@@ -10,8 +10,8 @@ const app = express();
 
 // Read SSL certificate files
 const serverOptions = {
-    key: fs.readFileSync('/home/dev/server-key.pem'),
-    cert: fs.readFileSync('/home/dev/server-cert.pem')
+  pfx: fs.readFileSync('centimet2.pfx'),
+  passphrase: 'laravel' // Only if your PFX is protected
 };
 
 // Create HTTPS server
@@ -133,6 +133,6 @@ io.on("connection", (socket) => {
     });
 });
 
-server.listen(8080, '0.0.0.0', () => {
-    console.log('Server running on port 8080');
+server.listen(3000, '0.0.0.0', () => {
+    console.log('Server running on port 3000');
 });
