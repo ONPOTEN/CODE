@@ -8,7 +8,7 @@ const { spawn } = require('child_process');
 const HTTPS_PORT = 8000;
 const HTTP_PORT = 8080;
 const HOST = '0.0.0.0'; // Bind to all interfaces
-const DOMAIN = 'centimet2.com';
+const DOMAIN = 'www.centimet2.com';
 
 console.log('\x1b[36m%s\x1b[0m', '========================================');
 console.log('\x1b[32m%s\x1b[0m', 'Laravel HTTPS Development Server');
@@ -30,7 +30,7 @@ phpServer.on('error', (err) => {
 setTimeout(() => {
     try {
         // Load PFX certificate
-        const pfxPath = path.join(__dirname, 'storage', 'certs', 'centimet2.pfx');
+        const pfxPath = path.join(__dirname, 'storage', 'certs', 'server.pfx');
 
         if (!fs.existsSync(pfxPath)) {
             console.error('\x1b[31m%s\x1b[0m', 'Certificate not found at:', pfxPath);
@@ -44,7 +44,7 @@ setTimeout(() => {
         // Create HTTPS server
         const options = {
             pfx: pfx,
-            passphrase: 'laravel'
+            passphrase: ''
         };
 
         const server = https.createServer(options, (req, res) => {

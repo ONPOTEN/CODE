@@ -19,6 +19,11 @@ class FriendController extends Controller
     {
         $currentUser = $request->user();
 
+        // Check if user is authenticated
+        if (!$currentUser) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
         // Can't send friend request to yourself
         if ($currentUser->ID == $userId) {
             return response()->json(['message' => 'You cannot send a friend request to yourself'], 400);
@@ -68,6 +73,11 @@ class FriendController extends Controller
     {
         $currentUser = $request->user();
 
+        // Check if user is authenticated
+        if (!$currentUser) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
         // Find the friend request where current user is the friend_id (receiver)
         $friendRequest = Friend::where('user_id', $userId)
             ->where('friend_id', $currentUser->ID)
@@ -94,6 +104,11 @@ class FriendController extends Controller
     {
         $currentUser = $request->user();
 
+        // Check if user is authenticated
+        if (!$currentUser) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
         // Find the friend request where current user is the friend_id (receiver)
         $friendRequest = Friend::where('user_id', $userId)
             ->where('friend_id', $currentUser->ID)
@@ -116,6 +131,11 @@ class FriendController extends Controller
     public function unfriend(Request $request, $userId)
     {
         $currentUser = $request->user();
+
+        // Check if user is authenticated
+        if (!$currentUser) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
 
         // Find the friendship (either direction)
         $friendship = Friend::where(function ($query) use ($currentUser, $userId) {
@@ -144,6 +164,11 @@ class FriendController extends Controller
     {
         $currentUser = $request->user();
 
+        // Check if user is authenticated
+        if (!$currentUser) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
         // Get all accepted friendships
         $friendIds = Friend::where(function ($query) use ($currentUser) {
             $query->where('user_id', $currentUser->ID)
@@ -170,6 +195,11 @@ class FriendController extends Controller
     {
         $currentUser = $request->user();
 
+        // Check if user is authenticated
+        if (!$currentUser) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
         // Get all pending requests where current user is the receiver
         $pendingRequests = Friend::where('friend_id', $currentUser->ID)
             ->where('status', 'pending')
@@ -185,6 +215,11 @@ class FriendController extends Controller
     public function status(Request $request, $userId)
     {
         $currentUser = $request->user();
+
+        // Check if user is authenticated
+        if (!$currentUser) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
 
         if ($currentUser->ID == $userId) {
             return response()->json([

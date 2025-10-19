@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://centimet2.com:8000/api/v1';
 
 // Token storage utilities
 const TOKEN_KEY = 'api_token';
@@ -37,12 +37,19 @@ export class ApiException extends Error {
 
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
-    const error: ApiError = await response.json().catch(() => ({
-      message: response.statusText,
-    }));
+    let error: ApiError;
+    try {
+      error = await response.json();
+    } catch {
+      error = {
+        message: response.statusText || `HTTP Error ${response.status}`,
+      };
+    }
+
+    const errorMessage = error.message || response.statusText || `An error occurred (${response.status})`;
 
     throw new ApiException(
-      error.message || 'An error occurred',
+      errorMessage,
       response.status,
       error.errors
     );
@@ -124,6 +131,7 @@ export interface RegisterData {
   password: string;
   password_confirmation: string;
   display_name?: string;
+  phone?: string;
   role?: string;
 }
 
@@ -143,6 +151,7 @@ export const auth = {
   },
 
   login: async (username: string, password: string): Promise<LoginResponse> => {
+    // username can be email, phone, or actual username
     const response = await apiRequest<LoginResponse>('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ username, password }),
@@ -653,6 +662,8 @@ export interface ChatMessage {
   is_read: boolean;
   created_at: string;
   conversation_id?: number;
+  host_room?: string;
+  remote_room?: string;
 }
 
 export interface Conversation {
@@ -679,7 +690,15 @@ export const chat = {
   },
 
   getOrCreateConversation: async (userId: number): Promise<{ id: number; room_name: string; other_user: { id: number; name: string; email: string } }> => {
-    return apiRequest(`/conversations/with/${userId}`);
+    const response = await apiRequest<{ id: number; room_name: string; other_user: { id: number; name: string; email: string } }>(`/conversations/with/${userId}`);
+
+    // Format room name in ascending order (sort the room identifiers)
+    const [room1, room2] = response.room_name.split('-');
+    if (room1 && room2) {
+      response.room_name = [room1, room2].sort().join('-');
+    }
+    console.log('response.room_name:' + response.room_name);
+    return response;
   },
 
   getMessages: async (conversationId: number): Promise<{ room_name: string; messages: ChatMessage[] }> => {

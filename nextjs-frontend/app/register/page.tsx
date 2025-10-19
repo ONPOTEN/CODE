@@ -12,6 +12,7 @@ export default function RegisterPage() {
     password: '',
     password_confirmation: '',
     display_name: '',
+    phone: '',
     role: 'user',
   });
 
@@ -128,6 +129,28 @@ export default function RegisterPage() {
                 onChange={handleChange}
                 disabled={isLoading}
               />
+            </div>
+
+            {/* Phone */}
+            <div>
+              <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+                Phone Number
+              </label>
+              <input
+                id="phone"
+                name="phone"
+                type="tel"
+                className={`mt-1 appearance-none relative block w-full px-3 py-2 border ${
+                  getFieldError('phone') ? 'border-red-500' : 'border-gray-300'
+                } placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm`}
+                placeholder="Phone number (optional)"
+                value={formData.phone}
+                onChange={handleChange}
+                disabled={isLoading}
+              />
+              {getFieldError('phone') && (
+                <p className="mt-1 text-sm text-red-600">{getFieldError('phone')}</p>
+              )}
             </div>
 
             {/* Role */}

@@ -19,11 +19,13 @@ class ChatController extends Controller
     }
 
     /**
-     * Generate room name from user IDs (host-remote format)
+     * Generate room name from user IDs (ascending order for consistency)
      */
     private function generateRoomName($hostId, $remoteId)
     {
-        return "{$hostId}-{$remoteId}";
+        $ids = [$hostId, $remoteId];
+        sort($ids);
+        return "{$ids[0]}-{$ids[1]}";
     }
 
     /**

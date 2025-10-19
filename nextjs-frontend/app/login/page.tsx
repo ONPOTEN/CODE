@@ -48,7 +48,7 @@ export default function LoginPage() {
           <div className="rounded-md shadow-sm -space-y-px">
             <div>
               <label htmlFor="username" className="sr-only">
-                Username or Email
+                Username, Email, or Phone
               </label>
               <input
                 id="username"
@@ -56,7 +56,7 @@ export default function LoginPage() {
                 type="text"
                 required
                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-red-500 focus:border-red-500 focus:z-10 sm:text-sm"
-                placeholder="Username or Email"
+                placeholder="Username, Email, or Phone"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 disabled={isLoading}
@@ -92,7 +92,7 @@ export default function LoginPage() {
         </form>
 
         <div className="text-center text-sm text-gray-600">
-          <p>Test with your WordPress credentials</p>
+          <p>Login with username, email, or phone number</p>
         </div>
       </div>
     </div>

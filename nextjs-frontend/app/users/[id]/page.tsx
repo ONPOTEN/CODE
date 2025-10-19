@@ -93,10 +93,12 @@ export default function UserProfilePage() {
       setUser({ ...user, friend_request_sent: true });
       alert('Friend request sent successfully!');
     } catch (err) {
+      console.error('Full error object:', err);
       if (err instanceof ApiException) {
+        console.error('ApiException details - Status:', err.status, 'Message:', err.message, 'Errors:', err.errors);
         alert(`Failed to send friend request: ${err.message}`);
       } else {
-        alert('Failed to send friend request');
+        alert('Failed to send friend request: An unexpected error occurred');
       }
       console.error('Error sending friend request:', err);
     } finally {
@@ -114,10 +116,12 @@ export default function UserProfilePage() {
       setUser({ ...user, is_friend: true, friend_request_received: false });
       alert('Friend request accepted!');
     } catch (err) {
+      console.error('Full error object:', err);
       if (err instanceof ApiException) {
+        console.error('ApiException details - Status:', err.status, 'Message:', err.message, 'Errors:', err.errors);
         alert(`Failed to accept friend request: ${err.message}`);
       } else {
-        alert('Failed to accept friend request');
+        alert('Failed to accept friend request: An unexpected error occurred');
       }
       console.error('Error accepting friend request:', err);
     } finally {
@@ -135,10 +139,12 @@ export default function UserProfilePage() {
       setUser({ ...user, friend_request_received: false });
       alert('Friend request rejected');
     } catch (err) {
+      console.error('Full error object:', err);
       if (err instanceof ApiException) {
+        console.error('ApiException details - Status:', err.status, 'Message:', err.message, 'Errors:', err.errors);
         alert(`Failed to reject friend request: ${err.message}`);
       } else {
-        alert('Failed to reject friend request');
+        alert('Failed to reject friend request: An unexpected error occurred');
       }
       console.error('Error rejecting friend request:', err);
     } finally {
@@ -162,10 +168,12 @@ export default function UserProfilePage() {
       setUser({ ...user, is_friend: false });
       alert('Successfully unfriended');
     } catch (err) {
+      console.error('Full error object:', err);
       if (err instanceof ApiException) {
+        console.error('ApiException details - Status:', err.status, 'Message:', err.message, 'Errors:', err.errors);
         alert(`Failed to unfriend: ${err.message}`);
       } else {
-        alert('Failed to unfriend');
+        alert('Failed to unfriend: An unexpected error occurred');
       }
       console.error('Error unfriending:', err);
     } finally {

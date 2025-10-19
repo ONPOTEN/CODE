@@ -17,6 +17,13 @@ Route::prefix('v1')->group(function () {
     Route::post('/auth/login', [AuthController::class, 'login']);
     Route::post('/auth/logout', [AuthController::class, 'logout']);
 
+    // Debug endpoints
+    Route::get('/debug/users-with-phone', [AuthController::class, 'debugUsersWithPhone']);
+    Route::get('/debug/login-query', [AuthController::class, 'debugLoginQuery']);
+    Route::get('/debug/test-auth', [AuthController::class, 'debugTestAuth']);
+    Route::get('/debug/tokens', [AuthController::class, 'debugTokens']);
+    Route::post('/debug/test-token', [AuthController::class, 'debugTestToken']);
+
     // Posts
     Route::get('/posts', [PostController::class, 'index']);
     Route::get('/posts/{id}', [PostController::class, 'show'])->where('id', '[0-9]+');

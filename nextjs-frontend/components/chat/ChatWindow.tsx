@@ -4,6 +4,9 @@ import { useState, useEffect, useRef } from 'react';
 import { chat, ChatMessage, Conversation } from '@/lib/api';
 import { useSocket } from '@/contexts/SocketContext';
 import { formatTime } from '@/lib/utils';
+import VideoCallButton from './VideoCallButton';
+import VideoChatModal from './VideoChatModal';
+import IncomingCallNotification from './IncomingCallNotification';
 
 interface ChatWindowProps {
   conversation: Conversation;
@@ -16,8 +19,11 @@ export default function ChatWindow({ conversation, onNewMessage }: ChatWindowPro
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [roomName, setRoomName] = useState<string>('');
+  const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
+  const [isCallActive, setIsCallActive] = useState(false);
+  const [incomingCallVisible, setIncomingCallVisible] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const { socket, isConnected } = useSocket();
+  const { socket, isConnected, onIncomingCall, offIncomingCall } = useSocket();
 
   useEffect(() => {
     loadMessages();
@@ -61,6 +67,20 @@ export default function ChatWindow({ conversation, onNewMessage }: ChatWindowPro
     };
   }, [socket, conversation.id, onNewMessage]);
 
+  // Listen for incoming video calls
+  useEffect(() => {
+    const handleIncomingCall = (data: any) => {
+      console.log('Incoming call received:', data);
+      setIncomingCallVisible(true);
+    };
+
+    onIncomingCall(handleIncomingCall);
+
+    return () => {
+      offIncomingCall(handleIncomingCall);
+    };
+  }, [onIncomingCall, offIncomingCall]);
+
   const loadMessages = async () => {
     try {
       setLoading(true);
@@ -79,6 +99,19 @@ export default function ChatWindow({ conversation, onNewMessage }: ChatWindowPro
     setTimeout(() => {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, 100);
+  };
+
+  // Format room names as "{host room} - {remote room}" and sort ascending
+  const formatRoomName = (hostRoom?: string, remoteRoom?: string): string => {
+    if (!hostRoom && !remoteRoom) return '';
+
+    const rooms = [hostRoom || '', remoteRoom || ''].filter(Boolean);
+    if (rooms.length === 0) return '';
+
+    // Sort rooms in ascending order
+    rooms.sort();
+
+    return rooms.join(' - ');
   };
 
   const handleSendMessage = async (e: React.FormEvent) => {
@@ -106,6 +139,30 @@ export default function ChatWindow({ conversation, onNewMessage }: ChatWindowPro
     }
   };
 
+  const handleVideoCallClick = () => {
+    setIsVideoModalOpen(true);
+    setIsCallActive(true);
+  };
+
+  const handleVideoCallClose = () => {
+    setIsVideoModalOpen(false);
+    setIsCallActive(false);
+  };
+
+  const handleAcceptIncomingCall = () => {
+    setIncomingCallVisible(false);
+    setIsVideoModalOpen(true);
+    setIsCallActive(true);
+  };
+
+  const handleRejectIncomingCall = () => {
+    setIncomingCallVisible(false);
+    // Optionally notify the caller that the call was rejected
+    if (socket) {
+      socket.emit('call:end', { to: 'all' });
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -117,10 +174,17 @@ export default function ChatWindow({ conversation, onNewMessage }: ChatWindowPro
   return (
     <div className="flex flex-col h-full">
       {/* Chat Header */}
-      <div className="p-4 border-b border-gray-200 bg-white">
-        <h2 className="font-semibold text-lg">{conversation.other_user.name}</h2>
-        <p className="text-sm text-gray-500">{conversation.other_user.email}</p>
-        <p className="text-xs text-gray-400 mt-1">Room: {roomName || conversation.room_name}</p>
+      <div className="p-4 border-b border-gray-200 bg-white flex items-center justify-between">
+        <div className="flex-1">
+          <h2 className="font-semibold text-lg">{conversation.other_user.name}</h2>
+          <p className="text-sm text-gray-500">{conversation.other_user.email}</p>
+          <p className="text-xs text-gray-400 mt-1">Room: {roomName || conversation.room_name}</p>
+        </div>
+        <VideoCallButton
+          conversation={conversation}
+          onVideoCallClick={handleVideoCallClick}
+          isCallActive={isCallActive}
+        />
       </div>
 
       {/* Messages */}
@@ -148,13 +212,24 @@ export default function ChatWindow({ conversation, onNewMessage }: ChatWindowPro
                   </p>
                 )}
                 <p className="break-words">{message.message}</p>
-                <p
-                  className={`text-xs mt-1 ${
-                    message.is_mine ? 'text-blue-100' : 'text-gray-500'
-                  }`}
-                >
-                  {formatTime(message.created_at)}
-                </p>
+                <div className="flex flex-col gap-1 mt-1">
+                  {(message.host_room || message.remote_room) && (
+                    <p
+                      className={`text-xs ${
+                        message.is_mine ? 'text-blue-200' : 'text-gray-400'
+                      }`}
+                    >
+                      Room: {formatRoomName(message.host_room, message.remote_room)}
+                    </p>
+                  )}
+                  <p
+                    className={`text-xs ${
+                      message.is_mine ? 'text-blue-100' : 'text-gray-500'
+                    }`}
+                  >
+                    {formatTime(message.created_at)}
+                  </p>
+                </div>
               </div>
             </div>
           ))
@@ -188,6 +263,21 @@ export default function ChatWindow({ conversation, onNewMessage }: ChatWindowPro
           <p className="text-xs text-yellow-600 mt-2">Reconnecting...</p>
         )}
       </div>
+
+      {/* Video Chat Modal */}
+      <VideoChatModal
+        isOpen={isVideoModalOpen}
+        conversation={conversation}
+        onClose={handleVideoCallClose}
+      />
+
+      {/* Incoming Call Notification */}
+      <IncomingCallNotification
+        conversation={conversation}
+        isVisible={incomingCallVisible}
+        onAccept={handleAcceptIncomingCall}
+        onReject={handleRejectIncomingCall}
+      />
     </div>
   );
 }

@@ -18,8 +18,10 @@ class AuthController extends Controller
             'password' => 'required|string',
         ]);
 
+        // Search by username, email, or phone
         $user = WpUser::where('user_login', $request->username)
             ->orWhere('user_email', $request->username)
+            ->orWhere('phone', $request->username)
             ->first();
 
         if (!$user || !$this->verifyWordPressPassword($request->password, $user->user_pass)) {
@@ -65,6 +67,7 @@ class AuthController extends Controller
             'email' => 'required|email|max:100|unique:wp_users,user_email',
             'password' => 'required|string|min:8|confirmed',
             'display_name' => 'nullable|string|max:250',
+            'phone' => 'nullable|string|max:20|unique:wp_users,phone',
             'hobby' => 'nullable|string|max:255',
             'company' => 'nullable|string|max:255',
             'location' => 'nullable|string|max:255',
@@ -80,6 +83,7 @@ class AuthController extends Controller
             'user_registered' => now(),
             'user_status' => 0,
             'display_name' => $validated['display_name'] ?? $validated['username'],
+            'phone' => $validated['phone'] ?? null,
             'hobby' => $validated['hobby'] ?? null,
             'company' => $validated['company'] ?? null,
             'location' => $validated['location'] ?? null,
@@ -120,6 +124,127 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'Logged out successfully',
+        ]);
+    }
+
+    /**
+     * Debug endpoint to see all users and test login queries
+     */
+    public function debugUsersWithPhone(): JsonResponse
+    {
+        $allUsers = WpUser::select('ID', 'user_login', 'user_email', 'phone', 'display_name')->get();
+        $usersWithPhone = WpUser::whereNotNull('phone')
+            ->select('ID', 'user_login', 'user_email', 'phone', 'display_name')
+            ->get();
+
+        return response()->json([
+            'total_users' => $allUsers->count(),
+            'users_with_phone' => $usersWithPhone->count(),
+            'all_users' => $allUsers,
+            'users_with_phone_details' => $usersWithPhone,
+            'message' => 'Debug: Check if phone field exists and has data',
+        ]);
+    }
+
+    /**
+     * Debug endpoint to test login query with a specific value
+     */
+    public function debugLoginQuery(Request $request): JsonResponse
+    {
+        $input = $request->query('username', '');
+
+        $user = WpUser::where('user_login', $input)
+            ->orWhere('user_email', $input)
+            ->orWhere('phone', $input)
+            ->select('ID', 'user_login', 'user_email', 'phone', 'display_name')
+            ->first();
+
+        return response()->json([
+            'search_input' => $input,
+            'user_found' => $user ? true : false,
+            'user_data' => $user,
+            'message' => 'Debug: Test login query',
+        ]);
+    }
+
+    /**
+     * Debug endpoint to test Sanctum authentication
+     */
+    public function debugTestAuth(Request $request): JsonResponse
+    {
+        $authHeader = $request->header('Authorization');
+        $user = $request->user();
+
+        return response()->json([
+            'auth_header' => $authHeader ? substr($authHeader, 0, 30) . '...' : 'NOT FOUND',
+            'user_authenticated' => $user ? true : false,
+            'user_id' => $user?->ID,
+            'user_email' => $user?->user_email,
+            'all_headers' => collect($request->headers->all())->map(function ($value) {
+                return is_array($value) ? $value[0] : $value;
+            }),
+            'message' => 'Debug: Test if Sanctum authentication is working',
+        ]);
+    }
+
+    /**
+     * Debug endpoint to list all tokens in database
+     */
+    public function debugTokens(Request $request): JsonResponse
+    {
+        // Get all tokens with user info
+        $tokens = \DB::table('personal_access_tokens')
+            ->select('id', 'tokenable_id', 'tokenable_type', 'token', 'created_at')
+            ->get()
+            ->map(function ($token) {
+                return [
+                    'id' => $token->id,
+                    'user_id' => $token->tokenable_id,
+                    'token_hash' => substr($token->token, 0, 20) . '...',
+                    'created_at' => $token->created_at,
+                ];
+            });
+
+        return response()->json([
+            'total_tokens' => $tokens->count(),
+            'tokens' => $tokens,
+            'message' => 'Debug: All tokens in database',
+        ]);
+    }
+
+    /**
+     * Debug endpoint to manually test token validation
+     */
+    public function debugTestToken(Request $request): JsonResponse
+    {
+        $plainToken = $request->input('token');
+        if (!$plainToken) {
+            return response()->json(['error' => 'Token parameter required'], 400);
+        }
+
+        // Extract token hash from plain token
+        $parts = explode('|', $plainToken);
+        if (count($parts) !== 2) {
+            return response()->json(['error' => 'Invalid token format'], 400);
+        }
+
+        $tokenHash = hash('sha256', $parts[1]);
+
+        // Try to find the token
+        $tokenRecord = \DB::table('personal_access_tokens')
+            ->where('token', $tokenHash)
+            ->first();
+
+        return response()->json([
+            'plain_token_sent' => substr($plainToken, 0, 30) . '...',
+            'token_hash_generated' => substr($tokenHash, 0, 20) . '...',
+            'token_found_in_db' => $tokenRecord ? true : false,
+            'token_record' => $tokenRecord ? [
+                'id' => $tokenRecord->id,
+                'tokenable_id' => $tokenRecord->tokenable_id,
+                'user_exists' => \App\Models\WpUser::find($tokenRecord->tokenable_id) ? true : false,
+            ] : null,
+            'message' => 'Debug: Manual token validation test',
         ]);
     }
 
