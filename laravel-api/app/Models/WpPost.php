@@ -66,6 +66,21 @@ class WpPost extends Model
         return $this->hasMany(WpComment::class, 'comment_post_ID', 'ID');
     }
 
+    public function likes(): HasMany
+    {
+        return $this->hasMany(Like::class, 'post_id', 'ID');
+    }
+
+    public function dislikes(): HasMany
+    {
+        return $this->hasMany(Dislike::class, 'post_id', 'ID');
+    }
+
+    public function shares(): HasMany
+    {
+        return $this->hasMany(Share::class, 'post_id', 'ID');
+    }
+
     public function scopePublished($query)
     {
         return $query->where('post_status', 'publish');

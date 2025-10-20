@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ChatController;
+use App\Http\Controllers\Api\CommentController;
+use App\Http\Controllers\Api\EngagementController;
 use App\Http\Controllers\Api\FriendController;
 use App\Http\Controllers\Api\PostController;
 use App\Http\Controllers\Api\ShopController;
@@ -30,6 +32,14 @@ Route::prefix('v1')->group(function () {
     Route::get('/posts/slug/{slug}', [PostController::class, 'bySlug']);
     Route::get('/posts/type/{type}', [PostController::class, 'byType']);
 
+    // Comments (public)
+    Route::get('/posts/{postId}/comments', [CommentController::class, 'getPostComments'])->where('postId', '[0-9]+');
+
+    // Engagement stats (public)
+    Route::get('/posts/{postId}/engagement', [EngagementController::class, 'getEngagementStats'])->where('postId', '[0-9]+');
+    Route::get('/posts/{postId}/likes', [EngagementController::class, 'getPostLikes'])->where('postId', '[0-9]+');
+    Route::get('/posts/{postId}/shares', [EngagementController::class, 'getPostShares'])->where('postId', '[0-9]+');
+
     // Users
     Route::get('/users', [UserController::class, 'index']);
     Route::get('/users/search', [UserController::class, 'search']);
@@ -56,6 +66,18 @@ Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
     Route::post('/posts', [PostController::class, 'store']);
     Route::post('/posts/{id}', [PostController::class, 'update'])->where('id', '[0-9]+');
     Route::delete('/posts/{id}', [PostController::class, 'destroy'])->where('id', '[0-9]+');
+
+    // Comments (authenticated)
+    Route::post('/posts/{postId}/comments', [CommentController::class, 'storeComment'])->where('postId', '[0-9]+');
+    Route::put('/comments/{commentId}', [CommentController::class, 'updateComment'])->where('commentId', '[0-9]+');
+    Route::delete('/comments/{commentId}', [CommentController::class, 'deleteComment'])->where('commentId', '[0-9]+');
+
+    // Engagement (authenticated)
+    Route::post('/posts/{postId}/like', [EngagementController::class, 'likePost'])->where('postId', '[0-9]+');
+    Route::delete('/posts/{postId}/like', [EngagementController::class, 'unlikePost'])->where('postId', '[0-9]+');
+    Route::post('/posts/{postId}/dislike', [EngagementController::class, 'dislikePost'])->where('postId', '[0-9]+');
+    Route::delete('/posts/{postId}/dislike', [EngagementController::class, 'removeDislikePost'])->where('postId', '[0-9]+');
+    Route::post('/posts/{postId}/share', [EngagementController::class, 'sharePost'])->where('postId', '[0-9]+');
 
     // User Profile (authenticated)
     Route::put('/profile', [UserController::class, 'updateProfile']);
@@ -105,5 +127,9 @@ Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
         Route::get('/admin/users', [UserController::class, 'getAllUsersWithRoles']);
         Route::put('/admin/users/{userId}/role', [UserController::class, 'updateUserRole'])->where('userId', '[0-9]+');
         Route::post('/admin/users/roles/bulk-update', [UserController::class, 'bulkUpdateRoles']);
+
+        // Comment moderation
+        Route::post('/admin/comments/{commentId}/approve', [CommentController::class, 'approveComment'])->where('commentId', '[0-9]+');
+        Route::post('/admin/comments/{commentId}/reject', [CommentController::class, 'rejectComment'])->where('commentId', '[0-9]+');
     });
 });

@@ -9,6 +9,14 @@ class PostResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
+        $userLiked = false;
+        $userDisliked = false;
+
+        if ($request->user()) {
+            $userLiked = $this->likes()->where('user_id', $request->user()->ID)->exists();
+            $userDisliked = $this->dislikes()->where('user_id', $request->user()->ID)->exists();
+        }
+
         return [
             'id' => $this->ID,
             'title' => $this->post_title,
@@ -26,6 +34,22 @@ class PostResource extends JsonResource
             'meta' => $this->when($request->input('include_meta'), function () {
                 return $this->meta->pluck('meta_value', 'meta_key');
             }),
+            'engagement' => [
+                'likes' => [
+                    'count' => $this->likes()->count(),
+                    'user_liked' => $userLiked,
+                ],
+                'dislikes' => [
+                    'count' => $this->dislikes()->count(),
+                    'user_disliked' => $userDisliked,
+                ],
+                'comments' => [
+                    'count' => $this->comment_count,
+                ],
+                'shares' => [
+                    'count' => $this->shares()->count(),
+                ],
+            ],
             'comment_count' => $this->comment_count,
             'author_id' => $this->post_author,
         ];

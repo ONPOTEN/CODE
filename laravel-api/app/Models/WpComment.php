@@ -46,6 +46,11 @@ class WpComment extends Model
         return $this->belongsTo(WpUser::class, 'user_id', 'ID');
     }
 
+    public function author(): BelongsTo
+    {
+        return $this->belongsTo(WpUser::class, 'user_id', 'ID');
+    }
+
     public function scopeApproved($query)
     {
         return $query->where('comment_approved', '1');
