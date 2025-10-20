@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useAuth } from './AuthContext';
 import { ChatMessage } from '@/lib/api';
@@ -64,6 +64,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
 
       // Register user with socket server
       newSocket.emit('chat:register', { userId: user.id });
+      console.log('Registered user with socket:', user.id);
     });
 
     newSocket.on('disconnect', () => {
@@ -76,6 +77,16 @@ export function SocketProvider({ children }: { children: ReactNode }) {
       setIsConnected(false);
     });
 
+    // Debug: Log ALL events received
+    newSocket.onAny((eventName, ...args) => {
+      console.log('🔵 Socket.IO Event Received:', eventName, args);
+    });
+
+    // Specifically log new:message events
+    newSocket.on('new:message', (message) => {
+      console.log('🟢 NEW:MESSAGE Event in SocketContext:', message);
+    });
+
     setSocket(newSocket);
 
     return () => {
@@ -83,17 +94,21 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     };
   }, [isAuthenticated, user]);
 
-  const onNewMessage = (callback: (message: ChatMessage) => void) => {
+  const onNewMessage = useCallback((callback: (message: ChatMessage) => void) => {
     if (socket) {
+      console.log('🎯 Attaching new:message listener in onNewMessage');
       socket.on('new:message', callback);
+    } else {
+      console.warn('⚠️ Cannot attach listener - socket is null');
     }
-  };
+  }, [socket]);
 
-  const offNewMessage = (callback: (message: ChatMessage) => void) => {
+  const offNewMessage = useCallback((callback: (message: ChatMessage) => void) => {
     if (socket) {
+      console.log('🔴 Removing new:message listener in offNewMessage');
       socket.off('new:message', callback);
     }
-  };
+  }, [socket]);
 
   // Video call event handlers
   const onUserJoined = (callback: (data: VideoCallEvent) => void) => {

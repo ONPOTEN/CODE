@@ -210,6 +210,16 @@ class ChatController extends Controller
 
         $message->load(['sender', 'replyTo.sender']);
 
+        // Get the other user's ID
+        $otherUserId = $conversation->user1_id == $userId
+            ? $conversation->user2_id
+            : $conversation->user1_id;
+
+        // Generate room names for the message
+        $senderRoomName = $this->generateRoomName($userId, $otherUserId);
+        $recipientRoomName = $this->generateRoomName($otherUserId, $userId);
+
+        // Don't set is_mine here - let frontend determine based on sender.id
         $messageData = [
             'id' => $message->id,
             'message' => $message->message,
@@ -219,16 +229,19 @@ class ChatController extends Controller
                 'id' => $message->sender->ID,
                 'name' => $message->sender->display_name ?? $message->sender->user_login,
             ],
+            'sender_id' => $message->sender->ID, // Add sender_id for easier comparison
             'reply_to' => $message->replyTo ? [
                 'id' => $message->replyTo->id,
                 'message' => $message->replyTo->message,
                 'sender_name' => $message->replyTo->sender->display_name ?? $message->replyTo->sender->user_login,
             ] : null,
-            'is_mine' => true,
+            'is_mine' => true, // This is for the API response only
             'is_read' => false,
             'is_edited' => false,
             'created_at' => $message->created_at,
-            'conversation_id' => $conversationId,
+            'conversation_id' => (int) $conversationId, // Ensure it's an integer
+            'host_room' => $senderRoomName,
+            'remote_room' => $recipientRoomName,
         ];
 
         // Emit Socket.IO event to notify the recipient
@@ -389,6 +402,7 @@ class ChatController extends Controller
             curl_setopt($ch, CURLOPT_POST, true);
             curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
             curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode([
+                'senderId' => $senderId,
                 'recipientId' => $recipientId,
                 'messageData' => $messageData,
                 'senderRoomName' => $senderRoomName,

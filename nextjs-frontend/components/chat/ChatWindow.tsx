@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { chat, ChatMessage, Conversation } from '@/lib/api';
 import { useSocket } from '@/contexts/SocketContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { formatTime } from '@/lib/utils';
 import VideoCallButton from './VideoCallButton';
 import VideoChatModal from './VideoChatModal';
@@ -23,32 +24,75 @@ export default function ChatWindow({ conversation, onNewMessage }: ChatWindowPro
   const [isCallActive, setIsCallActive] = useState(false);
   const [incomingCallVisible, setIncomingCallVisible] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const joinedRoomRef = useRef<string | null>(null);
   const { socket, isConnected, onIncomingCall, offIncomingCall } = useSocket();
+  const { user } = useAuth();
 
   useEffect(() => {
     loadMessages();
   }, [conversation.id]);
 
   useEffect(() => {
-    // Join the chat room when conversation changes
+    // Join the chat room when socket connects or room changes
     if (socket && conversation.room_name) {
-      console.log('Joining room:', conversation.room_name);
-      socket.emit('chat:join-room', { roomName: conversation.room_name });
-      setRoomName(conversation.room_name);
-
-      return () => {
-        // Leave room on cleanup
-        console.log('Leaving room:', conversation.room_name);
-        socket.emit('chat:leave-room', { roomName: conversation.room_name });
-      };
+      // Only join if we're not already in this room
+      if (joinedRoomRef.current !== conversation.room_name) {
+        console.log('Joining room:', conversation.room_name);
+        socket.emit('chat:join-room', { roomName: conversation.room_name });
+        setRoomName(conversation.room_name);
+        joinedRoomRef.current = conversation.room_name;
+      }
     }
   }, [socket, conversation.room_name]);
 
+  // Separate effect to handle leaving room only when conversation ID changes
+  useEffect(() => {
+    return () => {
+      // This cleanup only runs when conversation.id changes or component unmounts
+      // Do NOT add socket to dependency array - that would cause cleanup on reconnection
+      if (joinedRoomRef.current) {
+        console.log('Leaving room:', joinedRoomRef.current);
+        const currentSocket = socket;
+        if (currentSocket) {
+          currentSocket.emit('chat:leave-room', { roomName: joinedRoomRef.current });
+        }
+        joinedRoomRef.current = null;
+      }
+    };
+  }, [conversation.id]);
+
   useEffect(() => {
     // Listen for new messages from Socket.IO
-    const handleNewMessage = (message: ChatMessage) => {
-      if (message.conversation_id === conversation.id) {
-        setMessages((prev) => [...prev, message]);
+    const handleNewMessage = (message: any) => {
+      // Convert conversation_id to number if it's a string
+      const messageConversationId = typeof message.conversation_id === 'string'
+        ? parseInt(message.conversation_id, 10)
+        : message.conversation_id;
+
+      if (messageConversationId === conversation.id) {
+        // Determine if message is mine based on sender ID
+        const senderId = message.sender_id || message.sender?.id;
+        const isMine = senderId === user?.id;
+
+        console.log(`💬 ChatWindow received message: sender_id=${senderId}, user_id=${user?.id}, is_mine=${isMine}`);
+
+        // Create properly formatted message
+        const formattedMessage: ChatMessage = {
+          ...message,
+          is_mine: isMine
+        };
+
+        setMessages((prev) => {
+          // Check if message already exists to avoid duplicates
+          const messageExists = prev.some(m => m.id === formattedMessage.id);
+          if (messageExists) {
+            console.log('⚠️ Message already exists, skipping duplicate:', formattedMessage.id);
+            return prev;
+          }
+          console.log('➕ Adding new message:', formattedMessage.id);
+          return [...prev, formattedMessage];
+        });
+
         scrollToBottom();
         if (onNewMessage) {
           onNewMessage();
@@ -65,7 +109,7 @@ export default function ChatWindow({ conversation, onNewMessage }: ChatWindowPro
         socket.off('new:message', handleNewMessage);
       }
     };
-  }, [socket, conversation.id, onNewMessage]);
+  }, [socket, conversation.id, onNewMessage, user]);
 
   // Listen for incoming video calls
   useEffect(() => {
@@ -124,9 +168,14 @@ export default function ChatWindow({ conversation, onNewMessage }: ChatWindowPro
 
     try {
       setSending(true);
-      const message = await chat.sendMessage(conversation.id, messageText);
-      setMessages((prev) => [...prev, message]);
-      scrollToBottom();
+      await chat.sendMessage(conversation.id, messageText);
+
+      // Don't add message locally - let Socket.IO broadcast handle it
+      // This prevents duplicate messages
+      console.log('📤 Message sent, waiting for Socket.IO broadcast');
+
+      // Note: The message will be added via the Socket.IO 'new:message' event
+      // which ensures consistency across all clients
 
       if (onNewMessage) {
         onNewMessage();
