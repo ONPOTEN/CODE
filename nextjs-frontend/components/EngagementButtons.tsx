@@ -6,11 +6,18 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useEngagement } from '@/contexts/EngagementContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Engagement } from '@/lib/engagementService';
+import { handleSocialShare } from '@/lib/shareUtils';
+import { ShareToast } from '@/components/ShareToast';
 
 interface EngagementButtonsProps {
   postId: number;
+  postTitle?: string;
+  postSlug?: string;
+  postText?: string;
   className?: string;
   showLabels?: boolean;
   compact?: boolean;
@@ -18,10 +25,15 @@ interface EngagementButtonsProps {
 
 export function EngagementButtons({
   postId,
+  postTitle = 'Check out this post',
+  postSlug,
+  postText,
   className = '',
   showLabels = true,
   compact = false,
 }: EngagementButtonsProps) {
+  const router = useRouter();
+  const { isAuthenticated } = useAuth();
   const {
     engagements,
     toggleLike,
@@ -34,6 +46,8 @@ export function EngagementButtons({
   } = useEngagement();
 
   const [showShareMenu, setShowShareMenu] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
   const engagement = engagements.get(postId);
 
   // Load engagement stats on mount
@@ -47,13 +61,59 @@ export function EngagementButtons({
     return <div className={`bg-gray-100 rounded animate-pulse h-12 ${className}`} />;
   }
 
+  const handleLikeClick = () => {
+    if (!isAuthenticated) {
+      router.push('/login');
+      return;
+    }
+    toggleLike(postId);
+  };
+
+  const handleDislikeClick = () => {
+    if (!isAuthenticated) {
+      router.push('/login');
+      return;
+    }
+    toggleDislike(postId);
+  };
+
+  const handleShareClick = () => {
+    if (!isAuthenticated) {
+      router.push('/login');
+      return;
+    }
+    setShowShareMenu(!showShareMenu);
+  };
+
   const handleShare = async (platform: string) => {
+    if (!isAuthenticated) {
+      router.push('/login');
+      return;
+    }
     try {
+      // Track share in backend
       await sharePost(postId, platform);
       setShowShareMenu(false);
+
+      // Open social media share dialog
+      await handleSocialShare(platform, postId, postTitle, postSlug, postText);
+
+      // Show success message for direct link
+      if (platform === 'direct') {
+        setToastMessage('Link copied to clipboard!');
+        setShowToast(true);
+      }
     } catch (error) {
       console.error('Failed to share:', error);
     }
+  };
+
+  const handleCommentClick = () => {
+    if (!isAuthenticated) {
+      router.push('/login');
+      return;
+    }
+    document.getElementById(`comments-section-${postId}`)?.scrollIntoView({ behavior: 'smooth' });
   };
 
   const isLikeLoading = likeLoading.has(postId);
@@ -65,17 +125,18 @@ export function EngagementButtons({
   }`;
 
   return (
+    <>
     <div className={`flex gap-2 flex-wrap ${className}`}>
       {/* Like Button */}
       <button
-        onClick={() => toggleLike(postId)}
+        onClick={handleLikeClick}
         disabled={isLikeLoading}
         className={`${baseButtonClasses} ${
           engagement.likes.user_liked
             ? 'bg-blue-100 text-blue-600 hover:bg-blue-200'
             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
         }`}
-        title="Like this post"
+        title={isAuthenticated ? 'Like this post' : 'Login to like this post'}
       >
         <span className="text-lg">👍</span>
         <span className="flex items-center gap-1">
@@ -86,14 +147,14 @@ export function EngagementButtons({
 
       {/* Dislike Button */}
       <button
-        onClick={() => toggleDislike(postId)}
+        onClick={handleDislikeClick}
         disabled={isDislikeLoading}
         className={`${baseButtonClasses} ${
           engagement.dislikes.user_disliked
             ? 'bg-red-100 text-red-600 hover:bg-red-200'
             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
         }`}
-        title="Dislike this post"
+        title={isAuthenticated ? 'Dislike this post' : 'Login to dislike this post'}
       >
         <span className="text-lg">👎</span>
         <span className="flex items-center gap-1">
@@ -105,10 +166,10 @@ export function EngagementButtons({
       {/* Share Button with Platform Menu */}
       <div className="relative">
         <button
-          onClick={() => setShowShareMenu(!showShareMenu)}
+          onClick={handleShareClick}
           disabled={isShareLoading}
           className={`${baseButtonClasses} bg-gray-100 text-gray-700 hover:bg-gray-200`}
-          title="Share this post"
+          title={isAuthenticated ? 'Share this post' : 'Login to share this post'}
         >
           <span className="text-lg">📤</span>
           <span className="flex items-center gap-1">
@@ -165,8 +226,8 @@ export function EngagementButtons({
       {/* Comments Button - Link to comments section */}
       <button
         className={`${baseButtonClasses} bg-gray-100 text-gray-700 hover:bg-gray-200`}
-        onClick={() => document.getElementById(`comments-section-${postId}`)?.scrollIntoView({ behavior: 'smooth' })}
-        title="View comments"
+        onClick={handleCommentClick}
+        title={isAuthenticated ? 'View comments' : 'Login to comment'}
       >
         <span className="text-lg">💬</span>
         <span className="flex items-center gap-1">
@@ -175,6 +236,13 @@ export function EngagementButtons({
         </span>
       </button>
     </div>
+
+    <ShareToast
+      message={toastMessage}
+      isVisible={showToast}
+      onClose={() => setShowToast(false)}
+    />
+  </>
   );
 }
 

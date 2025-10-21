@@ -6,7 +6,9 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useEngagement } from '@/contexts/EngagementContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Comment } from '@/lib/engagementService';
 
 interface CommentsSectionProps {
@@ -165,6 +167,8 @@ export function CommentsSection({
   currentUserId,
   className = '',
 }: CommentsSectionProps) {
+  const router = useRouter();
+  const { isAuthenticated } = useAuth();
   const { comments, commentLoading, addComment, fetchComments } = useEngagement();
   const [commentText, setCommentText] = useState('');
   const [replyingTo, setReplyingTo] = useState<number | null>(null);
@@ -182,6 +186,11 @@ export function CommentsSection({
   }, [postId]);
 
   const handlePostComment = async () => {
+    if (!isAuthenticated) {
+      router.push('/login');
+      return;
+    }
+
     if (!commentText.trim()) {
       alert('Please enter a comment');
       return;
@@ -211,7 +220,7 @@ export function CommentsSection({
       </h3>
 
       {/* Comment Input */}
-      {currentUserId && (
+      {isAuthenticated ? (
         <div className="space-y-2">
           {replyingTo !== null && (
             <div className="flex items-center gap-2 p-2 bg-blue-50 rounded border border-blue-200">
@@ -241,6 +250,16 @@ export function CommentsSection({
             className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 font-medium text-sm"
           >
             {isPosting ? 'Posting...' : 'Post Comment'}
+          </button>
+        </div>
+      ) : (
+        <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <p className="text-blue-700 text-sm mb-3">Sign in to comment on this post</p>
+          <button
+            onClick={() => router.push('/login')}
+            className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-medium text-sm"
+          >
+            Login to Comment
           </button>
         </div>
       )}

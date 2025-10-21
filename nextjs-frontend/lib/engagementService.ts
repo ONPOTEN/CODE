@@ -55,8 +55,15 @@ class EngagementService {
   private token: string | null = null;
   private listeners: Map<string, Set<Function>> = new Map();
 
-  constructor(apiBaseUrl: string = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000') {
+  constructor(apiBaseUrl: string = process.env.NEXT_PUBLIC_API_URL || 'https://centimet2.com:8000/api/v1') {
     this.apiBaseUrl = apiBaseUrl;
+  }
+
+  /**
+   * Set the authentication token for API requests
+   */
+  setToken(token: string): void {
+    this.token = token;
   }
 
   /**
@@ -186,7 +193,7 @@ class EngagementService {
    * Like a post
    */
   async likePost(postId: number): Promise<any> {
-    const response = await fetch(`${this.apiBaseUrl}/api/v1/posts/${postId}/like`, {
+    const response = await fetch(`${this.apiBaseUrl}/posts/${postId}/like`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${this.token}`,
@@ -205,7 +212,7 @@ class EngagementService {
    * Unlike a post
    */
   async unlikePost(postId: number): Promise<any> {
-    const response = await fetch(`${this.apiBaseUrl}/api/v1/posts/${postId}/like`, {
+    const response = await fetch(`${this.apiBaseUrl}/posts/${postId}/like`, {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${this.token}`,
@@ -224,7 +231,7 @@ class EngagementService {
    * Dislike a post
    */
   async dislikePost(postId: number): Promise<any> {
-    const response = await fetch(`${this.apiBaseUrl}/api/v1/posts/${postId}/dislike`, {
+    const response = await fetch(`${this.apiBaseUrl}/posts/${postId}/dislike`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${this.token}`,
@@ -243,7 +250,7 @@ class EngagementService {
    * Remove dislike from a post
    */
   async removeDislikePost(postId: number): Promise<any> {
-    const response = await fetch(`${this.apiBaseUrl}/api/v1/posts/${postId}/dislike`, {
+    const response = await fetch(`${this.apiBaseUrl}/posts/${postId}/dislike`, {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${this.token}`,
@@ -262,7 +269,7 @@ class EngagementService {
    * Share a post
    */
   async sharePost(postId: number, sharedVia: string = 'direct'): Promise<any> {
-    const response = await fetch(`${this.apiBaseUrl}/api/v1/posts/${postId}/share`, {
+    const response = await fetch(`${this.apiBaseUrl}/posts/${postId}/share`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${this.token}`,
@@ -282,7 +289,7 @@ class EngagementService {
    * Get engagement stats for a post
    */
   async getEngagementStats(postId: number): Promise<Engagement> {
-    const response = await fetch(`${this.apiBaseUrl}/api/v1/posts/${postId}/engagement`, {
+    const response = await fetch(`${this.apiBaseUrl}/posts/${postId}/engagement`, {
       headers: {
         'Authorization': this.token ? `Bearer ${this.token}` : '',
       },
@@ -300,7 +307,7 @@ class EngagementService {
    */
   async getPostComments(postId: number, page: number = 1, perPage: number = 15): Promise<any> {
     const response = await fetch(
-      `${this.apiBaseUrl}/api/v1/posts/${postId}/comments?page=${page}&per_page=${perPage}`,
+      `${this.apiBaseUrl}/posts/${postId}/comments?page=${page}&per_page=${perPage}`,
       {
         headers: {
           'Authorization': this.token ? `Bearer ${this.token}` : '',
@@ -319,7 +326,7 @@ class EngagementService {
    * Create a comment on a post
    */
   async createComment(postId: number, content: string, parentId?: number): Promise<any> {
-    const response = await fetch(`${this.apiBaseUrl}/api/v1/posts/${postId}/comments`, {
+    const response = await fetch(`${this.apiBaseUrl}/posts/${postId}/comments`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${this.token}`,
@@ -343,7 +350,7 @@ class EngagementService {
    * Update a comment
    */
   async updateComment(commentId: number, content: string): Promise<any> {
-    const response = await fetch(`${this.apiBaseUrl}/api/v1/comments/${commentId}`, {
+    const response = await fetch(`${this.apiBaseUrl}/comments/${commentId}`, {
       method: 'PUT',
       headers: {
         'Authorization': `Bearer ${this.token}`,
@@ -363,7 +370,7 @@ class EngagementService {
    * Delete a comment
    */
   async deleteComment(commentId: number): Promise<any> {
-    const response = await fetch(`${this.apiBaseUrl}/api/v1/comments/${commentId}`, {
+    const response = await fetch(`${this.apiBaseUrl}/comments/${commentId}`, {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${this.token}`,
@@ -383,7 +390,7 @@ class EngagementService {
    */
   async getPostLikes(postId: number, page: number = 1, perPage: number = 15): Promise<any> {
     const response = await fetch(
-      `${this.apiBaseUrl}/api/v1/posts/${postId}/likes?page=${page}&per_page=${perPage}`,
+      `${this.apiBaseUrl}/posts/${postId}/likes?page=${page}&per_page=${perPage}`,
       {
         headers: {
           'Authorization': this.token ? `Bearer ${this.token}` : '',
@@ -403,7 +410,7 @@ class EngagementService {
    */
   async getPostShares(postId: number, page: number = 1, perPage: number = 15): Promise<any> {
     const response = await fetch(
-      `${this.apiBaseUrl}/api/v1/posts/${postId}/shares?page=${page}&per_page=${perPage}`,
+      `${this.apiBaseUrl}/posts/${postId}/shares?page=${page}&per_page=${perPage}`,
       {
         headers: {
           'Authorization': this.token ? `Bearer ${this.token}` : '',

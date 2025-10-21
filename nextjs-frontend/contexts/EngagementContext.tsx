@@ -48,9 +48,12 @@ export function EngagementProvider({ children, token }: { children: React.ReactN
   const [socketConnected, setSocketConnected] = useState(false);
   const [socketError, setSocketError] = useState<string | null>(null);
 
-  // Initialize socket connection
+  // Initialize socket connection and set token for HTTP requests
   useEffect(() => {
     if (!token) return;
+
+    // Set token for HTTP requests
+    engagementService.setToken(token);
 
     const initSocket = async () => {
       try {
@@ -316,6 +319,30 @@ export function EngagementProvider({ children, token }: { children: React.ReactN
     [fetchEngagementStats]
   );
 
+  // Fetch comments - defined before addComment
+  const fetchComments = useCallback(async (postId: number, page: number = 1) => {
+    try {
+      setCommentLoading((prev) => new Map(prev).set(postId, true));
+      const response = await engagementService.getPostComments(postId, page);
+
+      setComments((prev) => {
+        const updated = new Map(prev);
+        updated.set(postId, response.data || []);
+        return updated;
+      });
+
+      return response;
+    } catch (error) {
+      console.error(`Failed to fetch comments for post ${postId}:`, error);
+    } finally {
+      setCommentLoading((prev) => {
+        const updated = new Map(prev);
+        updated.delete(postId);
+        return updated;
+      });
+    }
+  }, []);
+
   // Add comment
   const addComment = useCallback(
     async (postId: number, content: string, parentId?: number) => {
@@ -369,30 +396,6 @@ export function EngagementProvider({ children, token }: { children: React.ReactN
     },
     []
   );
-
-  // Fetch comments
-  const fetchComments = useCallback(async (postId: number, page: number = 1) => {
-    try {
-      setCommentLoading((prev) => new Map(prev).set(postId, true));
-      const response = await engagementService.getPostComments(postId, page);
-
-      setComments((prev) => {
-        const updated = new Map(prev);
-        updated.set(postId, response.data || []);
-        return updated;
-      });
-
-      return response;
-    } catch (error) {
-      console.error(`Failed to fetch comments for post ${postId}:`, error);
-    } finally {
-      setCommentLoading((prev) => {
-        const updated = new Map(prev);
-        updated.delete(postId);
-        return updated;
-      });
-    }
-  }, []);
 
   // Fetch likes
   const fetchLikes = useCallback(async (postId: number, page: number = 1) => {

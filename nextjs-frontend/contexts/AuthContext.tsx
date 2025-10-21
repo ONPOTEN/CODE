@@ -84,6 +84,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const response: LoginResponse = await auth.login(username, password);
       setUser(response.user);
+
+      // Emit token update event so EngagementProviderWrapper can update
+      const token = auth.getToken();
+      if (token && typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('tokenUpdated', { detail: token }));
+      }
     } catch (err) {
       if (err instanceof ApiException) {
         setError(err.message);

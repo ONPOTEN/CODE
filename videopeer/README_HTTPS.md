@@ -23,6 +23,8 @@ Deploy: Push to production
 
 do add comment,like,dislike,share like facebook for wp_posts in laravel
 do add comment,like,dislike,share like facebook for nextjs,connect to backend laravel,use real-time with videopeer socketio
+
+make share post work with Facebook,Twitter,Whatsapp,LinkedIn,Email,Direct Link
 # VideoPeer Socket.IO HTTPS Server
 
 ## ✅ Configuration Complete

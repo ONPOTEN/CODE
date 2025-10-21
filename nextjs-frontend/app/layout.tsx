@@ -4,6 +4,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { SocketProvider } from "@/contexts/SocketContext";
+import { EngagementProviderWrapper } from "@/components/EngagementProviderWrapper";
 
 export const metadata: Metadata = {
   title: "Centimet2 - Marketplace",
@@ -20,11 +21,13 @@ export default function RootLayout({
       <body className="font-sans antialiased">
         <AuthProvider>
           <SocketProvider>
-            <Header />
-            <main className="min-h-screen bg-gray-50">
-              {children}
-            </main>
-            <Footer />
+            <EngagementProviderWrapper>
+              <Header />
+              <main className="min-h-screen bg-gray-50">
+                {children}
+              </main>
+              <Footer />
+            </EngagementProviderWrapper>
           </SocketProvider>
         </AuthProvider>
       </body>

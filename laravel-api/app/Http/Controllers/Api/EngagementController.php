@@ -17,41 +17,88 @@ class EngagementController extends Controller
      */
     public function likePost(Request $request, $postId): JsonResponse
     {
-        $user = $request->user();
-        $post = WpPost::findOrFail($postId);
+        try {
+            // Debug logging
+            \Log::debug('likePost called', [
+                'postId' => $postId,
+                'headers' => $request->headers->all(),
+                'auth_header' => $request->header('Authorization') ? substr($request->header('Authorization'), 0, 20) . '...' : 'none',
+            ]);
 
-        // Check if user already liked this post
-        $existingLike = Like::where('post_id', $postId)
-            ->where('user_id', $user->ID)
-            ->first();
+            $user = $request->user();
 
-        if ($existingLike) {
+            // Check if user is authenticated
+            if (!$user) {
+                \Log::warning('User not authenticated in likePost', [
+                    'postId' => $postId,
+                    'auth_header' => $request->header('Authorization') ? 'present' : 'missing',
+                ]);
+                return response()->json([
+                    'message' => 'Unauthorized',
+                    'error' => 'User not authenticated',
+                ], 401);
+            }
+
+            // Check if post exists
+            $post = WpPost::findOrFail($postId);
+
+            // Check if user already liked this post
+            $existingLike = Like::where('post_id', $postId)
+                ->where('user_id', $user->ID)
+                ->first();
+
+            if ($existingLike) {
+                return response()->json([
+                    'message' => 'You have already liked this post',
+                    'post_id' => $postId,
+                    'user_id' => $user->ID,
+                    'liked' => true,
+                ], 200);
+            }
+
+            // Remove dislike if exists
+            Dislike::where('post_id', $postId)
+                ->where('user_id', $user->ID)
+                ->delete();
+
+            // Create like
+            Like::create([
+                'post_id' => $postId,
+                'user_id' => $user->ID,
+            ]);
+
             return response()->json([
-                'message' => 'You have already liked this post',
+                'message' => 'Post liked successfully',
                 'post_id' => $postId,
                 'user_id' => $user->ID,
                 'liked' => true,
-            ], 200);
+                'likes_count' => $post->likes()->count(),
+            ], 201);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'message' => 'Post not found',
+                'error' => $e->getMessage(),
+            ], 404);
+        } catch (\Illuminate\Database\QueryException $e) {
+            \Log::error('Database error in likePost:', [
+                'error' => $e->getMessage(),
+                'postId' => $postId,
+                'userId' => $request->user()?->ID,
+            ]);
+            return response()->json([
+                'message' => 'Failed to like post',
+                'error' => 'Database error: ' . $e->getMessage(),
+            ], 500);
+        } catch (\Exception $e) {
+            \Log::error('Unexpected error in likePost:', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json([
+                'message' => 'Failed to like post',
+                'error' => $e->getMessage(),
+            ], 500);
         }
-
-        // Remove dislike if exists
-        Dislike::where('post_id', $postId)
-            ->where('user_id', $user->ID)
-            ->delete();
-
-        // Create like
-        Like::create([
-            'post_id' => $postId,
-            'user_id' => $user->ID,
-        ]);
-
-        return response()->json([
-            'message' => 'Post liked successfully',
-            'post_id' => $postId,
-            'user_id' => $user->ID,
-            'liked' => true,
-            'likes_count' => $post->likes()->count(),
-        ], 201);
     }
 
     /**
@@ -59,27 +106,42 @@ class EngagementController extends Controller
      */
     public function unlikePost(Request $request, $postId): JsonResponse
     {
-        $user = $request->user();
+        try {
+            $user = $request->user();
 
-        $deleted = Like::where('post_id', $postId)
-            ->where('user_id', $user->ID)
-            ->delete();
+            if (!$user) {
+                return response()->json([
+                    'message' => 'Unauthorized',
+                    'error' => 'User not authenticated',
+                ], 401);
+            }
 
-        if (!$deleted) {
+            $deleted = Like::where('post_id', $postId)
+                ->where('user_id', $user->ID)
+                ->delete();
+
+            if (!$deleted) {
+                return response()->json([
+                    'message' => 'You have not liked this post',
+                ], 404);
+            }
+
+            $post = WpPost::findOrFail($postId);
+
             return response()->json([
-                'message' => 'You have not liked this post',
-            ], 404);
+                'message' => 'Post unliked successfully',
+                'post_id' => $postId,
+                'user_id' => $user->ID,
+                'liked' => false,
+                'likes_count' => $post->likes()->count(),
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error in unlikePost:', ['error' => $e->getMessage()]);
+            return response()->json([
+                'message' => 'Failed to unlike post',
+                'error' => $e->getMessage(),
+            ], 500);
         }
-
-        $post = WpPost::findOrFail($postId);
-
-        return response()->json([
-            'message' => 'Post unliked successfully',
-            'post_id' => $postId,
-            'user_id' => $user->ID,
-            'liked' => false,
-            'likes_count' => $post->likes()->count(),
-        ]);
     }
 
     /**
@@ -87,41 +149,57 @@ class EngagementController extends Controller
      */
     public function dislikePost(Request $request, $postId): JsonResponse
     {
-        $user = $request->user();
-        $post = WpPost::findOrFail($postId);
+        try {
+            $user = $request->user();
 
-        // Check if user already disliked this post
-        $existingDislike = Dislike::where('post_id', $postId)
-            ->where('user_id', $user->ID)
-            ->first();
+            if (!$user) {
+                return response()->json([
+                    'message' => 'Unauthorized',
+                    'error' => 'User not authenticated',
+                ], 401);
+            }
 
-        if ($existingDislike) {
+            $post = WpPost::findOrFail($postId);
+
+            // Check if user already disliked this post
+            $existingDislike = Dislike::where('post_id', $postId)
+                ->where('user_id', $user->ID)
+                ->first();
+
+            if ($existingDislike) {
+                return response()->json([
+                    'message' => 'You have already disliked this post',
+                    'post_id' => $postId,
+                    'user_id' => $user->ID,
+                    'disliked' => true,
+                ], 200);
+            }
+
+            // Remove like if exists
+            Like::where('post_id', $postId)
+                ->where('user_id', $user->ID)
+                ->delete();
+
+            // Create dislike
+            Dislike::create([
+                'post_id' => $postId,
+                'user_id' => $user->ID,
+            ]);
+
             return response()->json([
-                'message' => 'You have already disliked this post',
+                'message' => 'Post disliked successfully',
                 'post_id' => $postId,
                 'user_id' => $user->ID,
                 'disliked' => true,
-            ], 200);
+                'dislikes_count' => $post->dislikes()->count(),
+            ], 201);
+        } catch (\Exception $e) {
+            \Log::error('Error in dislikePost:', ['error' => $e->getMessage()]);
+            return response()->json([
+                'message' => 'Failed to dislike post',
+                'error' => $e->getMessage(),
+            ], 500);
         }
-
-        // Remove like if exists
-        Like::where('post_id', $postId)
-            ->where('user_id', $user->ID)
-            ->delete();
-
-        // Create dislike
-        Dislike::create([
-            'post_id' => $postId,
-            'user_id' => $user->ID,
-        ]);
-
-        return response()->json([
-            'message' => 'Post disliked successfully',
-            'post_id' => $postId,
-            'user_id' => $user->ID,
-            'disliked' => true,
-            'dislikes_count' => $post->dislikes()->count(),
-        ], 201);
     }
 
     /**
@@ -129,27 +207,42 @@ class EngagementController extends Controller
      */
     public function removeDislikePost(Request $request, $postId): JsonResponse
     {
-        $user = $request->user();
+        try {
+            $user = $request->user();
 
-        $deleted = Dislike::where('post_id', $postId)
-            ->where('user_id', $user->ID)
-            ->delete();
+            if (!$user) {
+                return response()->json([
+                    'message' => 'Unauthorized',
+                    'error' => 'User not authenticated',
+                ], 401);
+            }
 
-        if (!$deleted) {
+            $deleted = Dislike::where('post_id', $postId)
+                ->where('user_id', $user->ID)
+                ->delete();
+
+            if (!$deleted) {
+                return response()->json([
+                    'message' => 'You have not disliked this post',
+                ], 404);
+            }
+
+            $post = WpPost::findOrFail($postId);
+
             return response()->json([
-                'message' => 'You have not disliked this post',
-            ], 404);
+                'message' => 'Post dislike removed successfully',
+                'post_id' => $postId,
+                'user_id' => $user->ID,
+                'disliked' => false,
+                'dislikes_count' => $post->dislikes()->count(),
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error in removeDislikePost:', ['error' => $e->getMessage()]);
+            return response()->json([
+                'message' => 'Failed to remove dislike',
+                'error' => $e->getMessage(),
+            ], 500);
         }
-
-        $post = WpPost::findOrFail($postId);
-
-        return response()->json([
-            'message' => 'Post dislike removed successfully',
-            'post_id' => $postId,
-            'user_id' => $user->ID,
-            'disliked' => false,
-            'dislikes_count' => $post->dislikes()->count(),
-        ]);
     }
 
     /**
@@ -157,27 +250,43 @@ class EngagementController extends Controller
      */
     public function sharePost(Request $request, $postId): JsonResponse
     {
-        $validated = $request->validate([
-            'shared_via' => 'nullable|string|in:direct,facebook,twitter,whatsapp,linkedin,email',
-        ]);
+        try {
+            $user = $request->user();
 
-        $user = $request->user();
-        $post = WpPost::findOrFail($postId);
+            if (!$user) {
+                return response()->json([
+                    'message' => 'Unauthorized',
+                    'error' => 'User not authenticated',
+                ], 401);
+            }
 
-        // Create share record
-        Share::create([
-            'post_id' => $postId,
-            'user_id' => $user->ID,
-            'shared_via' => $validated['shared_via'] ?? 'direct',
-        ]);
+            $validated = $request->validate([
+                'shared_via' => 'nullable|string|in:direct,facebook,twitter,whatsapp,linkedin,email',
+            ]);
 
-        return response()->json([
-            'message' => 'Post shared successfully',
-            'post_id' => $postId,
-            'user_id' => $user->ID,
-            'shared_via' => $validated['shared_via'] ?? 'direct',
-            'shares_count' => $post->shares()->count(),
-        ], 201);
+            $post = WpPost::findOrFail($postId);
+
+            // Create share record
+            Share::create([
+                'post_id' => $postId,
+                'user_id' => $user->ID,
+                'shared_via' => $validated['shared_via'] ?? 'direct',
+            ]);
+
+            return response()->json([
+                'message' => 'Post shared successfully',
+                'post_id' => $postId,
+                'user_id' => $user->ID,
+                'shared_via' => $validated['shared_via'] ?? 'direct',
+                'shares_count' => $post->shares()->count(),
+            ], 201);
+        } catch (\Exception $e) {
+            \Log::error('Error in sharePost:', ['error' => $e->getMessage()]);
+            return response()->json([
+                'message' => 'Failed to share post',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**
