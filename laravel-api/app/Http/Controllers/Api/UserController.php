@@ -49,6 +49,108 @@ class UserController extends Controller
     }
 
     /**
+     * Get user by nickname
+     */
+    public function byNickname(Request $request, $nickname)
+    {
+        $user = WpUser::where('user_nicename', $nickname)->firstOrFail();
+
+        return response()->json([
+            'user_id' => $user->ID,
+            'user_login' => $user->user_login,
+            'user_email' => $user->user_email,
+            'user_nicename' => $user->user_nicename,
+            'display_name' => $user->display_name,
+        ]);
+    }
+
+    /**
+     * Get user by phone number (query parameter version - PREFERRED)
+     * Uses query parameter instead of URL path to avoid encoding issues with '+'
+     * Example: /api/v1/users/by-phone?phone=%2B840867631313
+     */
+    public function byPhoneQuery(Request $request)
+    {
+        $phone = $request->query('phone');
+
+        if (!$phone) {
+            return response()->json([
+                'message' => 'Phone number is required. Use: /api/v1/users/by-phone?phone=+840867631313',
+            ], 400);
+        }
+
+        \Log::info('[UserController] byPhoneQuery lookup', [
+            'phone_from_query' => $phone,
+        ]);
+
+        // Use the model's findByPhone helper which handles normalization
+        $user = WpUser::findByPhone($phone);
+
+        if (!$user) {
+            \Log::warning('[UserController] User not found by phone', [
+                'phone' => $phone,
+            ]);
+
+            return response()->json([
+                'message' => 'User not found with phone: ' . $phone,
+            ], 404);
+        }
+
+        \Log::info('[UserController] User found by phone', [
+            'phone' => $phone,
+            'user_id' => $user->ID,
+        ]);
+
+        return response()->json([
+            'user_id' => $user->ID,
+            'user_login' => $user->user_login,
+            'user_email' => $user->user_email,
+            'user_nicename' => $user->user_nicename,
+            'display_name' => $user->display_name,
+            'phone' => $user->phone,
+            'firebase_uid' => $user->firebase_uid, // Required for phone+password login
+        ]);
+    }
+
+    /**
+     * Get user by phone number (path parameter version - LEGACY)
+     * Kept for backward compatibility but not recommended for '+' in phone numbers
+     * Example: /api/v1/users/by-phone/840867631313
+     */
+    public function byPhone(Request $request, $phone)
+    {
+        // Phone number comes URL-encoded from the route parameter
+        // Laravel automatically decodes %2B to +
+        // Use the model's findByPhone helper which handles normalization
+
+        \Log::info('[UserController] byPhone (legacy) lookup', [
+            'phone_from_path' => $phone,
+        ]);
+
+        $user = WpUser::findByPhone($phone);
+
+        if (!$user) {
+            \Log::warning('[UserController] User not found by phone (legacy)', [
+                'phone' => $phone,
+            ]);
+
+            return response()->json([
+                'message' => 'User not found with phone: ' . $phone,
+            ], 404);
+        }
+
+        return response()->json([
+            'user_id' => $user->ID,
+            'user_login' => $user->user_login,
+            'user_email' => $user->user_email,
+            'user_nicename' => $user->user_nicename,
+            'display_name' => $user->display_name,
+            'phone' => $user->phone,
+            'firebase_uid' => $user->firebase_uid, // Required for phone+password login
+        ]);
+    }
+
+    /**
      * Search users by name for autocomplete
      */
     public function search(Request $request)
@@ -350,6 +452,29 @@ class UserController extends Controller
             'message' => count($updatedUsers) . ' user(s) updated successfully',
             'updated_users' => $updatedUsers,
             'errors' => $errors,
+        ]);
+    }
+
+    /**
+     * Reset password via SMS verification (forgot password flow)
+     * Does NOT require current password - SMS verification serves as proof
+     */
+    public function resetPasswordViaSMS(Request $request)
+    {
+        $user = $request->user();
+
+        $validated = $request->validate([
+            'password' => 'required|string|min:6',
+            'password_confirmation' => 'required|string|min:6|same:password',
+        ]);
+
+        // Update password without verifying current password
+        $user->user_pass = password_hash($validated['password'], PASSWORD_BCRYPT);
+        $user->save();
+
+        return response()->json([
+            'message' => 'Password reset successfully via SMS verification',
+            'success' => true,
         ]);
     }
 }

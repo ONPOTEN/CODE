@@ -18,13 +18,46 @@ class AuthController extends Controller
             'password' => 'required|string',
         ]);
 
+        \Log::info('[AuthController::login] Login attempt', [
+            'username' => $request->username,
+            'password_length' => strlen($request->password),
+        ]);
+
         // Search by username, email, or phone
         $user = WpUser::where('user_login', $request->username)
             ->orWhere('user_email', $request->username)
             ->orWhere('phone', $request->username)
             ->first();
 
-        if (!$user || !$this->verifyWordPressPassword($request->password, $user->user_pass)) {
+        \Log::info('[AuthController::login] User lookup result', [
+            'username' => $request->username,
+            'user_found' => $user ? true : false,
+            'user_id' => $user?->ID,
+            'user_login' => $user?->user_login,
+        ]);
+
+        if (!$user) {
+            \Log::warning('[AuthController::login] User not found', [
+                'username' => $request->username,
+            ]);
+            throw ValidationException::withMessages([
+                'username' => ['The provided credentials are incorrect.'],
+            ]);
+        }
+
+        $passwordVerified = $this->verifyWordPressPassword($request->password, $user->user_pass);
+        \Log::info('[AuthController::login] Password verification result', [
+            'user_id' => $user->ID,
+            'verified' => $passwordVerified,
+            'stored_hash_length' => strlen($user->user_pass),
+            'input_password_length' => strlen($request->password),
+        ]);
+
+        if (!$passwordVerified) {
+            \Log::warning('[AuthController::login] Password verification failed', [
+                'user_id' => $user->ID,
+                'username' => $user->user_login,
+            ]);
             throw ValidationException::withMessages([
                 'username' => ['The provided credentials are incorrect.'],
             ]);
@@ -246,6 +279,317 @@ class AuthController extends Controller
             ] : null,
             'message' => 'Debug: Manual token validation test',
         ]);
+    }
+
+    /**
+     * Firebase Registration
+     * Creates a new user from Firebase authentication
+     */
+    public function firebaseRegister(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'firebase_uid' => 'required|string|unique:wp_users,firebase_uid',
+            'email' => 'required|email|unique:wp_users,user_email',
+            'display_name' => 'nullable|string',
+            'nickname' => 'required|string|unique:wp_users,user_nicename',
+            'username' => 'required|string|unique:wp_users,user_login',
+        ]);
+
+        try {
+            // Create new Firebase user
+            $user = WpUser::create([
+                'firebase_uid' => $validated['firebase_uid'],
+                'user_login' => $validated['username'],
+                'user_nicename' => $validated['nickname'],
+                'user_email' => $validated['email'],
+                'display_name' => $validated['display_name'],
+                'user_registered' => now(),
+                'user_status' => 0,
+                'role' => 'user',
+                'email_verified_at' => now(), // Firebase users are pre-verified
+                'password' => Hash::make(\Illuminate\Support\Str::random(32)), // Random password since Firebase handles auth
+            ]);
+
+            // Create token
+            $token = $user->createToken('firebase-auth')->plainTextToken;
+
+            return response()->json([
+                'success' => true,
+                'user' => [
+                    'id' => $user->ID,
+                    'username' => $user->user_login,
+                    'email' => $user->user_email,
+                    'display_name' => $user->display_name,
+                ],
+                'token' => $token,
+                'message' => 'Firebase registration successful',
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Firebase Login
+     * Authenticates user via Firebase token and creates/updates user in database
+     */
+public function firebaseLogin(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'firebase_uid' => 'required|string',
+            'email' => 'required|email',
+            'display_name' => 'nullable|string',
+            'auth_method' => 'required|string|in:email,google,facebook,apple,phone',
+        ]);
+
+        try {
+            // Generate display_name if not provided
+            $displayName = $validated['display_name'] ?? $this->generateDisplayName($validated['email']);
+
+            // Find or create user
+            $user = WpUser::firstOrCreate(
+                ['firebase_uid' => $validated['firebase_uid']],
+                [
+                    'user_login' => \Illuminate\Support\Str::slug($displayName) . '_' . \Illuminate\Support\Str::random(5),
+                    'user_nicename' => \Illuminate\Support\Str::slug($displayName),
+                    'user_email' => $validated['email'],
+                    'display_name' => $displayName,
+                    'user_registered' => now(),
+                    'user_status' => 0,
+                    'role' => 'user',
+                    'email_verified_at' => now(), // Firebase users are pre-verified
+                    'password' => Hash::make(\Illuminate\Support\Str::random(32)),
+                ]
+            );
+
+            // Update last login and auth method
+            $user->update([
+                'last_login_at' => now(),
+                'auth_method' => $validated['auth_method'],
+            ]);
+
+            // Revoke old tokens and create new one
+            $user->tokens()->delete();
+            $token = $user->createToken('firebase-auth')->plainTextToken;
+
+            return response()->json([
+                'success' => true,
+                'user' => [
+                    'id' => $user->ID,
+                    'username' => $user->user_login,
+                    'email' => $user->user_email,
+                    'display_name' => $user->display_name,
+                ],
+                'token' => $token,
+                'message' => 'Firebase login successful',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Generate display name from email if not provided
+     */
+    private function generateDisplayName(string $email): string
+    {
+        // Extract name part from email (before @)
+        $namePart = explode('@', $email)[0];
+        // Convert underscores and dots to spaces, then capitalize
+        return str_replace(['.', '_'], ' ', $namePart);
+    }
+
+    /**
+     * Reset password via phone number (already verified via SMS/Firebase)
+     * Used when user has already verified their phone number
+     */
+    public function resetPasswordByPhone(Request $request): JsonResponse
+    {
+        // CRITICAL DEBUG: Write to file immediately to confirm function is called
+        file_put_contents(
+            storage_path('logs/reset-password-debug.log'),
+            "[" . date('Y-m-d H:i:s') . "] resetPasswordByPhone called with data: " . json_encode($request->all()) . "\n",
+            FILE_APPEND
+        );
+
+        $validated = $request->validate([
+            'phone' => 'required|string',
+            'new_password' => 'required|string|min:6',
+            'firebase_uid' => 'required|string',
+        ]);
+
+        file_put_contents(
+            storage_path('logs/reset-password-debug.log'),
+            "[" . date('Y-m-d H:i:s') . "] Validation passed\n",
+            FILE_APPEND
+        );
+
+        \Log::info('[AuthController::resetPasswordByPhone] Password reset request received', [
+            'phone' => $validated['phone'],
+            'firebase_uid' => $validated['firebase_uid'],
+            'password_length' => strlen($validated['new_password']),
+        ]);
+
+        try {
+            // Find user by phone and firebase_uid
+            // First try exact match
+            $user = WpUser::where('phone', $validated['phone'])
+                ->where('firebase_uid', $validated['firebase_uid'])
+                ->first();
+
+            // If not found, try using flexible phone matching
+            if (!$user) {
+                \Log::info('[AuthController::resetPasswordByPhone] Exact match failed, trying flexible matching', [
+                    'phone' => $validated['phone'],
+                    'firebase_uid' => $validated['firebase_uid'],
+                ]);
+
+                // Use the model's flexible phone matching
+                $flexUser = WpUser::findByPhone($validated['phone']);
+                if ($flexUser && $flexUser->firebase_uid === $validated['firebase_uid']) {
+                    $user = $flexUser;
+                    \Log::info('[AuthController::resetPasswordByPhone] Found via flexible matching', [
+                        'phone_input' => $validated['phone'],
+                        'phone_stored' => $user->phone,
+                        'user_id' => $user->ID,
+                    ]);
+                }
+            }
+
+            if (!$user) {
+                \Log::warning('[AuthController::resetPasswordByPhone] User not found', [
+                    'phone' => $validated['phone'],
+                    'firebase_uid' => $validated['firebase_uid'],
+                ]);
+                return response()->json([
+                    'message' => 'User not found',
+                    'error' => 'No user found with this phone number and firebase UID',
+                ], 404);
+            }
+
+            \Log::info('[AuthController::resetPasswordByPhone] User found', [
+                'user_id' => $user->ID,
+                'user_login' => $user->user_login,
+                'phone' => $user->phone,
+            ]);
+
+            // Create new password hash
+            $newHash = Hash::make($validated['new_password']);
+            \Log::info('[AuthController::resetPasswordByPhone] Generated new hash', [
+                'user_id' => $user->ID,
+                'new_hash_length' => strlen($newHash),
+            ]);
+
+            // Update password in Laravel database
+            $user->user_pass = $newHash;
+            $user->save();
+
+            // Verify password was saved correctly
+            $user->refresh();
+            $verifyHash = $user->user_pass;
+            $verifyCheck = Hash::check($validated['new_password'], $verifyHash);
+
+            \Log::info('[AuthController::resetPasswordByPhone] Password updated and verified', [
+                'user_id' => $user->ID,
+                'saved_hash_length' => strlen($verifyHash),
+                'hash_matches_new' => ($newHash === $verifyHash) ? true : false,
+                'password_verification_check' => $verifyCheck,
+            ]);
+
+            // Create new token for the user
+            $user->tokens()->delete();
+            $token = $user->createToken('api-token')->plainTextToken;
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Password reset successfully',
+                'user' => [
+                    'id' => $user->ID,
+                    'username' => $user->user_login,
+                    'email' => $user->user_email,
+                    'display_name' => $user->display_name,
+                    'phone' => $user->phone,
+                ],
+                'token' => $token,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('[AuthController::resetPasswordByPhone] Error', [
+                'message' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'message' => 'Password reset failed',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * TEST endpoint - immediately returns success
+     */
+    public function testResetEndpoint(): JsonResponse
+    {
+        return response()->json([
+            'success' => true,
+            'message' => 'TEST ENDPOINT CALLED - Reset password endpoint is being reached!',
+            'timestamp' => now(),
+        ]);
+    }
+
+    /**
+     * Debug endpoint for password reset - shows the state after a reset
+     */
+    public function debugPasswordReset(Request $request): JsonResponse
+    {
+        $phone = $request->query('phone');
+        $firebase_uid = $request->query('firebase_uid');
+        $test_password = $request->query('test_password');
+
+        if (!$phone || !$firebase_uid || !$test_password) {
+            return response()->json([
+                'error' => 'Required parameters: phone, firebase_uid, test_password',
+            ], 400);
+        }
+
+        try {
+            $user = WpUser::where('phone', $phone)
+                ->where('firebase_uid', $firebase_uid)
+                ->first(['ID', 'user_login', 'user_email', 'phone', 'firebase_uid', 'user_pass']);
+
+            if (!$user) {
+                return response()->json([
+                    'error' => 'User not found',
+                    'search_phone' => $phone,
+                    'search_firebase_uid' => $firebase_uid,
+                ], 404);
+            }
+
+            // Test password verification
+            $passwordVerifies = Hash::check($test_password, $user->user_pass);
+
+            return response()->json([
+                'success' => true,
+                'user_id' => $user->ID,
+                'user_login' => $user->user_login,
+                'user_email' => $user->user_email,
+                'phone' => $user->phone,
+                'firebase_uid' => $user->firebase_uid,
+                'password_hash_length' => strlen($user->user_pass),
+                'test_password_length' => strlen($test_password),
+                'password_verifies' => $passwordVerifies,
+                'hash_preview' => substr($user->user_pass, 0, 50) . '...',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**

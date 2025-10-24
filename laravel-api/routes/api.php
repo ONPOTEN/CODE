@@ -19,12 +19,19 @@ Route::prefix('v1')->group(function () {
     Route::post('/auth/login', [AuthController::class, 'login']);
     Route::post('/auth/logout', [AuthController::class, 'logout']);
 
+    // Firebase Authentication
+    Route::post('/auth/firebase-register', [AuthController::class, 'firebaseRegister']);
+    Route::post('/auth/firebase-login', [AuthController::class, 'firebaseLogin']);
+    Route::post('/auth/test-reset-endpoint', [AuthController::class, 'testResetEndpoint']);
+    Route::post('/auth/reset-password-by-phone', [AuthController::class, 'resetPasswordByPhone']);
+
     // Debug endpoints
     Route::get('/debug/users-with-phone', [AuthController::class, 'debugUsersWithPhone']);
     Route::get('/debug/login-query', [AuthController::class, 'debugLoginQuery']);
     Route::get('/debug/test-auth', [AuthController::class, 'debugTestAuth']);
     Route::get('/debug/tokens', [AuthController::class, 'debugTokens']);
     Route::post('/debug/test-token', [AuthController::class, 'debugTestToken']);
+    Route::get('/debug/password-reset', [AuthController::class, 'debugPasswordReset']);
 
     // Posts
     Route::get('/posts', [PostController::class, 'index']);
@@ -45,6 +52,9 @@ Route::prefix('v1')->group(function () {
     Route::get('/users/search', [UserController::class, 'search']);
     Route::get('/users/{id}', [UserController::class, 'show'])->where('id', '[0-9]+');
     Route::get('/users/username/{username}', [UserController::class, 'byUsername']);
+    Route::get('/users/by-nickname/{nickname}', [UserController::class, 'byNickname']);
+    Route::get('/users/by-phone', [UserController::class, 'byPhoneQuery']); // Query parameter version (preferred)
+    Route::get('/users/by-phone/{phone}', [UserController::class, 'byPhone']); // Path parameter version (legacy)
 
     // Shops (public)
     Route::get('/shops', [ShopController::class, 'index']);
@@ -83,6 +93,7 @@ Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
     Route::put('/profile', [UserController::class, 'updateProfile']);
     Route::post('/profile/avatar', [UserController::class, 'uploadAvatar']);
     Route::put('/profile/password', [UserController::class, 'updatePassword']);
+    Route::put('/profile/password-reset', [UserController::class, 'resetPasswordViaSMS']);
 
     // Friends (authenticated)
     Route::get('/friends', [FriendController::class, 'index']);

@@ -1,7 +1,9 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { auth, LoginResponse, ApiException, RegisterData } from '@/lib/api';
+import { auth, LoginResponse, ApiException, RegisterData, tokenStorage } from '@/lib/api';
+import { firebaseAuthService } from '@/lib/firebaseAuthService';
+import { firebaseAuth } from '@/lib/firebase';
 
 interface AuthUser {
   id: number;
@@ -26,8 +28,18 @@ interface AuthContextType {
   user: AuthUser | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  authMethod?: string; // 'email', 'google', 'facebook', 'apple', 'phone', 'phone-password'
   register: (data: RegisterData) => Promise<void>;
   login: (username: string, password: string) => Promise<void>;
+  firebaseRegister: (email: string, password: string, displayName: string, nickname?: string) => Promise<void>;
+  firebaseLoginEmail: (email: string, password: string) => Promise<void>;
+  firebaseLoginNickname: (nickname: string, password: string) => Promise<void>;
+  firebaseLoginPhonePassword: (phoneNumber: string, password: string) => Promise<void>;
+  firebaseLoginGoogle: () => Promise<void>;
+  firebaseLoginFacebook: () => Promise<void>;
+  firebaseLoginApple: () => Promise<void>;
+  firebasePhoneVerify: (phoneNumber: string, recaptchaVerifier: any) => Promise<any>;
+  firebasePhoneConfirm: (confirmationResult: any, code: string, phoneNumber: string) => Promise<void>;
   logout: () => Promise<void>;
   error: string | null;
   validationErrors: Record<string, string[]> | null;
@@ -40,19 +52,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<Record<string, string[]> | null>(null);
+  const [authMethod, setAuthMethod] = useState<string | undefined>();
 
   useEffect(() => {
     // Check if user is already authenticated
-    const token = auth.getToken();
+    const token = tokenStorage.get();
     if (token) {
-      // In a real app, you'd verify the token with the backend
-      // For now, we'll just mark as authenticated
+      // Token exists, user is authenticated
       setIsLoading(false);
     } else {
       setIsLoading(false);
     }
+
+    // Listen to Firebase auth state changes
+    try {
+      const unsubscribe = firebaseAuth.onAuthStateChanged((firebaseUser) => {
+        if (!firebaseUser && !token) {
+          setUser(null);
+        }
+      });
+      return unsubscribe;
+    } catch (err) {
+      // Firebase not initialized yet
+      console.log('Firebase not initialized');
+    }
   }, []);
 
+  // Traditional email/password registration
   const register = async (data: RegisterData) => {
     try {
       setIsLoading(true);
@@ -61,6 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const response: LoginResponse = await auth.register(data);
       setUser(response.user);
+      setAuthMethod('email');
     } catch (err) {
       if (err instanceof ApiException) {
         setError(err.message);
@@ -76,6 +103,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Traditional email/password login
   const login = async (username: string, password: string) => {
     try {
       setIsLoading(true);
@@ -84,9 +112,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const response: LoginResponse = await auth.login(username, password);
       setUser(response.user);
+      setAuthMethod('email');
 
       // Emit token update event so EngagementProviderWrapper can update
-      const token = auth.getToken();
+      const token = tokenStorage.get();
       if (token && typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('tokenUpdated', { detail: token }));
       }
@@ -105,15 +134,276 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Firebase email registration
+  const firebaseRegister = async (email: string, password: string, displayName: string, nickname?: string) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      setValidationErrors(null);
+
+      const response = await firebaseAuthService.registerWithEmail(email, password, displayName, nickname);
+      if (response.success) {
+        setUser(response.user as any);
+        setAuthMethod('firebase-email');
+      } else {
+        throw new Error(response.error || 'Registration failed');
+      }
+    } catch (err: any) {
+      const errorMessage = firebaseAuthService.getErrorMessage(err);
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Firebase email login
+  const firebaseLoginEmail = async (email: string, password: string) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      setValidationErrors(null);
+
+      const response = await firebaseAuthService.loginWithEmail(email, password);
+      if (response.success) {
+        setUser(response.user as any);
+        setAuthMethod('firebase-email');
+
+        // Emit token update event
+        const token = tokenStorage.get();
+        if (token && typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('tokenUpdated', { detail: token }));
+        }
+      } else {
+        throw new Error(response.error || 'Login failed');
+      }
+    } catch (err: any) {
+      const errorMessage = firebaseAuthService.getErrorMessage(err);
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Firebase nickname login
+  const firebaseLoginNickname = async (nickname: string, password: string) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      setValidationErrors(null);
+
+      const response = await firebaseAuthService.loginWithNickname(nickname, password);
+      if (response.success) {
+        setUser(response.user as any);
+        setAuthMethod('firebase-nickname');
+
+        // Emit token update event
+        const token = tokenStorage.get();
+        if (token && typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('tokenUpdated', { detail: token }));
+        }
+      } else {
+        throw new Error(response.error || 'Login failed');
+      }
+    } catch (err: any) {
+      const errorMessage = firebaseAuthService.getErrorMessage(err);
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Firebase phone + password login
+  const firebaseLoginPhonePassword = async (phoneNumber: string, password: string) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      setValidationErrors(null);
+
+      const response = await firebaseAuthService.loginWithPhonePassword(phoneNumber, password);
+      if (response.success) {
+        setUser(response.user as any);
+        setAuthMethod('phone-password');
+
+        // Emit token update event
+        const token = tokenStorage.get();
+        if (token && typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('tokenUpdated', { detail: token }));
+        }
+      } else {
+        throw new Error(response.error || 'Login failed');
+      }
+    } catch (err: any) {
+      const errorMessage = firebaseAuthService.getErrorMessage(err);
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Firebase Google login
+  const firebaseLoginGoogle = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const response = await firebaseAuthService.signInWithGoogle();
+      if (response.success) {
+        setUser(response.user as any);
+        setAuthMethod('google');
+
+        const token = tokenStorage.get();
+        if (token && typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('tokenUpdated', { detail: token }));
+        }
+      } else {
+        throw new Error(response.error || 'Google sign-in failed');
+      }
+    } catch (err: any) {
+      const errorMessage = firebaseAuthService.getErrorMessage(err);
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Firebase Facebook login
+  const firebaseLoginFacebook = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const response = await firebaseAuthService.signInWithFacebook();
+      if (response.success) {
+        setUser(response.user as any);
+        setAuthMethod('facebook');
+
+        const token = tokenStorage.get();
+        if (token && typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('tokenUpdated', { detail: token }));
+        }
+      } else {
+        throw new Error(response.error || 'Facebook sign-in failed');
+      }
+    } catch (err: any) {
+      const errorMessage = firebaseAuthService.getErrorMessage(err);
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Firebase Apple login
+  const firebaseLoginApple = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const response = await firebaseAuthService.signInWithApple();
+      if (response.success) {
+        setUser(response.user as any);
+        setAuthMethod('apple');
+
+        const token = tokenStorage.get();
+        if (token && typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('tokenUpdated', { detail: token }));
+        }
+      } else {
+        throw new Error(response.error || 'Apple sign-in failed');
+      }
+    } catch (err: any) {
+      const errorMessage = firebaseAuthService.getErrorMessage(err);
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Firebase phone verification
+  const firebasePhoneVerify = async (phoneNumber: string, recaptchaVerifier: any) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      return await firebaseAuthService.verifyPhoneNumber(phoneNumber, recaptchaVerifier);
+    } catch (err: any) {
+      const errorMessage = firebaseAuthService.getErrorMessage(err);
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Firebase phone code confirmation
+  const firebasePhoneConfirm = async (
+    confirmationResult: any,
+    code: string,
+    phoneNumber: string
+  ) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      console.log('[AuthContext] Confirming phone code...');
+
+      const response = await firebaseAuthService.confirmPhoneCode(
+        confirmationResult,
+        code,
+        phoneNumber
+      );
+
+      if (response.success) {
+        console.log('[AuthContext] Phone verification successful!');
+        console.log('[AuthContext] User data:', {
+          id: response.user?.id,
+          username: response.user?.user_login,
+          email: response.user?.user_email,
+          phone: response.user?.phone,
+        });
+
+        // Set user state with returned user data
+        setUser(response.user as any);
+        setAuthMethod('phone');
+
+        // Emit token updated event for engagement context
+        const token = tokenStorage.get();
+        if (token && typeof window !== 'undefined') {
+          console.log('[AuthContext] Emitting tokenUpdated event');
+          window.dispatchEvent(new CustomEvent('tokenUpdated', { detail: token }));
+        }
+      } else {
+        console.error('[AuthContext] Phone verification failed:', response.error);
+        throw new Error(response.error || 'Phone verification failed');
+      }
+    } catch (err: any) {
+      console.error('[AuthContext] Phone confirmation error:', err);
+      const errorMessage = firebaseAuthService.getErrorMessage(err);
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const logout = async () => {
     try {
       setIsLoading(true);
+      await firebaseAuthService.logout();
       await auth.logout();
       setUser(null);
+      setAuthMethod(undefined);
     } catch (err) {
       console.error('Logout error:', err);
-      // Even if logout fails on backend, clear local state
+      // Even if logout fails, clear local state
       setUser(null);
+      setAuthMethod(undefined);
     } finally {
       setIsLoading(false);
     }
@@ -125,8 +415,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         isAuthenticated: !!user,
         isLoading,
+        authMethod,
         register,
         login,
+        firebaseRegister,
+        firebaseLoginEmail,
+        firebaseLoginNickname,
+        firebaseLoginPhonePassword,
+        firebaseLoginGoogle,
+        firebaseLoginFacebook,
+        firebaseLoginApple,
+        firebasePhoneVerify,
+        firebasePhoneConfirm,
         logout,
         error,
         validationErrors,

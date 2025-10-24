@@ -36,6 +36,10 @@ class WpUser extends Authenticatable
         'company_public',
         'location_public',
         'phone_public',
+        'firebase_uid',
+        'auth_method',
+        'last_login_at',
+        'email_verified_at',
     ];
 
     protected $hidden = [
@@ -52,6 +56,23 @@ class WpUser extends Authenticatable
         'location_public' => 'boolean',
         'phone_public' => 'boolean',
     ];
+
+    /**
+     * Normalize phone number when setting it
+     * Ensures consistent storage with '+' prefix for international numbers
+     */
+    public function setPhoneAttribute($value)
+    {
+        if ($value) {
+            // Trim whitespace
+            $value = trim($value);
+            // Add '+' prefix if it's not already there and looks like international format
+            if (!str_starts_with($value, '+') && preg_match('/^\d{10,}$/', $value)) {
+                $value = '+' . $value;
+            }
+        }
+        $this->attributes['phone'] = $value;
+    }
 
     public function posts(): HasMany
     {
@@ -106,5 +127,81 @@ class WpUser extends Authenticatable
     public function hasAnyRole(array $roles): bool
     {
         return in_array($this->role, $roles);
+    }
+
+    /**
+     * Normalize phone number for searching and comparison
+     * Handles both formats with and without '+' prefix
+     */
+    public static function normalizePhone(string $phone): string
+    {
+        $phone = trim($phone);
+        // Remove all non-digit characters except '+'
+        $phone = preg_replace('/[^\d+]/', '', $phone);
+        // Ensure '+' prefix if it looks like a phone number
+        if (!str_starts_with($phone, '+') && strlen($phone) >= 10) {
+            $phone = '+' . $phone;
+        }
+        return $phone;
+    }
+
+    /**
+     * Find user by phone number with flexible matching
+     * Handles different phone number formats by matching the core number
+     */
+    public static function findByPhone(string $phone)
+    {
+        $normalized = self::normalizePhone($phone);
+        $withoutPlus = ltrim($normalized, '+');
+        $digitsOnly = preg_replace('/[^\d]/', '', $normalized);
+
+        \Log::info('[WpUser::findByPhone] Searching for phone', [
+            'input' => $phone,
+            'normalized' => $normalized,
+            'without_plus' => $withoutPlus,
+            'digits_only' => $digitsOnly,
+        ]);
+
+        // Try exact matches first
+        $user = self::where('phone', $normalized)->first();
+        if ($user) {
+            \Log::info('[WpUser::findByPhone] Found via exact match', [
+                'user_id' => $user->ID,
+                'stored_phone' => $user->phone,
+            ]);
+            return $user;
+        }
+
+        $user = self::where('phone', $withoutPlus)->first();
+        if ($user) {
+            \Log::info('[WpUser::findByPhone] Found via exact match (without plus)', [
+                'user_id' => $user->ID,
+                'stored_phone' => $user->phone,
+            ]);
+            return $user;
+        }
+
+        // Flexible matching: match phones ending with the search digits
+        $allUsers = self::whereNotNull('phone')->where('phone', '!=', '')->get();
+        foreach ($allUsers as $user) {
+            $storedDigits = preg_replace('/[^\d]/', '', $user->phone);
+            // Match if stored phone ends with searched digits OR contains the same last N digits
+            if (str_ends_with($storedDigits, $digitsOnly) || str_ends_with($digitsOnly, $storedDigits)) {
+                \Log::info('[WpUser::findByPhone] Found via flexible match', [
+                    'user_id' => $user->ID,
+                    'stored_phone' => $user->phone,
+                    'stored_digits' => $storedDigits,
+                    'search_digits' => $digitsOnly,
+                ]);
+                return $user;
+            }
+        }
+
+        \Log::warning('[WpUser::findByPhone] No user found', [
+            'normalized' => $normalized,
+            'digits_only' => $digitsOnly,
+        ]);
+
+        return null;
     }
 }

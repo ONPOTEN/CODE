@@ -3,6 +3,61 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://centimet2.com:8
 // Token storage utilities
 const TOKEN_KEY = 'api_token';
 
+// Phone number utilities
+/**
+ * Encode phone number for URL-safe transmission
+ * Handles international format with '+' prefix
+ * Example: "+840867631313" → "%2B840867631313"
+ */
+export const encodePhoneNumber = (phone: string): string => {
+  return encodeURIComponent(phone.trim());
+};
+
+/**
+ * Normalize phone number to standard format
+ * Ensures '+' prefix for international numbers
+ * Example: "840867631313" → "+840867631313"
+ */
+export const normalizePhoneNumber = (phone: string): string => {
+  let normalized = phone.trim();
+  // Remove all non-digit characters except '+'
+  normalized = normalized.replace(/[^\d+]/g, '');
+  // Add '+' prefix if not present and looks like international number (10+ digits)
+  if (!normalized.startsWith('+') && /^\d{10,}$/.test(normalized)) {
+    normalized = '+' + normalized;
+  }
+  return normalized;
+};
+
+/**
+ * Get user by phone number - handles special encoding for '+' character
+ * Uses query parameter to avoid URL path encoding issues
+ */
+export const getUserByPhone = async (phoneNumber: string): Promise<any> => {
+  const normalizedPhone = normalizePhoneNumber(phoneNumber);
+
+  // Build URL with proper concatenation (not URL constructor which treats /path as domain-root absolute)
+  const basePath = API_BASE_URL.endsWith('/') ? API_BASE_URL.slice(0, -1) : API_BASE_URL;
+  const encodedPhone = encodeURIComponent(normalizedPhone);
+  const fullUrl = `${basePath}/users/by-phone?phone=${encodedPhone}`;
+
+  console.log(`[API] Looking up user by phone: ${normalizedPhone}`);
+  console.log(`[API] Full URL: ${fullUrl}`);
+
+  const token = tokenStorage.get();
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+  };
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const response = await fetch(fullUrl, { headers });
+  return handleResponse<any>(response);
+};
+
 export const tokenStorage = {
   get: (): string | null => {
     if (typeof window === 'undefined') return null;
@@ -62,7 +117,30 @@ export async function apiRequest<T = any>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const url = `${API_BASE_URL}${endpoint}`;
+  // Handle URL construction safely
+  // Build the full URL by combining base URL and endpoint
+  // Support both endpoints with query strings (e.g., '/posts?page=1') and without
+  //
+  // IMPORTANT: The URL constructor treats absolute paths (starting with /) as
+  // domain-root absolute, not as path appends. So we must concatenate strings instead.
+
+  let fullUrl: string;
+
+  if (endpoint.includes('?')) {
+    // Split endpoint and query string
+    const [path, queryString] = endpoint.split('?', 2);
+    // Concatenate base URL with path (handle leading/trailing slashes)
+    const basePath = API_BASE_URL.endsWith('/') ? API_BASE_URL.slice(0, -1) : API_BASE_URL;
+    const endpointPath = path.startsWith('/') ? path : '/' + path;
+    fullUrl = basePath + endpointPath + '?' + queryString;
+  } else {
+    // No query string, simple concatenation
+    const basePath = API_BASE_URL.endsWith('/') ? API_BASE_URL.slice(0, -1) : API_BASE_URL;
+    const endpointPath = endpoint.startsWith('/') ? endpoint : '/' + endpoint;
+    fullUrl = basePath + endpointPath;
+  }
+
+  console.log(`[apiRequest] Full URL: ${fullUrl}`);
 
   const token = tokenStorage.get();
   const headers: Record<string, string> = {
@@ -82,7 +160,7 @@ export async function apiRequest<T = any>(
     },
   };
 
-  const response = await fetch(url, config);
+  const response = await fetch(fullUrl, config);
   return handleResponse<T>(response);
 }
 
@@ -91,7 +169,10 @@ export async function apiRequestWithFiles<T = any>(
   endpoint: string,
   formData: FormData
 ): Promise<T> {
-  const url = `${API_BASE_URL}${endpoint}`;
+  // Use same URL construction logic as apiRequest
+  const basePath = API_BASE_URL.endsWith('/') ? API_BASE_URL.slice(0, -1) : API_BASE_URL;
+  const endpointPath = endpoint.startsWith('/') ? endpoint : '/' + endpoint;
+  const url = basePath + endpointPath;
 
   const token = tokenStorage.get();
   const headers: Record<string, string> = {
