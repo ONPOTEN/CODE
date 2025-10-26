@@ -7,10 +7,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import { users, ApiException } from '@/lib/api';
 
 export default function EditProfilePage() {
-  const { user, isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated, isLoading, updateUserAvatar } = useAuth();
   const router = useRouter();
 
   // Profile form state
+  const [username, setUsername] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [hobby, setHobby] = useState('');
@@ -27,6 +28,7 @@ export default function EditProfilePage() {
   const [profileLoading, setProfileLoading] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
   const [profileSuccess, setProfileSuccess] = useState(false);
+  const [usernameError, setUsernameError] = useState<string | null>(null);
 
   // Avatar form state
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
@@ -51,6 +53,7 @@ export default function EditProfilePage() {
 
   useEffect(() => {
     if (user) {
+      setUsername(user.username || '');
       setDisplayName(user.display_name || '');
       setEmail(user.email || '');
       setHobby(user.hobby || '');
@@ -71,10 +74,35 @@ export default function EditProfilePage() {
     e.preventDefault();
     setProfileError(null);
     setProfileSuccess(false);
+    setUsernameError(null);
+
+    // Validate username if it has changed
+    if (username !== user?.username) {
+      if (!username.trim()) {
+        setUsernameError('Username cannot be empty');
+        return;
+      }
+      if (username.length < 3) {
+        setUsernameError('Username must be at least 3 characters');
+        return;
+      }
+      if (username.length > 60) {
+        setUsernameError('Username cannot exceed 60 characters');
+        return;
+      }
+      // Check for valid characters (alphanumeric, underscore, hyphen)
+      if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
+        setUsernameError('Username can only contain letters, numbers, underscores, and hyphens');
+        return;
+      }
+    }
 
     try {
       setProfileLoading(true);
-      await users.updateProfile({
+
+      // Build the update object
+      const updateData: any = {
+        user_login: username, // Update username if changed
         display_name: displayName,
         user_email: email,
         hobby: hobby,
@@ -82,19 +110,32 @@ export default function EditProfilePage() {
         location: location,
         // role: role, // REMOVED: Users cannot change their own role
         profile_visibility: profileVisibility,
-        phone: phone,
+        // NOTE: phone is NOT included - users cannot change phone number
         email_public: emailPublic,
         hobby_public: hobbyPublic,
         company_public: companyPublic,
         location_public: locationPublic,
         phone_public: phonePublic,
-      });
+      };
+
+      await users.updateProfile(updateData);
+
+      // Update local username state after successful change
+      if (username !== user?.username) {
+        // The username has been updated on the backend
+        console.log('[Profile Edit] Username updated successfully');
+      }
 
       setProfileSuccess(true);
       setTimeout(() => setProfileSuccess(false), 3000);
     } catch (err) {
       if (err instanceof ApiException) {
-        setProfileError(err.message);
+        // Check if error is related to username
+        if (err.message.includes('user_login') || err.message.includes('username')) {
+          setUsernameError(err.message);
+        } else {
+          setProfileError(err.message);
+        }
       } else {
         setProfileError('Failed to update profile');
       }
@@ -104,14 +145,58 @@ export default function EditProfilePage() {
     }
   };
 
+  const validateAvatarFile = (file: File): string | null => {
+    const maxSize = 2 * 1024 * 1024; // 2MB
+    const validTypes = ['image/jpeg', 'image/png', 'image/gif'];
+
+    console.log('[validateAvatarFile] Validating file:', {
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      maxSize,
+      validTypes,
+    });
+
+    if (file.size > maxSize) {
+      return `File size must not exceed 2MB (current: ${(file.size / 1024 / 1024).toFixed(2)}MB)`;
+    }
+
+    if (!validTypes.includes(file.type)) {
+      return `Invalid file type: ${file.type}. Only JPEG, PNG, and GIF are allowed.`;
+    }
+
+    return null;
+  };
+
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      console.log('[handleAvatarChange] File selected:', {
+        name: file.name,
+        size: file.size,
+        type: file.type,
+      });
+
+      // Validate file
+      const validationError = validateAvatarFile(file);
+      if (validationError) {
+        setAvatarError(validationError);
+        setAvatarFile(null);
+        setAvatarPreview(null);
+        return;
+      }
+
+      setAvatarError(null);
       setAvatarFile(file);
+
       // Create preview URL
       const reader = new FileReader();
       reader.onloadend = () => {
         setAvatarPreview(reader.result as string);
+      };
+      reader.onerror = () => {
+        setAvatarError('Failed to read file');
+        setAvatarFile(null);
       };
       reader.readAsDataURL(file);
     }
@@ -127,22 +212,58 @@ export default function EditProfilePage() {
       return;
     }
 
+    // Validate file again before submit
+    const validationError = validateAvatarFile(avatarFile);
+    if (validationError) {
+      setAvatarError(validationError);
+      return;
+    }
+
     try {
+      console.log('[handleAvatarSubmit] Uploading avatar:', {
+        fileName: avatarFile.name,
+        fileSize: avatarFile.size,
+        fileType: avatarFile.type,
+      });
+
       setAvatarLoading(true);
-      await users.uploadAvatar(avatarFile);
+      const response = await users.uploadAvatar(avatarFile);
+
+      console.log('[handleAvatarSubmit] Upload successful:', {
+        avatarUrl: response.avatar_url,
+      });
+
+      // Update user avatar in auth context
+      if (response.avatar_url) {
+        updateUserAvatar(response.avatar_url);
+      }
 
       setAvatarSuccess(true);
+      setAvatarFile(null);
+      setAvatarPreview(null);
+
+      // Clear success message after 3 seconds
       setTimeout(() => {
         setAvatarSuccess(false);
-        window.location.reload(); // Reload to update avatar in header
-      }, 2000);
+      }, 3000);
     } catch (err) {
+      console.error('[handleAvatarSubmit] Error uploading avatar:', err);
+
       if (err instanceof ApiException) {
+        // Check for validation errors from API
+        if (err.errors?.avatar) {
+          const avatarErrors = Array.isArray(err.errors.avatar)
+            ? err.errors.avatar.join(', ')
+            : err.errors.avatar;
+          setAvatarError(`Validation error: ${avatarErrors}`);
+        } else {
+          setAvatarError(err.message);
+        }
+      } else if (err instanceof Error) {
         setAvatarError(err.message);
       } else {
         setAvatarError('Failed to upload avatar');
       }
-      console.error('Error uploading avatar:', err);
     } finally {
       setAvatarLoading(false);
     }
@@ -244,15 +365,30 @@ export default function EditProfilePage() {
             <div className="space-y-4">
               <div>
                 <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
-                  Username (cannot be changed)
+                  Username
+                  {username !== user?.username && (
+                    <span className="text-amber-600 text-xs ml-2">● Changed</span>
+                  )}
                 </label>
                 <input
                   type="text"
                   id="username"
-                  value={user.username}
-                  disabled
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent outline-none transition-colors ${
+                    usernameError
+                      ? 'border-red-300 focus:ring-red-500 bg-red-50'
+                      : 'border-gray-300 focus:ring-blue-500'
+                  }`}
+                  placeholder="Enter your username"
+                  required
                 />
+                {usernameError && (
+                  <p className="mt-1 text-sm text-red-600">{usernameError}</p>
+                )}
+                <p className="mt-1 text-xs text-gray-500">
+                  3-60 characters. Letters, numbers, underscores, and hyphens only.
+                </p>
               </div>
 
               <div>
@@ -375,17 +511,19 @@ export default function EditProfilePage() {
 
               <div>
                 <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-                  Phone
+                  Phone Number (cannot be changed)
                 </label>
                 <input
                   type="tel"
                   id="phone"
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="Your phone number"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  disabled
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed"
                 />
-                <div className="mt-2 flex items-center">
+                <p className="mt-1 text-xs text-gray-500">
+                  Phone number is locked for security. Contact support to change your phone number.
+                </p>
+                <div className="mt-3 flex items-center">
                   <input
                     type="checkbox"
                     id="phonePublic"

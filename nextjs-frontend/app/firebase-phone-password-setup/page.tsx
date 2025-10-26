@@ -1,31 +1,41 @@
 'use client';
 
 import { useState, FormEvent, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { auth } from '@/lib/firebase';
-import { apiRequest } from '@/lib/api';
-import { linkWithCredential, EmailAuthProvider, updateProfile, updatePassword } from 'firebase/auth';
+import { updateProfile, updatePassword } from 'firebase/auth';
+import { apiRequest, tokenStorage, normalizePhoneNumber } from '@/lib/api';
 
 export default function FirebasePhonePasswordSetupPage() {
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [passwordError, setPasswordError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [step, setStep] = useState<'setup' | 'update'>('setup');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
-  const [nickname, setNickname] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const phoneNumber = searchParams.get('phone');
 
-  // Get user data from previous phone verification
   useEffect(() => {
-    if (!phoneNumber) {
-      router.push('/firebase-phone-login');
-    }
-  }, [phoneNumber, router]);
+    // Check if user is authenticated via phone SMS
+    const checkUser = async () => {
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        console.error('[Phone Password Setup] No user authenticated');
+        router.push('/firebase-phone-login');
+      } else {
+        console.log('[Phone Password Setup] User authenticated:', currentUser.uid);
+        // Pre-fill display name if available
+        if (currentUser.displayName) {
+          setDisplayName(currentUser.displayName);
+        }
+      }
+    };
+
+    checkUser();
+  }, [router]);
 
   const validatePassword = (pwd: string): string => {
     if (!pwd) return 'Password is required';
@@ -36,125 +46,177 @@ export default function FirebasePhonePasswordSetupPage() {
     return '';
   };
 
+  // Step 1: Set up password
   const handlePasswordSetup = async (e: FormEvent) => {
     e.preventDefault();
-    setPasswordError('');
+    setErrorMessage('');
 
-    // Validate password
-    const error = validatePassword(password);
+    // Validate new password
+    const error = validatePassword(newPassword);
     if (error) {
-      setPasswordError(error);
+      setErrorMessage(error);
       return;
     }
 
     // Check passwords match
-    if (password !== confirmPassword) {
-      setPasswordError('Passwords do not match');
+    if (newPassword !== confirmNewPassword) {
+      setErrorMessage('New passwords do not match');
       return;
     }
 
-    if (!displayName || !nickname) {
-      setPasswordError('Display name and nickname are required');
+    // Validate display name
+    if (displayName.trim().length < 2) {
+      setErrorMessage('Display name must be at least 2 characters');
       return;
     }
 
     setIsLoading(true);
 
     try {
-      // Get the currently signed-in user (from phone SMS verification)
+      console.log('[Phone Password Setup] Starting password setup process...');
+
       const currentUser = auth.currentUser;
 
       if (!currentUser) {
-        throw new Error('No user authenticated. Please verify phone first.');
+        console.log('[Phone Password Setup] User not authenticated. Please start over.');
+        setErrorMessage('Authentication lost. Please start the process again.');
+        setStep('setup');
+        return;
       }
 
-      console.log(`[Phone Password Setup] Creating email+password account for phone user...`);
-      console.log(`  - Firebase UID: ${currentUser.uid}`);
-      console.log(`  - Phone: ${phoneNumber}`);
-      console.log(`  - Display Name: ${displayName}`);
+      // Get phone from Firebase user (stored during SMS verification)
+      // Phone should be in the phoneNumber property
+      let phoneNumber = currentUser.phoneNumber;
 
-      // Generate temporary email for this phone user
-      // Format: phone_{firebaseUid}@phone-auth.local
-      const tempEmail = `phone_${currentUser.uid}@phone-auth.local`;
-
-      // Step 1: Update Firebase user profile
-      await updateProfile(currentUser, {
-        displayName: displayName,
+      console.log('[Phone Password Setup] Firebase currentUser properties:', {
+        uid: currentUser.uid,
+        phoneNumber: phoneNumber,
+        displayName: currentUser.displayName,
+        email: currentUser.email,
       });
-      console.log(`[Phone Password Setup] Firebase profile updated`);
 
-      // Step 2: Link email+password credentials to the phone-verified account
-      // This is the KEY step - it creates email+password auth provider on the existing phone user
-      console.log(`[Phone Password Setup] Linking email+password provider...`);
-      try {
-        const credential = EmailAuthProvider.credential(tempEmail, password);
-        await linkWithCredential(currentUser, credential);
-        console.log(`[Phone Password Setup] Email+password provider linked successfully`);
-      } catch (linkError: any) {
-        console.error(`[Phone Password Setup] Failed to link credentials:`, linkError);
+      if (!phoneNumber) {
+        console.warn('[Phone Password Setup] phoneNumber not found in currentUser');
+        // Try to get phone from localStorage (saved during SMS verification)
+        // Check both phoneAuthData and phoneAuthPassword keys
+        let phoneAuthDataStr = localStorage.getItem('phoneAuthData');
+        if (!phoneAuthDataStr) {
+          phoneAuthDataStr = localStorage.getItem('phoneAuthPassword');
+        }
 
-        // If linking fails, try updating email first and then password
-        if (linkError.code === 'auth/email-already-in-use') {
-          throw new Error('This email is already in use. Please try a different one.');
-        } else if (linkError.code === 'auth/invalid-email') {
-          throw new Error('Invalid email format.');
-        } else if (linkError.code === 'auth/provider-already-linked') {
-          console.log(`[Phone Password Setup] Email+password provider already linked, updating password...`);
-          // Try updating password instead
+        if (phoneAuthDataStr) {
           try {
-            await updatePassword(currentUser, password);
-            console.log(`[Phone Password Setup] Password updated successfully`);
-          } catch (updateError: any) {
-            throw new Error(`Failed to set password: ${updateError.message}`);
+            const data = JSON.parse(phoneAuthDataStr);
+            phoneNumber = data.phoneNumber;
+            console.log('[Phone Password Setup] Phone recovered from localStorage:', phoneNumber);
+            console.log('[Phone Password Setup] localStorage data keys:', Object.keys(data));
+          } catch (e) {
+            console.error('[Phone Password Setup] Failed to parse phone auth data from localStorage:', e);
           }
         } else {
-          throw linkError;
+          console.warn('[Phone Password Setup] No phone auth data in localStorage');
+          console.log('[Phone Password Setup] Available localStorage keys:', Object.keys(localStorage));
+        }
+
+        // If still no phone, return error
+        if (!phoneNumber) {
+          console.error('[Phone Password Setup] ❌ Could not find phone number anywhere');
+          setErrorMessage('Phone number not found. Please verify your phone again.');
+          return;
         }
       }
 
-      // Step 3: Save password to localStorage for future phone+password logins
-      // NOTE: The user was already created in Laravel during phone SMS verification (confirmPhoneCode)
-      // We don't need to register again - just save the password for future logins
-      console.log(`[Phone Password Setup] Saving password for future logins...`);
-      const phoneAuthData = {
-        phoneNumber,
-        password,
-        firebaseUid: currentUser.uid,
-        tempEmail,
-        displayName,
-        nickname,
-        createdAt: new Date().toISOString(),
-      };
-      localStorage.setItem('phoneAuthPassword', JSON.stringify(phoneAuthData));
-      console.log(`[Phone Password Setup] Password saved to localStorage`);
+      console.log('[Phone Password Setup] Phone number (before normalization):', phoneNumber);
 
-      // Step 4: Verify Sanctum token exists (should have been set during phone verification)
-      const sanctumToken = localStorage.getItem('api_token');
-      if (sanctumToken) {
-        console.log(`[Phone Password Setup] Sanctum token confirmed, user is authenticated`);
+      // Step 1: Update Firebase profile with display name
+      console.log('[Phone Password Setup] Updating Firebase profile with display name...');
+      await updateProfile(currentUser, { displayName });
+      console.log('[Phone Password Setup] ✅ Firebase profile updated');
+
+      // Step 2: Update Firebase password
+      console.log('[Phone Password Setup] Updating Firebase password...');
+      await updatePassword(currentUser, newPassword);
+      console.log('[Phone Password Setup] ✅ Firebase password updated successfully');
+
+      // Step 3: Update password in Laravel via dedicated setup endpoint
+      console.log('[Phone Password Setup] Updating password in Laravel...');
+      const normalizedPhone = normalizePhoneNumber(phoneNumber);
+
+      console.log('[Phone Password Setup] Phone normalization:', {
+        original: phoneNumber,
+        normalized: normalizedPhone,
+        length: normalizedPhone.length,
+      });
+
+      console.log('[Phone Password Setup] Request data:', {
+        phone: normalizedPhone,
+        firebase_uid: currentUser.uid,
+        password_length: newPassword.length,
+      });
+
+      let setupResponse;
+      try {
+        setupResponse = await apiRequest('/auth/setup-password-by-phone', {
+          method: 'POST',
+          body: JSON.stringify({
+            phone: normalizedPhone,
+            new_password: newPassword,
+            firebase_uid: currentUser.uid,
+          }),
+        });
+        console.log('[Phone Password Setup] ✅ Laravel setup response received:', {
+          success: setupResponse?.success,
+          hasToken: !!setupResponse?.token,
+          message: setupResponse?.message,
+        });
+        console.log('[Phone Password Setup] Full Laravel setup response:', setupResponse);
+      } catch (setupError: any) {
+        console.error('[Phone Password Setup] Laravel setup API error:', setupError);
+        console.error('[Phone Password Setup] Setup error details:', {
+          message: setupError.message,
+          status: setupError.status,
+          errors: setupError.errors,
+        });
+        throw new Error(`Laravel password setup failed: ${setupError.message}`);
+      }
+
+      if (setupResponse && setupResponse.success && setupResponse.token) {
+        console.log('[Phone Password Setup] ✅ Laravel password setup successfully');
+        tokenStorage.set(setupResponse.token);
+        console.log('[Phone Password Setup] ✅ Sanctum token saved');
+
+        // Step 4: Save password to localStorage for future phone+password logins
+        console.log('[Phone Password Setup] Updating localStorage with new password...');
+        const phoneAuthData = {
+          phoneNumber: normalizedPhone,
+          password: newPassword,
+          firebaseUid: currentUser.uid,
+          tempEmail: `phone_${currentUser.uid}@phone-auth.local`,
+          displayName: displayName,
+          updatedAt: new Date().toISOString(),
+        };
+        localStorage.setItem('phoneAuthPassword', JSON.stringify(phoneAuthData));
+        console.log('[Phone Password Setup] ✅ Password saved to localStorage:', phoneAuthData);
+
+        // Success! Redirect to home
+        console.log('[Phone Password Setup] ✅ Password setup complete! Redirecting to home...');
+        router.push('/');
       } else {
-        console.log(`[Phone Password Setup] Note: Sanctum token not found, will be obtained during next login`);
+        console.warn('[Phone Password Setup] Laravel password setup failed - invalid response:', setupResponse);
+        setErrorMessage('Could not set up password in backend. Please try again.');
       }
-
-      console.log(`[Phone Password Setup] Setup complete! Redirecting to home...`);
-      // Redirect to home
-      router.push('/');
     } catch (err: any) {
-      console.error('[Phone Password Setup] Error:', err);
+      console.error('[Phone Password Setup] Password setup error:', err);
 
-      let errorMessage = 'Failed to set up password. Please try again.';
+      let errorMsg = 'Failed to set up password. Please try again.';
 
-      if (err.code === 'auth/email-already-in-use') {
-        errorMessage = 'This account already exists. Please log in instead.';
-      } else if (err.code === 'auth/invalid-email') {
-        errorMessage = 'Invalid email format.';
-      } else if (err.code === 'auth/weak-password') {
-        errorMessage = 'Password is too weak. Please use a stronger password.';
+      if (err.code === 'auth/weak-password') {
+        errorMsg = 'Password is too weak. Please use a stronger password.';
       } else if (err.message) {
-        errorMessage = err.message;
+        errorMsg = err.message;
       }
 
-      setPasswordError(errorMessage);
+      setErrorMessage(errorMsg);
     } finally {
       setIsLoading(false);
     }
@@ -166,169 +228,140 @@ export default function FirebasePhonePasswordSetupPage() {
         {/* Header */}
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Set up your password
+            Complete Your Setup
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Create a password to access your account on future logins using your phone number
+            Create a password to access your account using your phone number
           </p>
         </div>
 
-        {/* Phone Info */}
-        {phoneNumber && (
-          <div className="rounded-md bg-blue-50 p-4">
-            <div className="text-sm text-blue-800">
-              <p className="font-medium">Phone: {phoneNumber}</p>
-              <p className="text-xs mt-1">Complete your profile to finish setup</p>
-            </div>
+        {/* Step Indicator */}
+        <div className="flex justify-center gap-2">
+          <div className={`px-4 py-2 rounded-full text-sm font-medium ${
+            step === 'setup'
+              ? 'bg-blue-600 text-white'
+              : 'bg-gray-200 text-gray-800'
+          }`}>
+            Setup Password
           </div>
-        )}
+        </div>
 
         {/* Error Message */}
-        {passwordError && (
-          <div className="rounded-md bg-red-50 p-4">
-            <div className="text-sm font-medium text-red-800">{passwordError}</div>
+        {errorMessage && (
+          <div className="rounded-md bg-red-50 border border-red-200 p-4">
+            <p className="text-red-800 font-medium text-sm">{errorMessage}</p>
           </div>
         )}
 
-        {/* Password Form */}
-        <form className="mt-8 space-y-6" onSubmit={handlePasswordSetup}>
-          {/* Display Name Input */}
-          <div>
-            <label htmlFor="displayName" className="block text-sm font-medium text-gray-700">
-              Display Name
-            </label>
-            <input
-              id="displayName"
-              type="text"
-              autoComplete="name"
-              required
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-              placeholder="e.g., John Doe"
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-              disabled={isLoading}
-            />
-          </div>
-
-          {/* Nickname Input */}
-          <div>
-            <label htmlFor="nickname" className="block text-sm font-medium text-gray-700">
-              Nickname
-            </label>
-            <input
-              id="nickname"
-              type="text"
-              autoComplete="username"
-              required
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-              placeholder="e.g., johndoe"
-              value={nickname}
-              onChange={(e) => setNickname(e.target.value)}
-              disabled={isLoading}
-            />
-            <p className="mt-1 text-xs text-gray-500">
-              Unique username for your profile
-            </p>
-          </div>
-          {/* Password Input */}
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-              Password
-            </label>
-            <div className="relative">
+        {/* Password Setup Form */}
+        {step === 'setup' && (
+          <form onSubmit={handlePasswordSetup} className="space-y-4">
+            {/* Display Name */}
+            <div>
+              <label htmlFor="displayName" className="block text-sm font-medium text-gray-700 mb-1">
+                Display Name
+              </label>
               <input
-                id="password"
-                type={showPassword ? 'text' : 'password'}
-                autoComplete="new-password"
+                type="text"
+                id="displayName"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                placeholder="Your display name"
                 required
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                placeholder="Enter password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={isLoading}
+                minLength={2}
               />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
-                disabled={isLoading}
-              >
-                {showPassword ? '👁️' : '👁️‍🗨️'}
-              </button>
+              <p className="mt-1 text-xs text-gray-500">At least 2 characters</p>
             </div>
-            <p className="mt-2 text-xs text-gray-500">
-              Must contain uppercase, lowercase, number, and be at least 6 characters
-            </p>
-          </div>
 
-          {/* Confirm Password Input */}
-          <div>
-            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
-              Confirm Password
-            </label>
-            <div className="relative">
-              <input
-                id="confirmPassword"
-                type={showConfirmPassword ? 'text' : 'password'}
-                autoComplete="new-password"
-                required
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                placeholder="Confirm password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                disabled={isLoading}
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
-                disabled={isLoading}
-              >
-                {showConfirmPassword ? '👁️' : '👁️‍🗨️'}
-              </button>
+            {/* New Password */}
+            <div>
+              <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                Password
+              </label>
+              <div className="relative">
+                <input
+                  type={showNewPassword ? 'text' : 'password'}
+                  id="newPassword"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none pr-10"
+                  placeholder="Enter password"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                  className="absolute right-3 top-2.5 text-gray-500 hover:text-gray-700"
+                >
+                  {showNewPassword ? (
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                      <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+                    </svg>
+                  ) : (
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-14-14zM10 18a8 8 0 100-16 8 8 0 000 16zM6.623 7.089l.8.8a2 2 0 002.828 0l.6-.6a.75.75 0 10-1.061-1.061l-.6.6a.5.5 0 01-.707 0l-.8-.8a.75.75 0 10-1.06 1.061z" clipRule="evenodd" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+              <p className="mt-1 text-xs text-gray-500">
+                Must contain: uppercase, lowercase, number, 6+ characters
+              </p>
             </div>
-          </div>
 
-          {/* Password Strength Indicator */}
-          {password && (
-            <div className="rounded-md bg-gray-50 p-4">
-              <p className="text-sm font-medium text-gray-700 mb-2">Password Requirements:</p>
-              <div className="space-y-1 text-sm">
-                <p className={password.length >= 6 ? 'text-green-600' : 'text-gray-500'}>
-                  ✓ At least 6 characters
-                </p>
-                <p className={/[A-Z]/.test(password) ? 'text-green-600' : 'text-gray-500'}>
-                  ✓ Uppercase letter
-                </p>
-                <p className={/[a-z]/.test(password) ? 'text-green-600' : 'text-gray-500'}>
-                  ✓ Lowercase letter
-                </p>
-                <p className={/[0-9]/.test(password) ? 'text-green-600' : 'text-gray-500'}>
-                  ✓ Number
-                </p>
-                <p className={password === confirmPassword && confirmPassword ? 'text-green-600' : 'text-gray-500'}>
-                  ✓ Passwords match
-                </p>
+            {/* Confirm Password */}
+            <div>
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                Confirm Password
+              </label>
+              <div className="relative">
+                <input
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  id="confirmPassword"
+                  value={confirmNewPassword}
+                  onChange={(e) => setConfirmNewPassword(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none pr-10"
+                  placeholder="Confirm password"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-2.5 text-gray-500 hover:text-gray-700"
+                >
+                  {showConfirmPassword ? (
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                      <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+                    </svg>
+                  ) : (
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-14-14zM10 18a8 8 0 100-16 8 8 0 000 16zM6.623 7.089l.8.8a2 2 0 002.828 0l.6-.6a.75.75 0 10-1.061-1.061l-.6.6a.5.5 0 01-.707 0l-.8-.8a.75.75 0 10-1.06 1.061z" clipRule="evenodd" />
+                    </svg>
+                  )}
+                </button>
               </div>
             </div>
-          )}
 
-          {/* Submit Button */}
-          <button
-            type="submit"
-            disabled={isLoading || !password || password !== confirmPassword || !displayName || !nickname}
-            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isLoading ? 'Creating account...' : 'Create Account'}
-          </button>
-        </form>
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full mt-6 py-2 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+            >
+              {isLoading ? 'Setting up...' : 'Complete Setup'}
+            </button>
 
-        {/* Back Link */}
-        <p className="text-center text-sm text-gray-600">
-          <Link href="/firebase-login" className="font-medium text-blue-600 hover:text-blue-500">
-            Back to login
-          </Link>
-        </p>
+            {/* Back Link */}
+            <div className="text-center">
+              <Link href="/firebase-phone-login" className="text-sm text-blue-600 hover:text-blue-500">
+                Back to Phone Login
+              </Link>
+            </div>
+          </form>
+        )}
       </div>
     </div>
   );

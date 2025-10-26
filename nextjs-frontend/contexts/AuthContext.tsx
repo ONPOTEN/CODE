@@ -40,6 +40,7 @@ interface AuthContextType {
   firebaseLoginApple: () => Promise<void>;
   firebasePhoneVerify: (phoneNumber: string, recaptchaVerifier: any) => Promise<any>;
   firebasePhoneConfirm: (confirmationResult: any, code: string, phoneNumber: string) => Promise<void>;
+  updateUserAvatar: (avatarUrl: string) => void;
   logout: () => Promise<void>;
   error: string | null;
   validationErrors: Record<string, string[]> | null;
@@ -392,6 +393,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const updateUserAvatar = (avatarUrl: string) => {
+    if (user) {
+      setUser({
+        ...user,
+        avatar: avatarUrl,
+      });
+    }
+  };
+
   const logout = async () => {
     try {
       setIsLoading(true);
@@ -427,6 +437,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         firebaseLoginApple,
         firebasePhoneVerify,
         firebasePhoneConfirm,
+        updateUserAvatar,
         logout,
         error,
         validationErrors,

@@ -343,11 +343,19 @@ public function firebaseLogin(Request $request): JsonResponse
             'email' => 'required|email',
             'display_name' => 'nullable|string',
             'auth_method' => 'required|string|in:email,google,facebook,apple,phone',
+            'phone_number' => 'nullable|string', // Phone number from Firebase phone auth
         ]);
 
         try {
             // Generate display_name if not provided
             $displayName = $validated['display_name'] ?? $this->generateDisplayName($validated['email']);
+
+            \Log::info('[AuthController::firebaseLogin] Login request', [
+                'firebase_uid' => $validated['firebase_uid'],
+                'email' => $validated['email'],
+                'auth_method' => $validated['auth_method'],
+                'phone_number' => $validated['phone_number'] ?? 'not provided',
+            ]);
 
             // Find or create user
             $user = WpUser::firstOrCreate(
@@ -357,6 +365,7 @@ public function firebaseLogin(Request $request): JsonResponse
                     'user_nicename' => \Illuminate\Support\Str::slug($displayName),
                     'user_email' => $validated['email'],
                     'display_name' => $displayName,
+                    'phone' => $validated['phone_number'] ?? null, // Store phone if provided
                     'user_registered' => now(),
                     'user_status' => 0,
                     'role' => 'user',
@@ -365,10 +374,29 @@ public function firebaseLogin(Request $request): JsonResponse
                 ]
             );
 
-            // Update last login and auth method
-            $user->update([
+            // Update last login, auth method, and phone number if provided
+            $updateData = [
                 'last_login_at' => now(),
                 'auth_method' => $validated['auth_method'],
+            ];
+
+            // Sync phone number from Firebase if provided
+            if ($validated['phone_number']) {
+                $updateData['phone'] = $validated['phone_number'];
+                \Log::info('[AuthController::firebaseLogin] Syncing phone number', [
+                    'user_id' => $user->ID,
+                    'phone' => $validated['phone_number'],
+                ]);
+            }
+
+            $user->update($updateData);
+
+            \Log::info('[AuthController::firebaseLogin] User authenticated/created', [
+                'user_id' => $user->ID,
+                'user_login' => $user->user_login,
+                'firebase_uid' => $user->firebase_uid,
+                'phone' => $user->phone,
+                'is_new' => $user->wasRecentlyCreated,
             ]);
 
             // Revoke old tokens and create new one
@@ -382,11 +410,16 @@ public function firebaseLogin(Request $request): JsonResponse
                     'username' => $user->user_login,
                     'email' => $user->user_email,
                     'display_name' => $user->display_name,
+                    'phone' => $user->phone,
                 ],
                 'token' => $token,
                 'message' => 'Firebase login successful',
             ]);
         } catch (\Exception $e) {
+            \Log::error('[AuthController::firebaseLogin] Error', [
+                'message' => $e->getMessage(),
+                'firebase_uid' => $validated['firebase_uid'] ?? 'unknown',
+            ]);
             return response()->json([
                 'success' => false,
                 'message' => $e->getMessage(),
@@ -525,6 +558,187 @@ public function firebaseLogin(Request $request): JsonResponse
 
             return response()->json([
                 'message' => 'Password reset failed',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Setup password for phone-only user on first password creation
+     * Used during phone SMS login when user creates a password for the first time
+     * Similar to resetPasswordByPhone but for initial setup
+     */
+    public function setupPasswordByPhone(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'phone' => 'required|string',
+            'new_password' => 'required|string|min:6',
+            'firebase_uid' => 'required|string',
+        ]);
+
+        \Log::info('[AuthController::setupPasswordByPhone] Password setup request received', [
+            'phone' => $validated['phone'],
+            'firebase_uid' => $validated['firebase_uid'],
+            'password_length' => strlen($validated['new_password']),
+        ]);
+
+        try {
+            // Debug: Log request details
+            \Log::info('[AuthController::setupPasswordByPhone] DEBUG - Request details', [
+                'phone_received' => $validated['phone'],
+                'firebase_uid_received' => $validated['firebase_uid'],
+                'phone_length' => strlen($validated['phone']),
+            ]);
+
+            // Debug: Check all users with this firebase_uid to help diagnose
+            $usersWithFirebaseUid = WpUser::where('firebase_uid', $validated['firebase_uid'])->get(['ID', 'user_login', 'phone', 'firebase_uid']);
+            \Log::info('[AuthController::setupPasswordByPhone] DEBUG - Users with matching firebase_uid', [
+                'firebase_uid' => $validated['firebase_uid'],
+                'count' => $usersWithFirebaseUid->count(),
+                'users' => $usersWithFirebaseUid->map(function ($u) {
+                    return [
+                        'id' => $u->ID,
+                        'login' => $u->user_login,
+                        'phone' => $u->phone,
+                        'phone_length' => strlen($u->phone),
+                    ];
+                })->toArray(),
+            ]);
+
+            // Debug: Check all users with this phone to help diagnose
+            $usersWithPhone = WpUser::where('phone', $validated['phone'])->get(['ID', 'user_login', 'phone', 'firebase_uid']);
+            \Log::info('[AuthController::setupPasswordByPhone] DEBUG - Users with matching phone', [
+                'phone' => $validated['phone'],
+                'count' => $usersWithPhone->count(),
+                'users' => $usersWithPhone->map(function ($u) {
+                    return [
+                        'id' => $u->ID,
+                        'login' => $u->user_login,
+                        'firebase_uid' => $u->firebase_uid,
+                    ];
+                })->toArray(),
+            ]);
+
+            // Find user by phone and firebase_uid
+            // First try exact match
+            $user = WpUser::where('phone', $validated['phone'])
+                ->where('firebase_uid', $validated['firebase_uid'])
+                ->first();
+
+            \Log::info('[AuthController::setupPasswordByPhone] Exact match attempt', [
+                'phone' => $validated['phone'],
+                'firebase_uid' => $validated['firebase_uid'],
+                'found' => $user ? true : false,
+                'user_id' => $user?->ID,
+            ]);
+
+            // If not found, try using flexible phone matching
+            if (!$user) {
+                \Log::info('[AuthController::setupPasswordByPhone] Exact match failed, trying flexible matching', [
+                    'phone' => $validated['phone'],
+                    'firebase_uid' => $validated['firebase_uid'],
+                ]);
+
+                // Use the model's flexible phone matching
+                $flexUser = WpUser::findByPhone($validated['phone']);
+                \Log::info('[AuthController::setupPasswordByPhone] Flexible match result', [
+                    'found' => $flexUser ? true : false,
+                    'user_id' => $flexUser?->ID,
+                    'phone' => $flexUser?->phone,
+                ]);
+
+                if ($flexUser && $flexUser->firebase_uid === $validated['firebase_uid']) {
+                    $user = $flexUser;
+                    \Log::info('[AuthController::setupPasswordByPhone] ✅ Found via flexible matching', [
+                        'phone_input' => $validated['phone'],
+                        'phone_stored' => $user->phone,
+                        'user_id' => $user->ID,
+                    ]);
+                } else {
+                    \Log::warning('[AuthController::setupPasswordByPhone] Flexible match failed - firebase_uid mismatch', [
+                        'phone_input' => $validated['phone'],
+                        'flex_user_firebase_uid' => $flexUser?->firebase_uid,
+                        'expected_firebase_uid' => $validated['firebase_uid'],
+                    ]);
+                }
+            }
+
+            if (!$user) {
+                \Log::error('[AuthController::setupPasswordByPhone] ❌ User not found', [
+                    'phone' => $validated['phone'],
+                    'firebase_uid' => $validated['firebase_uid'],
+                    'search_methods' => ['exact_match', 'flexible_match'],
+                    'all_users_count' => WpUser::count(),
+                ]);
+                return response()->json([
+                    'message' => 'User not found',
+                    'error' => 'No user found with this phone number and firebase UID',
+                    'debug' => [
+                        'searched_phone' => $validated['phone'],
+                        'searched_firebase_uid' => $validated['firebase_uid'],
+                    ],
+                ], 404);
+            }
+
+            \Log::info('[AuthController::setupPasswordByPhone] User found', [
+                'user_id' => $user->ID,
+                'user_login' => $user->user_login,
+                'phone' => $user->phone,
+                'has_password' => !empty($user->user_pass),
+            ]);
+
+            // Create new password hash
+            $newHash = Hash::make($validated['new_password']);
+            \Log::info('[AuthController::setupPasswordByPhone] Generated new hash', [
+                'user_id' => $user->ID,
+                'new_hash_length' => strlen($newHash),
+            ]);
+
+            // Update password in Laravel database
+            $user->user_pass = $newHash;
+            $user->save();
+
+            // Verify password was saved correctly
+            $user->refresh();
+            $verifyHash = $user->user_pass;
+            $verifyCheck = Hash::check($validated['new_password'], $verifyHash);
+
+            \Log::info('[AuthController::setupPasswordByPhone] Password setup and verified', [
+                'user_id' => $user->ID,
+                'saved_hash_length' => strlen($verifyHash),
+                'hash_matches_new' => ($newHash === $verifyHash) ? true : false,
+                'password_verification_check' => $verifyCheck,
+            ]);
+
+            // Create new token for the user
+            $user->tokens()->delete();
+            $token = $user->createToken('api-token')->plainTextToken;
+
+            \Log::info('[AuthController::setupPasswordByPhone] Password setup successful', [
+                'user_id' => $user->ID,
+                'username' => $user->user_login,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Password setup successfully',
+                'user' => [
+                    'id' => $user->ID,
+                    'username' => $user->user_login,
+                    'email' => $user->user_email,
+                    'display_name' => $user->display_name,
+                    'phone' => $user->phone,
+                ],
+                'token' => $token,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('[AuthController::setupPasswordByPhone] Error', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'message' => 'Password setup failed',
                 'error' => $e->getMessage(),
             ], 500);
         }

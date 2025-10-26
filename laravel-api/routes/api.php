@@ -24,6 +24,7 @@ Route::prefix('v1')->group(function () {
     Route::post('/auth/firebase-login', [AuthController::class, 'firebaseLogin']);
     Route::post('/auth/test-reset-endpoint', [AuthController::class, 'testResetEndpoint']);
     Route::post('/auth/reset-password-by-phone', [AuthController::class, 'resetPasswordByPhone']);
+    Route::post('/auth/setup-password-by-phone', [AuthController::class, 'setupPasswordByPhone']);
 
     // Debug endpoints
     Route::get('/debug/users-with-phone', [AuthController::class, 'debugUsersWithPhone']);

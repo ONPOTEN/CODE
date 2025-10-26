@@ -176,7 +176,16 @@ class UserController extends Controller
     {
         $user = $request->user();
 
+        // Check if phone is being submitted - reject if it is
+        if ($request->has('phone')) {
+            return response()->json([
+                'message' => 'Phone number cannot be changed',
+                'error' => 'Phone number is locked for security. Contact support to change your phone number.',
+            ], 422);
+        }
+
         $validated = $request->validate([
+            'user_login' => 'sometimes|string|max:60|unique:wp_users,user_login,' . $user->ID . ',ID|regex:/^[a-zA-Z0-9_-]+$/',
             'display_name' => 'sometimes|string|max:250',
             'user_email' => 'sometimes|email|unique:wp_users,user_email,' . $user->ID . ',ID',
             'hobby' => 'sometimes|nullable|string|max:255',
@@ -184,13 +193,28 @@ class UserController extends Controller
             'location' => 'sometimes|nullable|string|max:255',
             // REMOVED: 'role' - Users cannot change their own role
             'profile_visibility' => 'sometimes|nullable|string|in:public,private',
-            'phone' => 'sometimes|nullable|string|max:20',
+            // REMOVED: 'phone' - Users cannot change their phone number
             'email_public' => 'sometimes|boolean',
             'hobby_public' => 'sometimes|boolean',
             'company_public' => 'sometimes|boolean',
             'location_public' => 'sometimes|boolean',
             'phone_public' => 'sometimes|boolean',
         ]);
+
+        // Handle username change (user_login)
+        if (isset($validated['user_login'])) {
+            $oldUsername = $user->user_login;
+            $user->user_login = $validated['user_login'];
+
+            // Also update user_nicename for consistency (WordPress convention)
+            $user->user_nicename = $validated['user_login'];
+
+            \Log::info('[UserController::updateProfile] Username changed', [
+                'user_id' => $user->ID,
+                'old_username' => $oldUsername,
+                'new_username' => $validated['user_login'],
+            ]);
+        }
 
         if (isset($validated['display_name'])) {
             $user->display_name = $validated['display_name'];
@@ -218,9 +242,7 @@ class UserController extends Controller
             $user->profile_visibility = $validated['profile_visibility'];
         }
 
-        if (isset($validated['phone'])) {
-            $user->phone = $validated['phone'];
-        }
+        // REMOVED: Phone update logic - Phone number is locked for security
 
         if (isset($validated['email_public'])) {
             $user->email_public = $validated['email_public'];
@@ -244,6 +266,12 @@ class UserController extends Controller
 
         $user->save();
 
+        \Log::info('[UserController::updateProfile] Profile updated successfully', [
+            'user_id' => $user->ID,
+            'username' => $user->user_login,
+            'fields_updated' => array_keys($validated),
+        ]);
+
         return new UserResource($user);
     }
 
@@ -252,45 +280,74 @@ class UserController extends Controller
      */
     public function uploadAvatar(Request $request)
     {
-        $user = $request->user();
+        try {
+            $user = $request->user();
 
-        $validated = $request->validate([
-            'avatar' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048', // Max 2MB
-        ]);
+            // Debug: Log the request details
+            \Log::info('Avatar upload request', [
+                'has_file_avatar' => $request->hasFile('avatar'),
+                'all_files' => array_keys($request->allFiles()),
+                'content_type' => $request->header('Content-Type'),
+                'content_length' => $request->header('Content-Length'),
+            ]);
 
-        if ($request->hasFile('avatar')) {
+            // Check if file exists before validation
+            if (!$request->hasFile('avatar')) {
+                \Log::error('Avatar file not found in request');
+                return response()->json([
+                    'message' => 'The avatar field is required.',
+                    'errors' => ['avatar' => ['The avatar field is required.']],
+                ], 422);
+            }
+
+            // Validate the file
+            $validated = $request->validate([
+                'avatar' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048', // Max 2MB
+            ]);
+
             $file = $request->file('avatar');
 
             // Delete old avatar if exists
-            if ($user->avatar && file_exists(public_path('storage/avatars/' . $user->avatar))) {
-                unlink(public_path('storage/avatars/' . $user->avatar));
+            if ($user->avatar) {
+                \Storage::disk('public')->delete('avatars/' . $user->avatar);
             }
 
-            // Create avatars directory if it doesn't exist
-            if (!file_exists(public_path('storage/avatars'))) {
-                mkdir(public_path('storage/avatars'), 0755, true);
-            }
-
-            // Generate unique filename
+            // Store file using Laravel Storage (handles directory creation)
             $filename = $user->ID . '_' . time() . '.' . $file->getClientOriginalExtension();
+            $path = $file->storeAs('avatars', $filename, 'public');
 
-            // Move file to storage/avatars
-            $file->move(public_path('storage/avatars'), $filename);
+            if (!$path) {
+                \Log::error('Failed to store avatar file');
+                return response()->json([
+                    'message' => 'Failed to save avatar file',
+                ], 500);
+            }
 
             // Update user avatar
             $user->avatar = $filename;
             $user->save();
 
+            \Log::info('Avatar uploaded successfully', ['user_id' => $user->ID, 'filename' => $filename]);
+
+            // Return complete user data with avatar_url
             return response()->json([
                 'message' => 'Avatar uploaded successfully',
+                'user' => new \App\Http\Resources\UserResource($user),
                 'avatar' => $filename,
-                'avatar_url' => url('storage/avatars/' . $filename),
+                'avatar_url' => \Storage::disk('public')->url('avatars/' . $filename),
             ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            \Log::error('Avatar validation error', ['errors' => $e->errors()]);
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            \Log::error('Avatar upload error: ' . $e->getMessage(), ['exception' => $e]);
+            return response()->json([
+                'message' => 'Avatar upload failed: ' . $e->getMessage(),
+            ], 500);
         }
-
-        return response()->json([
-            'message' => 'No file uploaded',
-        ], 400);
     }
 
     /**

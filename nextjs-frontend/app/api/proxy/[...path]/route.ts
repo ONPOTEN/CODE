@@ -86,11 +86,7 @@ async function proxyRequest(
     }
     console.log(`[API Proxy] Forwarded headers:`, debugHeaders);
 
-    // Ensure Content-Type is set for POST requests without a body
-    if (['POST', 'PUT', 'PATCH'].includes(method) && !headers['content-type']) {
-      headers['content-type'] = 'application/json';
-    }
-
+    // Don't set Content-Type yet - we need to handle it based on body type
     const options: RequestInit = {
       method,
       headers,
@@ -107,25 +103,45 @@ async function proxyRequest(
         // Check if there's actually a body to read
         const contentLength = request.headers.get('content-length');
         if (contentLength && parseInt(contentLength) > 0) {
-          if (contentType?.includes('application/json')) {
+          if (contentType?.includes('multipart/form-data')) {
+            console.log(`[API Proxy] Handling multipart/form-data body`);
+            const formData = await request.formData();
+            options.body = formData;
+            // IMPORTANT: Don't set Content-Type for FormData - let the fetch API set it with boundary
+            // Remove content-type header if it exists so browser can set it properly
+            delete headers['content-type'];
+            console.log(`[API Proxy] FormData entries:`, Array.from(formData.entries()).map(([key, value]) => ({
+              key,
+              type: value instanceof File ? `File(${(value as File).name})` : typeof value,
+            })));
+          } else if (contentType?.includes('application/json')) {
             const body = await request.json();
             console.log(`[API Proxy] Parsed JSON body:`, body);
             options.body = JSON.stringify(body);
-          } else if (contentType?.includes('multipart/form-data')) {
-            console.log(`[API Proxy] Using FormData body`);
-            options.body = await request.formData();
+            // Set content-type for JSON
+            headers['content-type'] = 'application/json';
           } else if (contentType) {
             console.log(`[API Proxy] Using text body`);
             options.body = await request.text();
+            if (!headers['content-type']) {
+              headers['content-type'] = contentType;
+            }
           }
         } else {
           console.log(`[API Proxy] No request body, sending empty POST`);
+          // Only set default content-type for empty requests
+          if (!headers['content-type']) {
+            headers['content-type'] = 'application/json';
+          }
         }
       } catch (bodyError) {
         const bodyErrorMsg = bodyError instanceof Error ? bodyError.message : 'Unknown error parsing body';
         console.error(`[API Proxy] Error parsing request body: ${bodyErrorMsg}`);
         throw new Error(`Failed to parse request body: ${bodyErrorMsg}`);
       }
+    } else {
+      // For GET, DELETE, etc - ensure content-type is not set for requests without body
+      delete headers['content-type'];
     }
 
     console.log(`[API Proxy] Attempting to fetch from backend: ${url}`);

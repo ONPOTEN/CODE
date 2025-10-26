@@ -5,6 +5,55 @@ const TOKEN_KEY = 'api_token';
 
 // Phone number utilities
 /**
+ * Validate Firebase phone number format
+ * Must be exactly 10 digits (Vietnamese phone format)
+ * Auto-adds +84 prefix for Firebase authentication
+ *
+ * Accepts formats:
+ * - "0867631313" (10 digits starting with 0) → "+84867631313"
+ * - "867631313" (9 digits, assumes 0 prefix) → "+84867631313"
+ * - "84867631313" (12 digits with country code) → "+84867631313"
+ * - "+84867631313" (already formatted) → "+84867631313"
+ *
+ * Returns: { valid: boolean, error?: string, normalized?: string }
+ */
+export const validateFirebasePhoneNumber = (phone: string): { valid: boolean; error?: string; normalized?: string } => {
+  let normalized = phone.trim();
+
+  // Remove all non-digit characters for counting
+  const digitsOnly = normalized.replace(/[^\d]/g, '');
+
+  // Case 1: 10 digits starting with 0 (e.g., "0867631313")
+  if (/^0\d{9}$/.test(digitsOnly)) {
+    // Remove leading 0 and add +84
+    return { valid: true, normalized: '+84' + digitsOnly.substring(1) };
+  }
+
+  // Case 2: 9 digits without leading 0 (e.g., "867631313")
+  if (/^\d{9}$/.test(digitsOnly)) {
+    // Add +84 prefix
+    return { valid: true, normalized: '+84' + digitsOnly };
+  }
+
+  // Case 3: 12 digits starting with 84 (e.g., "84867631313")
+  if (/^84\d{10}$/.test(digitsOnly)) {
+    // Already has country code, just add +
+    return { valid: true, normalized: '+' + digitsOnly };
+  }
+
+  // Case 4: Already has +84 prefix (e.g., "+84867631313")
+  if (/^\+84\d{10}$/.test(normalized)) {
+    return { valid: true, normalized };
+  }
+
+  // Invalid format
+  return {
+    valid: false,
+    error: `Invalid phone format. Expected 10 digits (Vietnamese format: 0XXXXXXXXX or XXXXXXXXX). Got ${digitsOnly.length} digits.`,
+  };
+};
+
+/**
  * Encode phone number for URL-safe transmission
  * Handles international format with '+' prefix
  * Example: "+840867631313" → "%2B840867631313"
@@ -14,18 +63,43 @@ export const encodePhoneNumber = (phone: string): string => {
 };
 
 /**
- * Normalize phone number to standard format
- * Ensures '+' prefix for international numbers
- * Example: "840867631313" → "+840867631313"
+ * Normalize phone number to standard format with +84 prefix
+ * For Firebase: Converts any 10-digit Vietnamese phone to +84 format
+ * Enforces Vietnam country code +84 format
+ *
+ * Example: "867631313" → "+84867631313" (auto-adds +84 if missing)
+ * Example: "0867631313" → "+84867631313" (converts 0-prefix to +84)
+ * Example: "84867631313" → "+84867631313" (converts country code format)
+ * Example: "+84867631313" → "+84867631313" (already correct)
  */
 export const normalizePhoneNumber = (phone: string): string => {
   let normalized = phone.trim();
-  // Remove all non-digit characters except '+'
-  normalized = normalized.replace(/[^\d+]/g, '');
-  // Add '+' prefix if not present and looks like international number (10+ digits)
-  if (!normalized.startsWith('+') && /^\d{10,}$/.test(normalized)) {
-    normalized = '+' + normalized;
+
+  // Remove all non-digit characters except +
+  let digitsOnly = normalized.replace(/[^\d+]/g, '');
+
+  // Remove + if present for processing
+  digitsOnly = digitsOnly.replace(/\+/g, '');
+
+  // If starts with 0, remove it (Vietnam local format: 0XXXXXXXXX → XXXXXXXXX)
+  if (digitsOnly.startsWith('0')) {
+    digitsOnly = digitsOnly.substring(1);
   }
+
+  // If starts with 84, remove it (already has country code)
+  if (digitsOnly.startsWith('84')) {
+    digitsOnly = digitsOnly.substring(2);
+  }
+
+  // Now we should have 9 digits (local number without 0 prefix or country code)
+  // Add 84 prefix for international format
+  normalized = '+84' + digitsOnly;
+
+  // Validate: should be +84 followed by 9 digits (total 12 chars)
+  if (!/^\+84\d{9}$/.test(normalized)) {
+    console.warn(`[Phone Normalization] Invalid phone format: ${phone} (normalized: ${normalized}). Expected format: +84XXXXXXXXX (10 digits total)`);
+  }
+
   return normalized;
 };
 
@@ -183,6 +257,18 @@ export async function apiRequestWithFiles<T = any>(
     headers['Authorization'] = `Bearer ${token}`;
   }
 
+  // Debug logging
+  console.log('[apiRequestWithFiles] Request details:', {
+    url,
+    method: 'POST',
+    hasAuth: !!token,
+    hasContentType: 'Content-Type' in headers,
+    formDataEntries: Array.from(formData.entries()).map(([key, value]) => ({
+      key,
+      valueType: value instanceof File ? `File(${(value as File).name})` : typeof value,
+    })),
+  });
+
   // Don't set Content-Type for FormData - browser will set it with boundary
   const config: RequestInit = {
     method: 'POST',
@@ -191,6 +277,7 @@ export async function apiRequestWithFiles<T = any>(
   };
 
   const response = await fetch(url, config);
+  console.log('[apiRequestWithFiles] Response status:', response.status);
   return handleResponse<T>(response);
 }
 
@@ -497,7 +584,9 @@ export const users = {
     return apiRequest(`/users/search?${searchParams}`);
   },
 
-  updateProfile: async (data: { display_name?: string; user_email?: string; hobby?: string; company?: string; location?: string; role?: string; profile_visibility?: string; phone?: string; email_public?: boolean; hobby_public?: boolean; company_public?: boolean; location_public?: boolean; phone_public?: boolean }): Promise<User> => {
+  updateProfile: async (data: { user_login?: string; display_name?: string; user_email?: string; hobby?: string; company?: string; location?: string; profile_visibility?: string; email_public?: boolean; hobby_public?: boolean; company_public?: boolean; location_public?: boolean; phone_public?: boolean }): Promise<User> => {
+    // NOTE: phone field is intentionally not included - phone cannot be changed
+    // role field is intentionally not included - users cannot change their own role
     return apiRequest('/profile', {
       method: 'PUT',
       body: JSON.stringify(data),
@@ -511,12 +600,28 @@ export const users = {
     });
   },
 
-  uploadAvatar: async (file: File): Promise<{ message: string; avatar: string; avatar_url: string }> => {
-    return apiRequestWithFiles('/profile/avatar', (() => {
-      const formData = new FormData();
-      formData.append('avatar', file);
-      return formData;
-    })());
+  uploadAvatar: async (file: File): Promise<{
+    message: string;
+    avatar: string;
+    avatar_url: string;
+    user?: AuthUser;
+  }> => {
+    const formData = new FormData();
+    formData.append('avatar', file);
+
+    // Debug logging
+    console.log('[uploadAvatar] File details:', {
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      lastModified: file.lastModified,
+    });
+    console.log('[uploadAvatar] FormData contents:', {
+      hasAvatar: formData.has('avatar'),
+      entriesCount: Array.from(formData.entries()).length,
+    });
+
+    return apiRequestWithFiles('/profile/avatar', formData);
   },
 };
 

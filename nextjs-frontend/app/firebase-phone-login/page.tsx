@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { RecaptchaVerifier } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
+import { validateFirebasePhoneNumber } from '@/lib/api';
 
 export default function FirebasePhoneLoginPage() {
   const [step, setStep] = useState<'phone' | 'verify'>('phone');
@@ -59,13 +60,22 @@ export default function FirebasePhoneLoginPage() {
       return;
     }
 
+    // Validate and normalize phone number (auto-adds +84 prefix)
+    const validation = validateFirebasePhoneNumber(phoneNumber);
+    if (!validation.valid) {
+      alert(validation.error || 'Invalid phone number');
+      return;
+    }
+
     if (!recaptchaVerifier) {
       alert('reCAPTCHA is still initializing. Please wait a moment and try again.');
       return;
     }
 
     try {
-      const result = await firebasePhoneVerify(phoneNumber, recaptchaVerifier);
+      console.log(`[Firebase Phone Login] Verifying phone: ${phoneNumber} → ${validation.normalized}`);
+      // Use the normalized phone number with +84 prefix
+      const result = await firebasePhoneVerify(validation.normalized!, recaptchaVerifier);
       setConfirmationResult(result);
       setStep('verify');
     } catch (err: any) {
@@ -74,7 +84,7 @@ export default function FirebasePhoneLoginPage() {
       if (err?.code === 'auth/captcha-check-failed') {
         alert('reCAPTCHA verification failed. Please ensure your domain is authorized in Firebase Console. Make sure your domain (e.g., localhost, yourdomain.com) is added to Firebase Authentication > Settings > Authorized Domains.');
       } else if (err?.code === 'auth/invalid-phone-number') {
-        alert('Invalid phone number. Please include the country code (e.g., +1 for USA).');
+        alert('Invalid phone number. Expected 10 digits (e.g., 0867631313 or 867631313). The +84 prefix will be added automatically.');
       } else {
         alert(err?.message || 'Phone verification failed. Please try again.');
       }

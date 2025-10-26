@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { updatePassword } from 'firebase/auth';
 import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
-import { apiRequest, tokenStorage, encodePhoneNumber, normalizePhoneNumber, getUserByPhone } from '@/lib/api';
+import { apiRequest, tokenStorage, encodePhoneNumber, normalizePhoneNumber, getUserByPhone, validateFirebasePhoneNumber } from '@/lib/api';
 
 export default function FirebasePhoneResetPasswordPage() {
   const [step, setStep] = useState<'phone' | 'verify' | 'reset'>('phone');
@@ -42,13 +42,21 @@ export default function FirebasePhoneResetPasswordPage() {
       return;
     }
 
+    // Validate and normalize phone number (auto-adds +84 prefix)
+    const validation = validateFirebasePhoneNumber(phoneNumber);
+    if (!validation.valid) {
+      setErrorMessage(validation.error || 'Invalid phone number');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
       console.log('[Reset Password] Starting phone sign in...');
+      console.log(`[Reset Password] Phone: ${phoneNumber} → ${validation.normalized}`);
 
-      // Normalize phone number
-      const normalizedPhone = normalizePhoneNumber(phoneNumber);
+      // Use normalized phone with +84 prefix
+      const normalizedPhone = validation.normalized!;
 
       // Query Laravel to get user email by phone
       // Using query parameter endpoint for better encoding of '+' character
@@ -76,8 +84,8 @@ export default function FirebasePhoneResetPasswordPage() {
 
         // Send SMS code
         try {
-          console.log('[Reset Password] Sending SMS code to:', phoneNumber);
-          const confirmation = await signInWithPhoneNumber(auth, phoneNumber, verifier);
+          console.log('[Reset Password] Sending SMS code to:', normalizedPhone);
+          const confirmation = await signInWithPhoneNumber(auth, normalizedPhone, verifier);
           setConfirmationResult(confirmation);
           console.log('[Reset Password] SMS code sent successfully');
           setStep('verify');
