@@ -60,7 +60,13 @@ class PostResource extends JsonResource
         // Check for new storage path
         $thumbnailPath = $this->meta->where('meta_key', '_thumbnail_path')->first()?->meta_value;
         if ($thumbnailPath) {
-            return asset('storage/' . $thumbnailPath);
+            // Generate S3 URL for the file
+            try {
+                return \Storage::disk('s3')->url($thumbnailPath);
+            } catch (\Exception $e) {
+                // Fallback to local storage if S3 fails
+                return asset('storage/' . $thumbnailPath);
+            }
         }
 
         // Fallback to WordPress attachment
@@ -80,7 +86,13 @@ class PostResource extends JsonResource
         });
 
         foreach ($imageMeta as $meta) {
-            $images[] = asset('storage/' . $meta->meta_value);
+            try {
+                // Generate S3 URL for the file
+                $images[] = \Storage::disk('s3')->url($meta->meta_value);
+            } catch (\Exception $e) {
+                // Fallback to local storage if S3 fails
+                $images[] = asset('storage/' . $meta->meta_value);
+            }
         }
 
         return $images;

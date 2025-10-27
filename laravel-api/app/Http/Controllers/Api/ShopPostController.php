@@ -72,19 +72,13 @@ class ShopPostController extends Controller
             // Create directory structure: shopid/year/month/day
             $now = now();
             $directory = "shop_posts/{$shopId}/{$now->year}/{$now->format('m')}/{$now->format('d')}";
-            $fullPath = public_path("storage/{$directory}");
-
-            // Create directory if it doesn't exist
-            if (!file_exists($fullPath)) {
-                mkdir($fullPath, 0755, true);
-            }
 
             foreach ($files as $file) {
                 // Generate unique filename
                 $filename = time() . '_' . Str::random(10) . '.' . $file->getClientOriginalExtension();
 
-                // Move file to the organized directory
-                $file->move($fullPath, $filename);
+                // Store file to S3 using Storage facade
+                $path = $file->storeAs($directory, $filename, 's3');
 
                 // Store relative path: shopid/year/month/day/filename
                 $imagePaths[] = "{$shopId}/{$now->year}/{$now->format('m')}/{$now->format('d')}/{$filename}";
@@ -169,9 +163,10 @@ class ShopPostController extends Controller
         if ($request->has('remove_images')) {
             $imagesToRemove = $request->input('remove_images');
             foreach ($imagesToRemove as $imagePath) {
-                $fullPath = public_path('storage/shop_posts/' . $imagePath);
-                if (file_exists($fullPath)) {
-                    unlink($fullPath);
+                // Delete file from S3
+                $fullS3Path = "shop_posts/{$imagePath}";
+                if (\Storage::disk('s3')->exists($fullS3Path)) {
+                    \Storage::disk('s3')->delete($fullS3Path);
                 }
                 // Remove from current images array
                 $currentImages = array_values(array_filter($currentImages, fn($img) => $img !== $imagePath));
@@ -185,19 +180,13 @@ class ShopPostController extends Controller
             // Create directory structure: shopid/year/month/day
             $now = now();
             $directory = "shop_posts/{$shopId}/{$now->year}/{$now->format('m')}/{$now->format('d')}";
-            $fullPath = public_path("storage/{$directory}");
-
-            // Create directory if it doesn't exist
-            if (!file_exists($fullPath)) {
-                mkdir($fullPath, 0755, true);
-            }
 
             foreach ($files as $file) {
                 // Generate unique filename
                 $filename = time() . '_' . Str::random(10) . '.' . $file->getClientOriginalExtension();
 
-                // Move file to the organized directory
-                $file->move($fullPath, $filename);
+                // Store file to S3 using Storage facade
+                $path = $file->storeAs($directory, $filename, 's3');
 
                 // Add to current images array
                 $currentImages[] = "{$shopId}/{$now->year}/{$now->format('m')}/{$now->format('d')}/{$filename}";

@@ -52,6 +52,7 @@ Route::prefix('v1')->group(function () {
     Route::get('/users', [UserController::class, 'index']);
     Route::get('/users/search', [UserController::class, 'search']);
     Route::get('/users/{id}', [UserController::class, 'show'])->where('id', '[0-9]+');
+    Route::get('/users/{id}/wall', [PostController::class, 'userWall'])->where('id', '[0-9]+');
     Route::get('/users/username/{username}', [UserController::class, 'byUsername']);
     Route::get('/users/by-nickname/{nickname}', [UserController::class, 'byNickname']);
     Route::get('/users/by-phone', [UserController::class, 'byPhoneQuery']); // Query parameter version (preferred)

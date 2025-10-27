@@ -36,6 +36,7 @@ class WpPost extends Model
         'post_mime_type',
         'comment_count',
         'visibility',
+        'wall_id',
     ];
 
     protected $casts = [
@@ -46,6 +47,7 @@ class WpPost extends Model
         'post_parent' => 'integer',
         'menu_order' => 'integer',
         'comment_count' => 'integer',
+        'wall_id' => 'integer',
     ];
 
     const CREATED_AT = 'post_date';

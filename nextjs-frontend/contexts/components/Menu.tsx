@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function Menu() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
 
   const toggleMenu = () => setIsOpen(!isOpen);
@@ -61,6 +61,19 @@ export default function Menu() {
                       Manage your posts and content
                     </p>
                   </Link>
+
+                  {user && (
+                    <Link
+                      href={`/users/${user.id}/wall`}
+                      className="block px-6 py-4 hover:bg-indigo-50 transition-colors"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      <h3 className="font-semibold text-lg mb-1">My Wall</h3>
+                      <p className="text-gray-600 text-sm">
+                        View and manage your personal wall
+                      </p>
+                    </Link>
+                  )}
 
                   <Link
                     href="/posts/create"

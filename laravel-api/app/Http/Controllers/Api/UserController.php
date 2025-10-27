@@ -309,12 +309,12 @@ class UserController extends Controller
 
             // Delete old avatar if exists
             if ($user->avatar) {
-                \Storage::disk('public')->delete('avatars/' . $user->avatar);
+                \Storage::disk('s3')->delete('avatars/' . $user->avatar);
             }
 
             // Store file using Laravel Storage (handles directory creation)
             $filename = $user->ID . '_' . time() . '.' . $file->getClientOriginalExtension();
-            $path = $file->storeAs('avatars', $filename, 'public');
+            $path = $file->storeAs('avatars', $filename, 's3');
 
             if (!$path) {
                 \Log::error('Failed to store avatar file');
@@ -334,7 +334,7 @@ class UserController extends Controller
                 'message' => 'Avatar uploaded successfully',
                 'user' => new \App\Http\Resources\UserResource($user),
                 'avatar' => $filename,
-                'avatar_url' => \Storage::disk('public')->url('avatars/' . $filename),
+                'avatar_url' => \Storage::disk('s3')->url('avatars/' . $filename),
             ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
             \Log::error('Avatar validation error', ['errors' => $e->errors()]);

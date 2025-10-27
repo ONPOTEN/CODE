@@ -515,6 +515,17 @@ export const posts = {
     return apiRequest<PaginatedResponse<Post>>(`/my-posts${query}`);
   },
 
+  userWall: async (userId: number, params?: { per_page?: number; page?: number; search?: string; type?: string }) => {
+    const searchParams = new URLSearchParams();
+    if (params?.per_page) searchParams.append('per_page', params.per_page.toString());
+    if (params?.page) searchParams.append('page', params.page.toString());
+    if (params?.search) searchParams.append('search', params.search);
+    if (params?.type) searchParams.append('type', params.type);
+
+    const query = searchParams.toString() ? `?${searchParams}` : '';
+    return apiRequest<PaginatedResponse<Post>>(`/users/${userId}/wall${query}`);
+  },
+
   delete: async (id: number): Promise<{ message: string }> => {
     return apiRequest<{ message: string }>(`/posts/${id}`, {
       method: 'DELETE',
