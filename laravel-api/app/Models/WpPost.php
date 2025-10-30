@@ -83,6 +83,11 @@ class WpPost extends Model
         return $this->hasMany(Share::class, 'post_id', 'ID');
     }
 
+    public function shareWalls(): HasMany
+    {
+        return $this->hasMany(ShareWall::class, 'post_id', 'ID');
+    }
+
     public function scopePublished($query)
     {
         return $query->where('post_status', 'publish');

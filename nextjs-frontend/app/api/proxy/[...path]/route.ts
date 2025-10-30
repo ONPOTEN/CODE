@@ -94,8 +94,8 @@ async function proxyRequest(
       signal: AbortSignal.timeout(30000), // 30 second timeout
     };
 
-    // Add body for POST, PUT, PATCH requests
-    if (['POST', 'PUT', 'PATCH'].includes(method)) {
+    // Add body for POST, PUT, PATCH, and DELETE requests
+    if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
       const contentType = request.headers.get('content-type');
       console.log(`[API Proxy] Request content-type: ${contentType}`);
 
@@ -128,7 +128,7 @@ async function proxyRequest(
             }
           }
         } else {
-          console.log(`[API Proxy] No request body, sending empty POST`);
+          console.log(`[API Proxy] No request body, sending empty ${method}`);
           // Only set default content-type for empty requests
           if (!headers['content-type']) {
             headers['content-type'] = 'application/json';
@@ -140,7 +140,7 @@ async function proxyRequest(
         throw new Error(`Failed to parse request body: ${bodyErrorMsg}`);
       }
     } else {
-      // For GET, DELETE, etc - ensure content-type is not set for requests without body
+      // For GET, HEAD, etc - ensure content-type is not set for requests without body
       delete headers['content-type'];
     }
 

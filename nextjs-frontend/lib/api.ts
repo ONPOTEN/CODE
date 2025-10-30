@@ -177,6 +177,9 @@ async function handleResponse<T>(response: Response): Promise<T> {
 
     const errorMessage = error.message || response.statusText || `An error occurred (${response.status})`;
 
+    console.error(`[handleResponse] Error ${response.status}:`, errorMessage);
+    console.error(`[handleResponse] Error details:`, error);
+
     throw new ApiException(
       errorMessage,
       response.status,
@@ -184,7 +187,9 @@ async function handleResponse<T>(response: Response): Promise<T> {
     );
   }
 
-  return response.json();
+  const data = await response.json();
+  console.log(`[handleResponse] Success response (${response.status}):`, data);
+  return data;
 }
 
 export async function apiRequest<T = any>(
@@ -215,6 +220,10 @@ export async function apiRequest<T = any>(
   }
 
   console.log(`[apiRequest] Full URL: ${fullUrl}`);
+  console.log(`[apiRequest] Method: ${options.method || 'GET'}`);
+  if (options.body) {
+    console.log(`[apiRequest] Body: ${options.body}`);
+  }
 
   const token = tokenStorage.get();
   const headers: Record<string, string> = {
@@ -234,8 +243,16 @@ export async function apiRequest<T = any>(
     },
   };
 
-  const response = await fetch(fullUrl, config);
-  return handleResponse<T>(response);
+  console.log(`[apiRequest] Request headers:`, config.headers);
+
+  try {
+    const response = await fetch(fullUrl, config);
+    console.log(`[apiRequest] Response status: ${response.status}`);
+    return handleResponse<T>(response);
+  } catch (error) {
+    console.error(`[apiRequest] Fetch error:`, error);
+    throw error;
+  }
 }
 
 // API request with file upload support
@@ -526,9 +543,32 @@ export const posts = {
     return apiRequest<PaginatedResponse<Post>>(`/users/${userId}/wall${query}`);
   },
 
+  sharedWall: async (userId: number, params?: { per_page?: number; page?: number }) => {
+    const searchParams = new URLSearchParams();
+    if (params?.per_page) searchParams.append('per_page', params.per_page.toString());
+    if (params?.page) searchParams.append('page', params.page.toString());
+
+    const query = searchParams.toString() ? `?${searchParams}` : '';
+    return apiRequest<PaginatedResponse<Post>>(`/users/${userId}/shared-wall${query}`);
+  },
+
   delete: async (id: number): Promise<{ message: string }> => {
     return apiRequest<{ message: string }>(`/posts/${id}`, {
       method: 'DELETE',
+    });
+  },
+
+  shareToWall: async (postId: number, wallId: number): Promise<{ success: boolean; message: string; post: Post }> => {
+    return apiRequest<{ success: boolean; message: string; post: Post }>(`/posts/${postId}/share-to-wall`, {
+      method: 'POST',
+      body: JSON.stringify({ wall_id: wallId }),
+    });
+  },
+
+  deleteSharedPost: async (postId: number, wallId: number): Promise<{ success: boolean; message: string }> => {
+    return apiRequest<{ success: boolean; message: string }>(`/posts/${postId}/shared-wall`, {
+      method: 'DELETE',
+      body: JSON.stringify({ wall_id: wallId }),
     });
   },
 };
@@ -598,10 +638,18 @@ export const users = {
   updateProfile: async (data: { user_login?: string; display_name?: string; user_email?: string; hobby?: string; company?: string; location?: string; profile_visibility?: string; email_public?: boolean; hobby_public?: boolean; company_public?: boolean; location_public?: boolean; phone_public?: boolean }): Promise<User> => {
     // NOTE: phone field is intentionally not included - phone cannot be changed
     // role field is intentionally not included - users cannot change their own role
-    return apiRequest('/profile', {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
+    console.log('[users.updateProfile] Calling API with data:', data);
+    try {
+      const response = await apiRequest('/profile', {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      });
+      console.log('[users.updateProfile] Response received:', response);
+      return response;
+    } catch (error) {
+      console.error('[users.updateProfile] Error caught:', error);
+      throw error;
+    }
   },
 
   updatePassword: async (data: { current_password: string; new_password: string; new_password_confirmation: string }): Promise<{ message: string }> => {

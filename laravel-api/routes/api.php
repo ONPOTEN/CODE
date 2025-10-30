@@ -53,6 +53,7 @@ Route::prefix('v1')->group(function () {
     Route::get('/users/search', [UserController::class, 'search']);
     Route::get('/users/{id}', [UserController::class, 'show'])->where('id', '[0-9]+');
     Route::get('/users/{id}/wall', [PostController::class, 'userWall'])->where('id', '[0-9]+');
+    Route::get('/users/{id}/shared-wall', [PostController::class, 'sharedWall'])->where('id', '[0-9]+');
     Route::get('/users/username/{username}', [UserController::class, 'byUsername']);
     Route::get('/users/by-nickname/{nickname}', [UserController::class, 'byNickname']);
     Route::get('/users/by-phone', [UserController::class, 'byPhoneQuery']); // Query parameter version (preferred)
@@ -78,6 +79,8 @@ Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
     Route::post('/posts', [PostController::class, 'store']);
     Route::post('/posts/{id}', [PostController::class, 'update'])->where('id', '[0-9]+');
     Route::delete('/posts/{id}', [PostController::class, 'destroy'])->where('id', '[0-9]+');
+    Route::post('/posts/{id}/share-to-wall', [PostController::class, 'shareToWall'])->where('id', '[0-9]+');
+    Route::delete('/posts/{id}/shared-wall', [PostController::class, 'deleteSharedPost'])->where('id', '[0-9]+');
 
     // Comments (authenticated)
     Route::post('/posts/{postId}/comments', [CommentController::class, 'storeComment'])->where('postId', '[0-9]+');

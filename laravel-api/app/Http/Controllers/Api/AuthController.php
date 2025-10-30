@@ -18,22 +18,31 @@ class AuthController extends Controller
             'password' => 'required|string',
         ]);
 
+        $username = $request->username;
+        $password = $request->password;
+
         \Log::info('[AuthController::login] Login attempt', [
-            'username' => $request->username,
-            'password_length' => strlen($request->password),
+            'username' => $username,
+            'username_length' => strlen($username),
+            'password_length' => strlen($password),
+            'request_body' => $request->all(),
         ]);
 
         // Search by username, email, or phone
-        $user = WpUser::where('user_login', $request->username)
-            ->orWhere('user_email', $request->username)
-            ->orWhere('phone', $request->username)
+        $user = WpUser::where('user_login', $username)
+            ->orWhere('user_email', $username)
+            ->orWhere('phone', $username)
             ->first();
 
         \Log::info('[AuthController::login] User lookup result', [
-            'username' => $request->username,
+            'username' => $username,
             'user_found' => $user ? true : false,
             'user_id' => $user?->ID,
             'user_login' => $user?->user_login,
+            'user_email' => $user?->user_email,
+            'user_phone' => $user?->phone,
+            'has_password' => $user ? !empty($user->user_pass) : false,
+            'password_hash_length' => $user ? strlen($user->user_pass) : 0,
         ]);
 
         if (!$user) {
@@ -45,12 +54,14 @@ class AuthController extends Controller
             ]);
         }
 
-        $passwordVerified = $this->verifyWordPressPassword($request->password, $user->user_pass);
+        $passwordVerified = $this->verifyWordPressPassword($password, $user->user_pass);
         \Log::info('[AuthController::login] Password verification result', [
             'user_id' => $user->ID,
             'verified' => $passwordVerified,
             'stored_hash_length' => strlen($user->user_pass),
-            'input_password_length' => strlen($request->password),
+            'input_password_length' => strlen($password),
+            'stored_hash_preview' => substr($user->user_pass, 0, 30) . '...',
+            'password_first_chars' => substr($password, 0, 10),
         ]);
 
         if (!$passwordVerified) {
@@ -574,12 +585,14 @@ public function firebaseLogin(Request $request): JsonResponse
             'phone' => 'required|string',
             'new_password' => 'required|string|min:6',
             'firebase_uid' => 'required|string',
+            'display_name' => 'nullable|string|min:2|max:255',
         ]);
 
         \Log::info('[AuthController::setupPasswordByPhone] Password setup request received', [
             'phone' => $validated['phone'],
             'firebase_uid' => $validated['firebase_uid'],
             'password_length' => strlen($validated['new_password']),
+            'display_name' => $validated['display_name'] ?? null,
         ]);
 
         try {
@@ -588,6 +601,7 @@ public function firebaseLogin(Request $request): JsonResponse
                 'phone_received' => $validated['phone'],
                 'firebase_uid_received' => $validated['firebase_uid'],
                 'phone_length' => strlen($validated['phone']),
+                'firebase_uid_length' => strlen($validated['firebase_uid']),
             ]);
 
             // Debug: Check all users with this firebase_uid to help diagnose
@@ -660,22 +674,41 @@ public function firebaseLogin(Request $request): JsonResponse
                         'flex_user_firebase_uid' => $flexUser?->firebase_uid,
                         'expected_firebase_uid' => $validated['firebase_uid'],
                     ]);
+
+                    // Try one more fallback: find by firebase_uid only and update phone
+                    \Log::info('[AuthController::setupPasswordByPhone] Trying fallback - find by firebase_uid only', [
+                        'firebase_uid' => $validated['firebase_uid'],
+                    ]);
+                    $firebaseOnlyUser = WpUser::where('firebase_uid', $validated['firebase_uid'])->first();
+                    if ($firebaseOnlyUser) {
+                        $user = $firebaseOnlyUser;
+                        \Log::info('[AuthController::setupPasswordByPhone] ✅ Found via firebase_uid only, will update phone', [
+                            'user_id' => $user->ID,
+                            'old_phone' => $user->phone,
+                            'new_phone' => $validated['phone'],
+                        ]);
+                    }
                 }
             }
 
             if (!$user) {
+                // Log all users to help diagnose the issue
+                $allUsersWithPhone = WpUser::whereNotNull('phone')->get(['ID', 'phone', 'firebase_uid', 'user_login']);
                 \Log::error('[AuthController::setupPasswordByPhone] ❌ User not found', [
                     'phone' => $validated['phone'],
                     'firebase_uid' => $validated['firebase_uid'],
                     'search_methods' => ['exact_match', 'flexible_match'],
                     'all_users_count' => WpUser::count(),
+                    'users_with_phone_count' => $allUsersWithPhone->count(),
                 ]);
                 return response()->json([
+                    'success' => false,
                     'message' => 'User not found',
                     'error' => 'No user found with this phone number and firebase UID',
                     'debug' => [
                         'searched_phone' => $validated['phone'],
                         'searched_firebase_uid' => $validated['firebase_uid'],
+                        'all_users_with_phone' => $allUsersWithPhone->count(),
                     ],
                 ], 404);
             }
@@ -694,8 +727,27 @@ public function firebaseLogin(Request $request): JsonResponse
                 'new_hash_length' => strlen($newHash),
             ]);
 
-            // Update password in Laravel database
+            // Update password and optionally display_name in Laravel database
             $user->user_pass = $newHash;
+
+            // Update phone if not already set (fallback from firebase_uid-only lookup)
+            if (empty($user->phone) && !empty($validated['phone'])) {
+                $user->phone = $validated['phone'];
+                \Log::info('[AuthController::setupPasswordByPhone] Updating phone number', [
+                    'user_id' => $user->ID,
+                    'phone' => $validated['phone'],
+                ]);
+            }
+
+            // Update display name if provided
+            if (!empty($validated['display_name'])) {
+                $user->display_name = $validated['display_name'];
+                \Log::info('[AuthController::setupPasswordByPhone] Updating display name', [
+                    'user_id' => $user->ID,
+                    'new_display_name' => $validated['display_name'],
+                ]);
+            }
+
             $user->save();
 
             // Verify password was saved correctly
@@ -708,6 +760,7 @@ public function firebaseLogin(Request $request): JsonResponse
                 'saved_hash_length' => strlen($verifyHash),
                 'hash_matches_new' => ($newHash === $verifyHash) ? true : false,
                 'password_verification_check' => $verifyCheck,
+                'display_name' => $user->display_name,
             ]);
 
             // Create new token for the user

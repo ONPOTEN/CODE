@@ -5,6 +5,7 @@ import { posts, Post, ApiException } from '@/lib/api';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { EngagementButtons } from '@/components/EngagementButtons';
 
 export default function InfiniteScrollPosts() {
   const [postsList, setPostsList] = useState<Post[]>([]);
@@ -205,11 +206,11 @@ export default function InfiniteScrollPosts() {
               return (
                 <article
                   key={post.id}
-                  className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden border border-gray-200"
+                  className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow border border-gray-200"
                 >
                   <div className="flex flex-col md:flex-row">
                     {/* Featured Image or Placeholder */}
-                    <div className="md:w-1/3 h-48 md:h-auto relative bg-gray-200">
+                    <div className="md:w-1/3 h-48 md:h-auto relative bg-gray-200 overflow-hidden rounded-t-lg md:rounded-l-lg md:rounded-t-none">
                       <Link href={`/posts/${post.id}`}>
                         {featuredImageUrl ? (
                           <img
@@ -343,7 +344,19 @@ export default function InfiniteScrollPosts() {
                         <p className="text-gray-700 mb-4 line-clamp-3">{post.excerpt}</p>
                       )}
 
-                      <div className="flex items-center justify-between text-sm text-gray-500 pt-4 border-t border-gray-100">
+                      {/* Engagement Buttons */}
+                      <div className="mb-4 py-4 border-t border-gray-100">
+                        <EngagementButtons
+                          postId={post.id}
+                          postTitle={post.title}
+                          postSlug={post.slug}
+                          postText={post.excerpt}
+                          showLabels={true}
+                          compact={true}
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between text-sm text-gray-500 pt-2 border-t border-gray-100">
                         <div className="flex gap-4">
                           <span className="flex items-center gap-1">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

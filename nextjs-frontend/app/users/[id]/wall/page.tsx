@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { posts, users, Post, User, ApiException, PaginatedResponse, CreatePostData } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
+import { EngagementButtons } from '@/components/EngagementButtons';
 
 export default function UserWallPage() {
   const params = useParams();
@@ -13,10 +14,14 @@ export default function UserWallPage() {
 
   const [user, setUser] = useState<User | null>(null);
   const [wallPosts, setWallPosts] = useState<Post[]>([]);
+  const [sharedWallPosts, setSharedWallPosts] = useState<Post[]>([]);
+  const [allPosts, setAllPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [wallLoading, setWallLoading] = useState(true);
+  const [sharedWallLoading, setSharedWallLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pagination, setPagination] = useState<any>(null);
+  const [sharedPagination, setSharedPagination] = useState<any>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState('');
@@ -34,6 +39,8 @@ export default function UserWallPage() {
   const [imagePreview, setImagePreview] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [openSharedPostMenuId, setOpenSharedPostMenuId] = useState<number | null>(null);
+  const [deletingSharedPostId, setDeletingSharedPostId] = useState<number | null>(null);
 
   const userId = params.id as string;
   const isOwnWall = currentUser && user && currentUser.id === user.id;
@@ -174,7 +181,7 @@ export default function UserWallPage() {
 
         const response = await posts.userWall(user.id, params);
         setWallPosts(response.data);
-        setPagination(response.pagination);
+        setPagination(response.meta);
       } catch (err) {
         if (err instanceof ApiException) {
           setError(`Failed to load wall posts: ${err.message}`);
@@ -190,6 +197,33 @@ export default function UserWallPage() {
     fetchWallPosts();
   }, [user, currentPage, searchQuery, selectedType]);
 
+  // Fetch shared wall posts
+  useEffect(() => {
+    async function fetchSharedWallPosts() {
+      if (!user) return;
+
+      try {
+        setSharedWallLoading(true);
+
+        const params: any = {
+          per_page: 15,
+          page: 1, // Always fetch first page of shared posts
+        };
+
+        const response = await posts.sharedWall(user.id, params);
+        setSharedWallPosts(response.data);
+        setSharedPagination(response.meta);
+      } catch (err) {
+        // Log error but don't block the page - shared posts are optional
+        console.error('Fetch shared wall posts error:', err);
+      } finally {
+        setSharedWallLoading(false);
+      }
+    }
+
+    fetchSharedWallPosts();
+  }, [user]);
+
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
     setCurrentPage(1);
@@ -198,6 +232,42 @@ export default function UserWallPage() {
   const handleTypeFilter = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedType(e.target.value);
     setCurrentPage(1);
+  };
+
+  const handleDeleteSharedPost = async (postId: number) => {
+    if (!currentUser || !user) return;
+
+    if (!confirm('Are you sure you want to remove this shared post from your wall?')) {
+      return;
+    }
+
+    setDeletingSharedPostId(postId);
+    try {
+      console.log('[UserWallPage] Deleting shared post', {
+        postId,
+        wallId: user.id,
+      });
+
+      await posts.deleteSharedPost(postId, user.id);
+
+      // Remove the post from the list
+      setSharedWallPosts((prev) => prev.filter((p) => p.id !== postId));
+      setOpenSharedPostMenuId(null);
+
+      // Show success message
+      alert('Shared post removed from your wall!');
+
+      console.log('[UserWallPage] Shared post deleted successfully');
+    } catch (err) {
+      if (err instanceof ApiException) {
+        alert(`Failed to remove shared post: ${err.message}`);
+      } else {
+        alert('Failed to remove shared post');
+      }
+      console.error('Delete shared post error:', err);
+    } finally {
+      setDeletingSharedPostId(null);
+    }
   };
 
   if (loading) {
@@ -454,97 +524,209 @@ export default function UserWallPage() {
         )}
 
         {/* Posts List */}
-        {wallLoading ? (
+        {wallLoading && sharedWallLoading ? (
           <div className="bg-white rounded-lg shadow-sm p-8 text-center">
             <p>Loading posts...</p>
           </div>
-        ) : wallPosts.length === 0 ? (
+        ) : wallPosts.length === 0 && sharedWallPosts.length === 0 ? (
           <div className="bg-white rounded-lg shadow-sm p-8 text-center">
             <p className="text-gray-600">No posts found on this wall.</p>
           </div>
         ) : (
           <>
-            <div className="space-y-4">
-              {wallPosts.map((post) => (
-                <Link key={post.id} href={`/posts/${post.id}`}>
-                  <div className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow p-4 cursor-pointer">
-                    <div className="flex gap-4">
-                      {post.featured_image && (
-                        <img
-                          src={post.featured_image}
-                          alt={post.title}
-                          className="w-32 h-32 object-cover rounded"
-                        />
-                      )}
-                      <div className="flex-1">
-                        <div className="flex items-start justify-between mb-2">
-                          <h3 className="text-lg font-semibold text-gray-900">{post.title}</h3>
-                          <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
-                            {post.type}
-                          </span>
-                        </div>
-                        {post.excerpt && (
-                          <p className="text-gray-600 text-sm mb-3 line-clamp-2">{post.excerpt}</p>
-                        )}
-                        <div className="flex items-center justify-between text-sm text-gray-500">
-                          <span>{new Date(post.created_at).toLocaleDateString()}</span>
-                          <div className="flex gap-4">
-                            <span>❤️ {post.engagement?.likes?.count || 0}</span>
-                            <span>💬 {post.comment_count}</span>
+            {/* User's Own Posts Section */}
+            {wallPosts.length > 0 && (
+              <div className="mb-8">
+                <div className="flex items-center gap-2 mb-4">
+                  <h2 className="text-xl font-bold text-gray-900">Wall Posts</h2>
+                  <span className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                    {pagination?.total || 0}
+                  </span>
+                </div>
+                <div className="space-y-4">
+                  {wallPosts.map((post) => (
+                    <div key={post.id} className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow p-4 border-l-4 border-blue-500 relative z-0">
+                      <Link href={`/posts/${post.id}`}>
+                        <div className="flex gap-4 cursor-pointer">
+                          {post.featured_image && (
+                            <img
+                              src={post.featured_image}
+                              alt={post.title}
+                              className="w-32 h-32 object-cover rounded"
+                            />
+                          )}
+                          <div className="flex-1">
+                            <div className="flex items-start justify-between mb-2">
+                              <h3 className="text-lg font-semibold text-gray-900">{post.title}</h3>
+                              <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                {post.type}
+                              </span>
+                            </div>
+                            {post.excerpt && (
+                              <p className="text-gray-600 text-sm mb-3 line-clamp-2">{post.excerpt}</p>
+                            )}
+                            <div className="flex items-center justify-between text-sm text-gray-500">
+                              <span>{new Date(post.created_at).toLocaleDateString()}</span>
+                            </div>
                           </div>
                         </div>
+                      </Link>
+                      {/* Engagement Buttons */}
+                      <div className="mt-4 pt-4 border-t border-gray-100 relative z-40">
+                        <EngagementButtons
+                          postId={post.id}
+                          postTitle={post.title}
+                          postSlug={post.slug}
+                          postText={post.excerpt}
+                          showLabels={true}
+                          compact={true}
+                        />
                       </div>
                     </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-
-            {/* Pagination */}
-            {pagination && pagination.total_pages > 1 && (
-              <div className="flex justify-center gap-2 mt-6">
-                {currentPage > 1 && (
-                  <button
-                    onClick={() => setCurrentPage(currentPage - 1)}
-                    className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded transition-colors"
-                  >
-                    Previous
-                  </button>
-                )}
-
-                {Array.from({ length: pagination.total_pages }, (_, i) => i + 1)
-                  .slice(
-                    Math.max(0, currentPage - 2),
-                    Math.min(pagination.total_pages, currentPage + 1)
-                  )
-                  .map((page) => (
-                    <button
-                      key={page}
-                      onClick={() => setCurrentPage(page)}
-                      className={`px-4 py-2 rounded transition-colors ${
-                        currentPage === page
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-200 hover:bg-gray-300'
-                      }`}
-                    >
-                      {page}
-                    </button>
                   ))}
+                </div>
 
-                {currentPage < pagination.total_pages && (
-                  <button
-                    onClick={() => setCurrentPage(currentPage + 1)}
-                    className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded transition-colors"
-                  >
-                    Next
-                  </button>
+                {/* Pagination for Own Posts */}
+                {pagination && pagination.last_page > 1 && (
+                  <div className="flex justify-center gap-2 mt-6">
+                    {currentPage > 1 && (
+                      <button
+                        onClick={() => setCurrentPage(currentPage - 1)}
+                        className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded transition-colors"
+                      >
+                        Previous
+                      </button>
+                    )}
+
+                    {Array.from({ length: pagination.last_page }, (_, i) => i + 1)
+                      .slice(
+                        Math.max(0, currentPage - 2),
+                        Math.min(pagination.last_page, currentPage + 1)
+                      )
+                      .map((page) => (
+                        <button
+                          key={page}
+                          onClick={() => setCurrentPage(page)}
+                          className={`px-4 py-2 rounded transition-colors ${
+                            currentPage === page
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-gray-200 hover:bg-gray-300'
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      ))}
+
+                    {currentPage < pagination.last_page && (
+                      <button
+                        onClick={() => setCurrentPage(currentPage + 1)}
+                        className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded transition-colors"
+                      >
+                        Next
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
             )}
 
-            <div className="mt-6 text-center text-sm text-gray-600">
-              Showing {wallPosts.length} of {pagination?.total || 0} posts
-            </div>
+            {/* Shared Posts Section */}
+            {sharedWallPosts.length > 0 && (
+              <div className="mb-8">
+                <div className="flex items-center gap-2 mb-4">
+                  <h2 className="text-xl font-bold text-gray-900">Shared Posts</h2>
+                  <span className="text-sm text-gray-500 bg-green-100 px-3 py-1 rounded-full">
+                    {sharedPagination?.total || 0}
+                  </span>
+                </div>
+                <div className="space-y-4">
+                  {sharedWallPosts.map((post) => (
+                    <div key={post.id} className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow p-4 border-l-4 border-green-500 relative z-0">
+                      <Link href={`/posts/${post.id}`}>
+                        <div className="flex gap-4 cursor-pointer">
+                          {post.featured_image && (
+                            <img
+                              src={post.featured_image}
+                              alt={post.title}
+                              className="w-32 h-32 object-cover rounded"
+                            />
+                          )}
+                          <div className="flex-1">
+                            <div className="flex items-start justify-between mb-2">
+                              <h3 className="text-lg font-semibold text-gray-900">{post.title}</h3>
+                              <div className="flex items-center gap-2">
+                                <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+                                  {post.type}
+                                </span>
+                                {isOwnWall && (
+                                  <div className="relative">
+                                    <button
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        setOpenSharedPostMenuId(openSharedPostMenuId === post.id ? null : post.id);
+                                      }}
+                                      className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                                      aria-label="Post options"
+                                    >
+                                      <svg className="w-5 h-5 text-gray-600" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" />
+                                      </svg>
+                                    </button>
+
+                                    {openSharedPostMenuId === post.id && (
+                                      <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50 py-1">
+                                        <button
+                                          onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            handleDeleteSharedPost(post.id);
+                                          }}
+                                          disabled={deletingSharedPostId === post.id}
+                                          className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 disabled:opacity-50"
+                                        >
+                                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                          </svg>
+                                          {deletingSharedPostId === post.id ? 'Removing...' : 'Remove from Wall'}
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            {post.excerpt && (
+                              <p className="text-gray-600 text-sm mb-3 line-clamp-2">{post.excerpt}</p>
+                            )}
+                            <div className="flex items-center justify-between text-sm text-gray-500">
+                              <span>{new Date(post.created_at).toLocaleDateString()}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </Link>
+                      {/* Engagement Buttons */}
+                      <div className="mt-4 pt-4 border-t border-gray-100 relative z-40">
+                        <EngagementButtons
+                          postId={post.id}
+                          postTitle={post.title}
+                          postSlug={post.slug}
+                          postText={post.excerpt}
+                          showLabels={true}
+                          compact={true}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {wallPosts.length === 0 && sharedWallPosts.length > 0 && (
+              <div className="bg-gray-50 rounded-lg shadow-sm p-8 text-center">
+                <p className="text-gray-600">No own posts on this wall, but there are shared posts below.</p>
+              </div>
+            )}
           </>
         )}
       </div>

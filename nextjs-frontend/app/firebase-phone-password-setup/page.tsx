@@ -4,22 +4,24 @@ import { useState, FormEvent, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { auth } from '@/lib/firebase';
-import { updateProfile, updatePassword } from 'firebase/auth';
+import { updatePassword } from 'firebase/auth';
 import { apiRequest, tokenStorage, normalizePhoneNumber } from '@/lib/api';
 
 export default function FirebasePhonePasswordSetupPage() {
   const [step, setStep] = useState<'setup' | 'update'>('setup');
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
-  const [displayName, setDisplayName] = useState('');
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
-    // Check if user is authenticated via phone SMS
+    // Check if user is authenticated via phone SMS (only once)
+    if (isInitialized) return;
+
     const checkUser = async () => {
       const currentUser = auth.currentUser;
       if (!currentUser) {
@@ -27,15 +29,12 @@ export default function FirebasePhonePasswordSetupPage() {
         router.push('/firebase-phone-login');
       } else {
         console.log('[Phone Password Setup] User authenticated:', currentUser.uid);
-        // Pre-fill display name if available
-        if (currentUser.displayName) {
-          setDisplayName(currentUser.displayName);
-        }
+        setIsInitialized(true);
       }
     };
 
     checkUser();
-  }, [router]);
+  }, [isInitialized, router]);
 
   const validatePassword = (pwd: string): string => {
     if (!pwd) return 'Password is required';
@@ -61,12 +60,6 @@ export default function FirebasePhonePasswordSetupPage() {
     // Check passwords match
     if (newPassword !== confirmNewPassword) {
       setErrorMessage('New passwords do not match');
-      return;
-    }
-
-    // Validate display name
-    if (displayName.trim().length < 2) {
-      setErrorMessage('Display name must be at least 2 characters');
       return;
     }
 
@@ -128,26 +121,26 @@ export default function FirebasePhonePasswordSetupPage() {
 
       console.log('[Phone Password Setup] Phone number (before normalization):', phoneNumber);
 
-      // Step 1: Update Firebase profile with display name
-      console.log('[Phone Password Setup] Updating Firebase profile with display name...');
-      await updateProfile(currentUser, { displayName });
-      console.log('[Phone Password Setup] ✅ Firebase profile updated');
-
-      // Step 2: Update Firebase password
-      console.log('[Phone Password Setup] Updating Firebase password...');
-      await updatePassword(currentUser, newPassword);
-      console.log('[Phone Password Setup] ✅ Firebase password updated successfully');
-
-      // Step 3: Update password in Laravel via dedicated setup endpoint
-      console.log('[Phone Password Setup] Updating password in Laravel...');
+      // Normalize phone first
       const normalizedPhone = normalizePhoneNumber(phoneNumber);
-
       console.log('[Phone Password Setup] Phone normalization:', {
         original: phoneNumber,
         normalized: normalizedPhone,
         length: normalizedPhone.length,
       });
 
+      // Step 1: Update Firebase password
+      console.log('[Phone Password Setup] Updating Firebase password...');
+      try {
+        await updatePassword(currentUser, newPassword);
+        console.log('[Phone Password Setup] ✅ Firebase password updated successfully');
+      } catch (updatePasswordError: any) {
+        console.error('[Phone Password Setup] Firebase password update error:', updatePasswordError);
+        throw new Error(`Failed to update password: ${updatePasswordError.message}`);
+      }
+
+      // Step 2: Update password in Laravel via dedicated setup endpoint
+      console.log('[Phone Password Setup] Updating password in Laravel...');
       console.log('[Phone Password Setup] Request data:', {
         phone: normalizedPhone,
         firebase_uid: currentUser.uid,
@@ -175,8 +168,12 @@ export default function FirebasePhonePasswordSetupPage() {
         console.error('[Phone Password Setup] Setup error details:', {
           message: setupError.message,
           status: setupError.status,
+          statusCode: setupError.statusCode,
           errors: setupError.errors,
+          response: setupError.response || setupError.statusText,
         });
+        // Log the full error object for debugging
+        console.error('[Phone Password Setup] Full error object:', setupError);
         throw new Error(`Laravel password setup failed: ${setupError.message}`);
       }
 
@@ -185,14 +182,13 @@ export default function FirebasePhonePasswordSetupPage() {
         tokenStorage.set(setupResponse.token);
         console.log('[Phone Password Setup] ✅ Sanctum token saved');
 
-        // Step 4: Save password to localStorage for future phone+password logins
+        // Step 3: Save password to localStorage for future phone+password logins
         console.log('[Phone Password Setup] Updating localStorage with new password...');
         const phoneAuthData = {
           phoneNumber: normalizedPhone,
           password: newPassword,
           firebaseUid: currentUser.uid,
           tempEmail: `phone_${currentUser.uid}@phone-auth.local`,
-          displayName: displayName,
           updatedAt: new Date().toISOString(),
         };
         localStorage.setItem('phoneAuthPassword', JSON.stringify(phoneAuthData));
@@ -256,24 +252,6 @@ export default function FirebasePhonePasswordSetupPage() {
         {/* Password Setup Form */}
         {step === 'setup' && (
           <form onSubmit={handlePasswordSetup} className="space-y-4">
-            {/* Display Name */}
-            <div>
-              <label htmlFor="displayName" className="block text-sm font-medium text-gray-700 mb-1">
-                Display Name
-              </label>
-              <input
-                type="text"
-                id="displayName"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                placeholder="Your display name"
-                required
-                minLength={2}
-              />
-              <p className="mt-1 text-xs text-gray-500">At least 2 characters</p>
-            </div>
-
             {/* New Password */}
             <div>
               <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-1">

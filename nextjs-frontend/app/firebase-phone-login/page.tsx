@@ -103,26 +103,14 @@ export default function FirebasePhoneLoginPage() {
       console.log('[Firebase Phone Login] Confirming phone code...');
       await firebasePhoneConfirm(confirmationResult, smsCode, phoneNumber);
 
-      // Check if this is a first-time phone login (no password saved yet)
-      // After SMS verification, confirmPhoneCode saves phoneAuthData to localStorage
-      const savedPhoneAuthPassword = localStorage.getItem('phoneAuthPassword');
-
       console.log('[Firebase Phone Login] SMS verification complete');
-      console.log('[Firebase Phone Login] Checking for saved password...');
-      console.log('[Firebase Phone Login] phoneAuthPassword exists:', !!savedPhoneAuthPassword);
+      console.log('[Firebase Phone Login] Redirecting to password setup...');
 
-      if (!savedPhoneAuthPassword) {
-        // First time: redirect to password setup
-        console.log('[Firebase Phone Login] First-time user - redirecting to password setup');
-        const params = new URLSearchParams({
-          phone: phoneNumber,
-        });
-        router.push(`/firebase-phone-password-setup?${params.toString()}`);
-      } else {
-        // Existing user with password: go to home
-        console.log('[Firebase Phone Login] Existing user with password - redirecting to home');
-        router.push('/');
-      }
+      // Always redirect to password setup after phone login
+      const params = new URLSearchParams({
+        phone: phoneNumber,
+      });
+      router.push(`/firebase-phone-password-setup?${params.toString()}`);
     } catch (err: any) {
       console.error('[Firebase Phone Login] Code verification failed:', err);
       alert(err?.message || 'Verification failed. Please try again.');

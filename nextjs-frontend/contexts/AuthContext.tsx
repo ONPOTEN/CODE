@@ -41,6 +41,7 @@ interface AuthContextType {
   firebasePhoneVerify: (phoneNumber: string, recaptchaVerifier: any) => Promise<any>;
   firebasePhoneConfirm: (confirmationResult: any, code: string, phoneNumber: string) => Promise<void>;
   updateUserAvatar: (avatarUrl: string) => void;
+  updateUserProfile: (updatedUser: Partial<AuthUser>) => void;
   logout: () => Promise<void>;
   error: string | null;
   validationErrors: Record<string, string[]> | null;
@@ -402,6 +403,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const updateUserProfile = (updatedUser: Partial<AuthUser>) => {
+    if (user) {
+      console.log('[AuthContext] Updating user profile with:', updatedUser);
+      setUser({
+        ...user,
+        ...updatedUser,
+      });
+      console.log('[AuthContext] User profile updated');
+    }
+  };
+
   const logout = async () => {
     try {
       setIsLoading(true);
@@ -438,6 +450,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         firebasePhoneVerify,
         firebasePhoneConfirm,
         updateUserAvatar,
+        updateUserProfile,
         logout,
         error,
         validationErrors,

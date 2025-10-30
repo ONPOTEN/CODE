@@ -12,6 +12,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Engagement } from '@/lib/engagementService';
 import { handleSocialShare } from '@/lib/shareUtils';
 import { ShareToast } from '@/components/ShareToast';
+import { posts } from '@/lib/api';
 
 interface EngagementButtonsProps {
   postId: number;
@@ -48,6 +49,8 @@ export function EngagementButtons({
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+  const [isShareToWallLoading, setIsShareToWallLoading] = useState(false);
+  const { user } = useAuth();
   const engagement = engagements.get(postId);
 
   // Load engagement stats on mount
@@ -116,6 +119,34 @@ export function EngagementButtons({
     document.getElementById(`comments-section-${postId}`)?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  const handleShareToMyWall = async () => {
+    if (!isAuthenticated || !user) {
+      router.push('/login');
+      return;
+    }
+
+    setIsShareToWallLoading(true);
+    try {
+      console.log('[EngagementButtons] Sharing post to my wall', {
+        postId,
+        wallId: user.id,
+      });
+
+      await posts.shareToWall(postId, user.id);
+      setToastMessage('Post shared to your wall!');
+      setShowToast(true);
+      setShowShareMenu(false);
+
+      console.log('[EngagementButtons] Post shared to wall successfully');
+    } catch (error: any) {
+      console.error('[EngagementButtons] Failed to share to wall:', error);
+      setToastMessage(error.message || 'Failed to share to wall');
+      setShowToast(true);
+    } finally {
+      setIsShareToWallLoading(false);
+    }
+  };
+
   const isLikeLoading = likeLoading.has(postId);
   const isDislikeLoading = dislikeLoading.has(postId);
   const isShareLoading = shareLoading.has(postId);
@@ -164,7 +195,7 @@ export function EngagementButtons({
       </button>
 
       {/* Share Button with Platform Menu */}
-      <div className="relative">
+      <div className="relative z-40">
         <button
           onClick={handleShareClick}
           disabled={isShareLoading}
@@ -180,8 +211,18 @@ export function EngagementButtons({
 
         {/* Share Platform Menu */}
         {showShareMenu && (
-          <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+          <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-[9999] fixed-menu" style={{ zIndex: 9999 }}>
             <div className="p-2">
+              {/* Share to My Wall */}
+              <button
+                onClick={handleShareToMyWall}
+                disabled={isShareToWallLoading}
+                className="w-full text-left px-4 py-2 hover:bg-purple-50 rounded flex items-center gap-2 border-b border-gray-200 mb-2 pb-2 disabled:opacity-50"
+              >
+                <span>{isShareToWallLoading ? '⏳' : '📌'}</span> Share to My Wall
+              </button>
+
+              {/* Social Media Shares */}
               <button
                 onClick={() => handleShare('facebook')}
                 className="w-full text-left px-4 py-2 hover:bg-blue-50 rounded flex items-center gap-2"

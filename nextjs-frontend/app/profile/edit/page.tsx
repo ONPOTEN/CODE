@@ -7,7 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { users, ApiException } from '@/lib/api';
 
 export default function EditProfilePage() {
-  const { user, isAuthenticated, isLoading, updateUserAvatar } = useAuth();
+  const { user, isAuthenticated, isLoading, updateUserAvatar, updateUserProfile } = useAuth();
   const router = useRouter();
 
   // Profile form state
@@ -51,8 +51,12 @@ export default function EditProfilePage() {
     }
   }, [isAuthenticated, isLoading, router]);
 
+  // Initialize form fields from user data - only on initial mount
+  const [isInitialized, setIsInitialized] = useState(false);
+
   useEffect(() => {
-    if (user) {
+    if (user && !isInitialized) {
+      console.log('[Profile Edit] Initializing form fields from user:', user);
       setUsername(user.username || '');
       setDisplayName(user.display_name || '');
       setEmail(user.email || '');
@@ -67,8 +71,9 @@ export default function EditProfilePage() {
       setCompanyPublic(user.company_public !== false);
       setLocationPublic(user.location_public !== false);
       setPhonePublic(user.phone_public !== false);
+      setIsInitialized(true);
     }
-  }, [user]);
+  }, [user, isInitialized]);
 
   const handleProfileSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -100,42 +105,97 @@ export default function EditProfilePage() {
     try {
       setProfileLoading(true);
 
-      // Build the update object
-      const updateData: any = {
-        user_login: username, // Update username if changed
-        display_name: displayName,
-        user_email: email,
-        hobby: hobby,
-        company: company,
-        location: location,
-        // role: role, // REMOVED: Users cannot change their own role
-        profile_visibility: profileVisibility,
-        // NOTE: phone is NOT included - users cannot change phone number
-        email_public: emailPublic,
-        hobby_public: hobbyPublic,
-        company_public: companyPublic,
-        location_public: locationPublic,
-        phone_public: phonePublic,
-      };
+      console.log('[Profile Edit] Starting profile update...');
 
-      await users.updateProfile(updateData);
+      // Build the update object - only send fields that should be updated
+      const updateData: any = {};
 
-      // Update local username state after successful change
+      // Always include these fields
+      if (displayName) updateData.display_name = displayName;
+      if (email) updateData.user_email = email;
+
+      // Include username if changed
       if (username !== user?.username) {
-        // The username has been updated on the backend
-        console.log('[Profile Edit] Username updated successfully');
+        updateData.user_login = username;
       }
 
+      // Always include these optional fields
+      updateData.hobby = hobby || null;
+      updateData.company = company || null;
+      updateData.location = location || null;
+      updateData.profile_visibility = profileVisibility;
+      updateData.email_public = emailPublic;
+      updateData.hobby_public = hobbyPublic;
+      updateData.company_public = companyPublic;
+      updateData.location_public = locationPublic;
+      updateData.phone_public = phonePublic;
+
+      console.log('[Profile Edit] Update data:', updateData);
+
+      const response = await users.updateProfile(updateData);
+
+      console.log('[Profile Edit] Profile update successful!');
+      console.log('[Profile Edit] Response:', response);
+
+      // Update the auth context directly with simple mapping
+      try {
+        if (response && typeof response === 'object') {
+          console.log('[Profile Edit] Updating auth context...');
+          updateUserProfile({
+            display_name: displayName,
+            email: email,
+            hobby: hobby || undefined,
+            company: company || undefined,
+            location: location || undefined,
+            profile_visibility: profileVisibility,
+            email_public: emailPublic,
+            hobby_public: hobbyPublic,
+            company_public: companyPublic,
+            location_public: locationPublic,
+            phone_public: phonePublic,
+          });
+          console.log('[Profile Edit] Auth context updated successfully');
+        }
+      } catch (updateError) {
+        console.error('[Profile Edit] Error updating auth context:', updateError);
+        // Continue anyway - don't block the redirect
+      }
+
+      // Show success message
       setProfileSuccess(true);
-      setTimeout(() => setProfileSuccess(false), 3000);
+
+      // Redirect to profile page after 1 second
+      setTimeout(() => {
+        console.log('[Profile Edit] Redirecting to profile page...');
+        router.push('/profile');
+      }, 1000);
+
     } catch (err) {
+      console.error('[Profile Edit] Full error object:', err);
+
       if (err instanceof ApiException) {
+        console.error('[Profile Edit] API Exception details:', {
+          message: err.message,
+          status: err.status,
+          errors: err.errors,
+        });
+
         // Check if error is related to username
         if (err.message.includes('user_login') || err.message.includes('username')) {
           setUsernameError(err.message);
+        } else if (err.message.includes('user_email') || err.message.includes('email')) {
+          setProfileError(`Email error: ${err.message}`);
+        } else if (err.errors) {
+          // Handle validation errors from API
+          const firstErrorKey = Object.keys(err.errors)[0];
+          const firstErrorMsg = err.errors[firstErrorKey];
+          setProfileError(Array.isArray(firstErrorMsg) ? firstErrorMsg[0] : firstErrorMsg);
         } else {
           setProfileError(err.message);
         }
+      } else if (err instanceof Error) {
+        console.error('[Profile Edit] Error message:', err.message);
+        setProfileError(err.message);
       } else {
         setProfileError('Failed to update profile');
       }

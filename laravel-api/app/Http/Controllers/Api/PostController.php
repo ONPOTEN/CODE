@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\PostResource;
 use App\Models\WpPost;
+use App\Models\ShareWall;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -104,6 +105,36 @@ class PostController extends Controller
         return PostResource::collection($posts);
     }
 
+    public function sharedWall(Request $request, $id): AnonymousResourceCollection
+    {
+        // Get all post IDs shared to this user's wall from ShareWall table
+        $sharedPostIds = ShareWall::where('user_id', $id)
+            ->pluck('post_id')
+            ->toArray();
+
+        // If no shared posts, return empty paginated collection
+        if (empty($sharedPostIds)) {
+            return PostResource::collection(
+                WpPost::whereIn('ID', [])->with(['author', 'meta'])->paginate(15)
+            );
+        }
+
+        // Get the posts with those IDs
+        $query = WpPost::with(['author', 'meta'])
+            ->published()
+            ->whereIn('ID', $sharedPostIds);
+
+        // Order by creation date descending
+        $orderBy = $request->input('order_by', 'post_date');
+        $order = $request->input('order', 'desc');
+        $query->orderBy($orderBy, $order);
+
+        $perPage = min($request->input('per_page', 15), 100);
+        $posts = $query->paginate($perPage);
+
+        return PostResource::collection($posts);
+    }
+
     public function store(Request $request): JsonResponse
     {
         // Get all files first, before validation
@@ -124,6 +155,7 @@ class PostController extends Controller
             'excerpt' => 'nullable|string',
             'type' => 'nullable|string|in:post,page,product',
             'status' => 'nullable|string|in:publish,draft,pending',
+            'wall_id' => 'nullable|integer|exists:wp_users,ID',
         ];
 
         // Only add image validation if we actually have files
@@ -150,6 +182,9 @@ class PostController extends Controller
 
         $now = now();
 
+        // Determine wall_id: use provided wall_id or default to current user's ID
+        $wallId = $validated['wall_id'] ?? $user->ID;
+
         $post = WpPost::create([
             'post_author' => $user->ID,
             'post_date' => $now,
@@ -173,8 +208,16 @@ class PostController extends Controller
             'menu_order' => 0,
             'post_mime_type' => '',
             'comment_count' => 0,
-            'wall_id' => $user->ID, // Auto-set wall_id to current user's ID
+            'wall_id' => $wallId,
         ]);
+
+        // If post is created on another user's wall, create a ShareWall record
+        if ($wallId !== $user->ID) {
+            ShareWall::create([
+                'user_id' => $wallId,
+                'post_id' => $post->ID,
+            ]);
+        }
 
         // Handle multiple image uploads
         // Use the files we captured before validation
@@ -540,5 +583,141 @@ class PostController extends Controller
         return response()->json([
             'message' => 'Post deleted successfully',
         ]);
+    }
+
+    /**
+     * Share an existing post to a user's wall
+     * Creates a ShareWall record to link the post to the target user's wall
+     */
+    public function shareToWall(Request $request, $id): JsonResponse
+    {
+        // Find the post
+        $post = WpPost::findOrFail($id);
+        $user = $request->user();
+
+        // Validate request
+        $validated = $request->validate([
+            'wall_id' => 'required|integer|exists:wp_users,ID|different:post_author',
+        ]);
+
+        $wallId = $validated['wall_id'];
+
+        \Log::info('[PostController::shareToWall] Share request', [
+            'post_id' => $post->ID,
+            'post_author' => $post->post_author,
+            'requesting_user_id' => $user->ID,
+            'target_wall_id' => $wallId,
+        ]);
+
+        // Check if share already exists
+        $existingShare = ShareWall::where('user_id', $wallId)
+            ->where('post_id', $post->ID)
+            ->first();
+
+        if ($existingShare) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This post is already shared to that wall',
+            ], 422);
+        }
+
+        // Create the share record
+        try {
+            ShareWall::create([
+                'user_id' => $wallId,
+                'post_id' => $post->ID,
+            ]);
+
+            \Log::info('[PostController::shareToWall] Share successful', [
+                'post_id' => $post->ID,
+                'wall_id' => $wallId,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Post shared to wall successfully',
+                'post' => new PostResource($post->load(['author', 'meta'])),
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('[PostController::shareToWall] Share failed', [
+                'post_id' => $post->ID,
+                'wall_id' => $wallId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to share post: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Delete a shared post from a user's wall
+     * Removes the ShareWall record that links a post to a user's wall
+     */
+    public function deleteSharedPost(Request $request, $id): JsonResponse
+    {
+        // Find the post
+        $post = WpPost::findOrFail($id);
+        $user = $request->user();
+
+        // Validate request
+        $validated = $request->validate([
+            'wall_id' => 'required|integer|exists:wp_users,ID',
+        ]);
+
+        $wallId = $validated['wall_id'];
+
+        \Log::info('[PostController::deleteSharedPost] Delete share request', [
+            'post_id' => $post->ID,
+            'wall_id' => $wallId,
+            'requesting_user_id' => $user->ID,
+        ]);
+
+        // Check if the user owns the wall (can only delete shared posts from own wall)
+        if ($wallId !== $user->ID) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized. You can only remove shared posts from your own wall.',
+            ], 403);
+        }
+
+        // Find and delete the share record
+        $shareRecord = ShareWall::where('user_id', $wallId)
+            ->where('post_id', $post->ID)
+            ->first();
+
+        if (!$shareRecord) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This post is not shared to your wall.',
+            ], 404);
+        }
+
+        try {
+            $shareRecord->delete();
+
+            \Log::info('[PostController::deleteSharedPost] Share deleted successfully', [
+                'post_id' => $post->ID,
+                'wall_id' => $wallId,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Shared post removed from your wall',
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('[PostController::deleteSharedPost] Delete failed', [
+                'post_id' => $post->ID,
+                'wall_id' => $wallId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to remove shared post: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 }

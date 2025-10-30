@@ -206,11 +206,20 @@ export const firebaseAuthService = {
         throw new Error('User account not properly configured');
       }
 
-      console.log(`[FirebaseAuthService] Found user: ${username}`);
+      console.log(`[FirebaseAuthService] Found user by phone:`, {
+        username: username,
+        email: userResponse.user_email,
+        firebase_uid: userResponse.firebase_uid,
+        phone: userResponse.phone,
+      });
 
       // Step 2: Login with Laravel using standard login endpoint
       // Use username (user_login) + password
       console.log(`[FirebaseAuthService] Logging in with Laravel using username: ${username}`);
+      console.log(`[FirebaseAuthService] Login request:`, {
+        username: username,
+        password_length: password.length,
+      });
       let loginResponse;
       try {
         loginResponse = await apiRequest<any>('/auth/login', {
@@ -220,12 +229,17 @@ export const firebaseAuthService = {
             password: password,
           }),
         });
-        console.log('[FirebaseAuthService] Laravel login response:', loginResponse);
+        console.log('[FirebaseAuthService] Laravel login successful:', {
+          token_received: !!loginResponse?.token,
+          user_id: loginResponse?.user?.id,
+        });
+        console.log('[FirebaseAuthService] Full login response:', loginResponse);
       } catch (loginError: any) {
         console.error('[FirebaseAuthService] Laravel login API error:', loginError);
         console.error('[FirebaseAuthService] Error details:', {
           message: loginError.message,
           status: loginError.status,
+          statusCode: loginError.statusCode,
           errors: loginError.errors,
         });
         throw new Error(`Login failed: ${loginError.message}`);
