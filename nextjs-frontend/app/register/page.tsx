@@ -7,16 +7,16 @@ import { useAuth } from '@/contexts/AuthContext';
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
-    displayName: '',
-    nickname: '',
+    username: '', // for user_login (unique username)
     email: '',
     password: '',
-    confirmPassword: '',
+    password_confirmation: '',
+    display_name: '',
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passwordMatch, setPasswordMatch] = useState(true);
-  const { firebaseRegister, isLoading, error } = useAuth();
+  const { register, isLoading, error, validationErrors } = useAuth();
   const router = useRouter();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -24,9 +24,9 @@ export default function RegisterPage() {
     setFormData((prev) => ({ ...prev, [name]: value }));
 
     // Check password match
-    if (name === 'password' || name === 'confirmPassword') {
+    if (name === 'password' || name === 'password_confirmation') {
       const password = name === 'password' ? value : formData.password;
-      const confirmPassword = name === 'confirmPassword' ? value : formData.confirmPassword;
+      const confirmPassword = name === 'password_confirmation' ? value : formData.password_confirmation;
       setPasswordMatch(password === confirmPassword || confirmPassword === '');
     }
   };
@@ -34,18 +34,35 @@ export default function RegisterPage() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
-    if (formData.password !== formData.confirmPassword) {
+    if (formData.password !== formData.password_confirmation) {
       setPasswordMatch(false);
       return;
     }
 
-    if (formData.password.length < 6) {
-      alert('Password must be at least 6 characters');
+    if (formData.password.length < 8) {
+      alert('Password must be at least 8 characters');
+      return;
+    }
+
+    if (!formData.username) {
+      alert('Username is required');
+      return;
+    }
+
+    if (!formData.display_name) {
+      alert('Display name is required');
       return;
     }
 
     try {
-      await firebaseRegister(formData.email, formData.password, formData.displayName, formData.nickname);
+      // Call Laravel backend registration (wp_users direct database)
+      await register({
+        username: formData.username,
+        email: formData.email,
+        password: formData.password,
+        password_confirmation: formData.password_confirmation,
+        display_name: formData.display_name,
+      });
       router.push('/'); // Redirect to home after successful registration
     } catch (err) {
       // Error is already handled in AuthContext
@@ -76,44 +93,56 @@ export default function RegisterPage() {
           </div>
         )}
 
+        {/* Validation Errors */}
+        {validationErrors && (
+          <div className="rounded-md bg-red-50 p-4">
+            {Object.entries(validationErrors).map(([field, messages]) => (
+              <p key={field} className="text-sm font-medium text-red-800">
+                <strong>{field}:</strong> {messages.join(', ')}
+              </p>
+            ))}
+          </div>
+        )}
+
         {/* Signup Form */}
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           {/* Display Name */}
           <div>
-            <label htmlFor="displayName" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="display_name" className="block text-sm font-medium text-gray-700">
               Full Name
             </label>
             <input
-              id="displayName"
-              name="displayName"
+              id="display_name"
+              name="display_name"
               type="text"
               autoComplete="name"
               required
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
               placeholder="John Doe"
-              value={formData.displayName}
+              value={formData.display_name}
               onChange={handleChange}
               disabled={isLoading}
             />
           </div>
 
-          {/* Nickname */}
+          {/* Username */}
           <div>
-            <label htmlFor="nickname" className="block text-sm font-medium text-gray-700">
-              Nickname
+            <label htmlFor="username" className="block text-sm font-medium text-gray-700">
+              Username
             </label>
             <input
-              id="nickname"
-              name="nickname"
+              id="username"
+              name="username"
               type="text"
-              autoComplete="nickname"
+              autoComplete="username"
               required
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
               placeholder="johndoe"
-              value={formData.nickname}
+              value={formData.username}
               onChange={handleChange}
               disabled={isLoading}
             />
+            <p className="mt-1 text-xs text-gray-500">Unique username for login</p>
           </div>
 
           {/* Email */}
@@ -162,18 +191,18 @@ export default function RegisterPage() {
                 {showPassword ? '👁️' : '👁️‍🗨️'}
               </button>
             </div>
-            <p className="mt-1 text-xs text-gray-500">Minimum 6 characters</p>
+            <p className="mt-1 text-xs text-gray-500">Minimum 8 characters</p>
           </div>
 
           {/* Confirm Password */}
           <div className="relative">
-            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="password_confirmation" className="block text-sm font-medium text-gray-700">
               Confirm Password
             </label>
             <div className="mt-1 relative">
               <input
-                id="confirmPassword"
-                name="confirmPassword"
+                id="password_confirmation"
+                name="password_confirmation"
                 type={showConfirmPassword ? 'text' : 'password'}
                 autoComplete="new-password"
                 required
@@ -181,7 +210,7 @@ export default function RegisterPage() {
                   passwordMatch ? 'border-gray-300' : 'border-red-300'
                 }`}
                 placeholder="••••••••"
-                value={formData.confirmPassword}
+                value={formData.password_confirmation}
                 onChange={handleChange}
                 disabled={isLoading}
               />

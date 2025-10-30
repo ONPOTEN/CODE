@@ -6,18 +6,17 @@ import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function LoginPage() {
-  const [emailOrNickname, setEmailOrNickname] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
+  const [username, setUsername] = useState(''); // email, username, or phone
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const { firebaseLoginEmail, firebaseLoginNickname, firebaseLoginPhonePassword, firebaseLoginGoogle, firebaseLoginFacebook, firebaseLoginApple, isLoading, error } = useAuth();
+  const { login, firebaseLoginPhonePassword, firebaseLoginGoogle, firebaseLoginFacebook, firebaseLoginApple, isLoading, error } = useAuth();
   const router = useRouter();
 
-  const handleCombinedLogin = async (e: FormEvent) => {
+  const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
 
-    if (!emailOrNickname && !phoneNumber) {
-      alert('Please enter email, nickname, or phone number');
+    if (!username) {
+      alert('Please enter email, username, or phone number');
       return;
     }
 
@@ -27,17 +26,34 @@ export default function LoginPage() {
     }
 
     try {
-      if (phoneNumber) {
-        // Phone + Password login
+      // Check if it's a phone number or can be treated as phone
+      const cleanedInput = username.trim();
+
+      // Phone formats:
+      // 1. With + prefix: +1234567890, +84867631313
+      // 2. Digits only (10+): 0961440086, 2125551234 (treated as phone for Firebase)
+      // 3. Email: user@example.com
+      // 4. Username: johndoe
+
+      const looksLikePhone = /^\+?\d{10,}$/.test(cleanedInput);
+      const hasPlus = cleanedInput.startsWith('+');
+      const isEmail = cleanedInput.includes('@');
+
+      if (looksLikePhone && !isEmail) {
+        // Phone + Password login via Firebase
+        // Normalize: add + prefix if missing
+        let phoneNumber = cleanedInput;
+        if (!hasPlus && /^\d{10,}$/.test(cleanedInput)) {
+          // Add + prefix for Firebase (required by Firebase)
+          phoneNumber = '+' + cleanedInput;
+        }
+        console.log('[Login] Detected phone number format, using Firebase phone auth:', cleanedInput, '→', phoneNumber);
         await firebaseLoginPhonePassword(phoneNumber, password);
       } else {
-        // Email or Nickname login
-        const isEmail = emailOrNickname.includes('@');
-        if (isEmail) {
-          await firebaseLoginEmail(emailOrNickname, password);
-        } else {
-          await firebaseLoginNickname(emailOrNickname, password);
-        }
+        // Email or username login via Laravel backend (wp_users)
+        // Laravel backend will handle flexible phone matching if needed
+        console.log('[Login] Detected email/username format, using Laravel backend:', cleanedInput);
+        await login(cleanedInput, password);
       }
       router.push('/');
     } catch (err) {
@@ -96,34 +112,23 @@ export default function LoginPage() {
           </div>
         )}
 
-        {/* Combined Email / Nickname / Phone + Password Form */}
-        <form className="mt-8 space-y-6" onSubmit={handleCombinedLogin}>
+        {/* Email / Username / Phone + Password Form */}
+        <form className="mt-8 space-y-6" onSubmit={handleLogin}>
           <div className="rounded-md shadow-sm -space-y-px">
-            {/* Email or Nickname Input */}
+            {/* Username / Email / Phone Input */}
             <div>
-              <label htmlFor="emailOrNickname" className="sr-only">
-                Email or Nickname
+              <label htmlFor="username" className="sr-only">
+                Email, Username, or Phone
               </label>
               <input
-                id="emailOrNickname"
-                name="emailOrNickname"
+                id="username"
+                name="username"
                 type="text"
                 autoComplete="username"
                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                placeholder="Email address, nickname, or phone number"
-                value={emailOrNickname || phoneNumber}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  // Check if value looks like a phone number
-                  const isPhoneNumber = value.startsWith('+') || /^[0-9]/.test(value);
-                  if (isPhoneNumber) {
-                    setPhoneNumber(value);
-                    setEmailOrNickname('');
-                  } else {
-                    setEmailOrNickname(value);
-                    setPhoneNumber('');
-                  }
-                }}
+                placeholder="Email, username, or phone number"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 disabled={isLoading}
               />
             </div>
@@ -158,7 +163,10 @@ export default function LoginPage() {
 
           {/* Helper text */}
           <p className="text-xs text-gray-500 text-center">
-            Enter email, nickname, or phone (with country code like +1)
+            <strong>Email:</strong> user@example.com<br />
+            <strong>Username:</strong> johndoe<br />
+            <strong>Phone:</strong> <code>+{'{'}country_code{'}'}{'{'}number{'}'}</code> or just digits
+            (e.g., <code>+12125551234</code>, <code>+84867631313</code>, or <code>0961440086</code>)
           </p>
 
           {/* Submit Button */}

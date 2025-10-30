@@ -28,11 +28,18 @@ class AuthController extends Controller
             'request_body' => $request->all(),
         ]);
 
-        // Search by username, email, or phone
+        // Search by username, email, or phone (with flexible phone matching)
         $user = WpUser::where('user_login', $username)
             ->orWhere('user_email', $username)
-            ->orWhere('phone', $username)
             ->first();
+
+        // If not found by username/email, try flexible phone matching
+        if (!$user) {
+            \Log::info('[AuthController::login] Not found by username/email, trying phone lookup', [
+                'username' => $username,
+            ]);
+            $user = WpUser::findByPhone($username);
+        }
 
         \Log::info('[AuthController::login] User lookup result', [
             'username' => $username,
