@@ -6,8 +6,10 @@
  */
 
 import React from 'react';
+import Link from 'next/link';
 import { EngagementButtons } from './EngagementButtons';
 import { CommentsSection } from './CommentsSection';
+import { AuthorCard } from './AuthorCard';
 import { useEngagement } from '@/contexts/EngagementContext';
 
 interface Post {
@@ -62,13 +64,13 @@ export function PostCardExample({ post, currentUserId }: PostCardExampleProps) {
 
       {/* Content */}
       <div className="p-4 sm:p-6">
-        {/* Author & Date */}
-        <div className="flex items-center gap-3 mb-4 pb-4 border-b border-gray-200">
-          <div className="flex-1">
-            <p className="font-semibold text-gray-900">{post.author.name}</p>
-            <p className="text-sm text-gray-500">{formatDate(post.created_at)}</p>
-          </div>
-        </div>
+        {/* Author Card with Profile Link */}
+        <AuthorCard
+          author={post.author}
+          createdAt={post.created_at}
+          compact={false}
+          showAvatar={false}
+        />
 
         {/* Title */}
         <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2 line-clamp-2">

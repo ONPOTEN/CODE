@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\PostController;
 use App\Http\Controllers\Api\ShopController;
 use App\Http\Controllers\Api\ShopPostController;
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\WallPostModerationController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -119,6 +120,17 @@ Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
     Route::post('/shops/{shopId}/posts', [ShopPostController::class, 'store'])->where('shopId', '[0-9]+');
     Route::put('/shops/{shopId}/posts/{id}', [ShopPostController::class, 'update'])->where(['shopId' => '[0-9]+', 'id' => '[0-9]+']);
     Route::delete('/shops/{shopId}/posts/{id}', [ShopPostController::class, 'destroy'])->where(['shopId' => '[0-9]+', 'id' => '[0-9]+']);
+
+    // Wall Post Moderation (authenticated - for current user's wall)
+    Route::prefix('wall-posts')->group(function () {
+        Route::get('/', [WallPostModerationController::class, 'index']);
+        Route::get('/pending-count', [WallPostModerationController::class, 'pendingCount']);
+        Route::get('/statistics', [WallPostModerationController::class, 'statistics']);
+        Route::get('/{wallPostId}', [WallPostModerationController::class, 'show'])->where('wallPostId', '[0-9]+');
+        Route::post('/{wallPostId}/accept', [WallPostModerationController::class, 'accept'])->where('wallPostId', '[0-9]+');
+        Route::post('/{wallPostId}/reject', [WallPostModerationController::class, 'reject'])->where('wallPostId', '[0-9]+');
+        Route::post('/batch-action', [WallPostModerationController::class, 'batchAction']);
+    });
 
     // Chat routes (authenticated)
     Route::get('/conversations', [ChatController::class, 'getConversations']);

@@ -6,6 +6,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEngagement } from '@/contexts/EngagementContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -84,9 +85,18 @@ function CommentItem({
       <div className="flex-1 min-w-0">
         {/* Author Info */}
         <div className="flex items-center gap-2">
-          <span className="font-semibold text-sm text-gray-900">
-            {comment.author?.name || comment.author_name}
-          </span>
+          {comment.author?.id ? (
+            <Link
+              href={`/users/${comment.author.id}`}
+              className="font-semibold text-sm text-gray-900 hover:text-blue-600 hover:underline transition-colors"
+            >
+              {comment.author?.name || comment.author_name}
+            </Link>
+          ) : (
+            <span className="font-semibold text-sm text-gray-900">
+              {comment.author?.name || comment.author_name}
+            </span>
+          )}
           <span className="text-xs text-gray-500">
             {new Date(comment.created_at).toLocaleDateString()}
           </span>

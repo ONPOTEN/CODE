@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { EngagementButtons } from '@/components/EngagementButtons';
+import { AuthorCard } from '@/components/AuthorCard';
 
 export default function InfiniteScrollPosts() {
   const [postsList, setPostsList] = useState<Post[]>([]);
@@ -244,7 +245,8 @@ export default function InfiniteScrollPosts() {
 
                     {/* Content */}
                     <div className={`p-6 flex-1 ${!featuredImageUrl ? 'w-full' : ''}`}>
-                      <div className="flex items-start justify-between mb-3">
+                      {/* Title */}
+                      <div className="flex items-start justify-between mb-4">
                         <h3 className="text-2xl font-semibold text-gray-900 hover:text-blue-600 transition-colors flex-1">
                           <Link href={`/posts/${post.id}`}>{post.title}</Link>
                         </h3>
@@ -339,6 +341,16 @@ export default function InfiniteScrollPosts() {
                           </div>
                         </div>
                       </div>
+
+                      {/* Author Card */}
+                      {post.author && (
+                        <AuthorCard
+                          author={post.author}
+                          createdAt={post.created_at}
+                          compact={true}
+                          showAvatar={false}
+                        />
+                      )}
 
                       {post.excerpt && (
                         <p className="text-gray-700 mb-4 line-clamp-3">{post.excerpt}</p>

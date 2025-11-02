@@ -94,6 +94,16 @@ class WpUser extends Authenticatable
         return $this->hasMany(ShareWall::class, 'user_id', 'ID');
     }
 
+    public function wall(): HasMany
+    {
+        return $this->hasMany(WpPost::class, 'wall_id', 'ID');
+    }
+
+    public function moderations(): HasMany
+    {
+        return $this->hasMany(ShareWall::class, 'moderated_by', 'ID');
+    }
+
     /**
      * Check if user has admin role
      */

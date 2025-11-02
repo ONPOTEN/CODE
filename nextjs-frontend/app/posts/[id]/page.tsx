@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
 import { EngagementButtons } from '@/components/EngagementButtons';
 import { CommentsSection } from '@/components/CommentsSection';
+import { AuthorCard } from '@/components/AuthorCard';
 
 export default function ViewPostPage() {
   const params = useParams();
@@ -183,6 +184,18 @@ export default function ViewPostPage() {
                   {post.status}
                 </span>
               </div>
+
+              {/* Author Card */}
+              {post.author && (
+                <div className="mb-6">
+                  <AuthorCard
+                    author={post.author}
+                    createdAt={post.created_at}
+                    compact={false}
+                    showAvatar={false}
+                  />
+                </div>
+              )}
 
               {/* Post Metadata */}
               <div className="space-y-3">

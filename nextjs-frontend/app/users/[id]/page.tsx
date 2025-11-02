@@ -6,6 +6,9 @@ import { users, posts, friends, User, Post, ApiException } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
 import UserSearchAutocomplete from '@/components/UserSearchAutocomplete';
+import { WallPostCard } from '@/components/WallPostCard';
+import { ShareToWallModal } from '@/components/ShareToWallModal';
+import { CreateWallPostModal } from '@/components/CreateWallPostModal';
 
 export default function UserProfilePage() {
   const params = useParams();
@@ -17,6 +20,8 @@ export default function UserProfilePage() {
   const [postsLoading, setPostsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [friendActionLoading, setFriendActionLoading] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   const userId = params.id as string;
 
@@ -62,25 +67,24 @@ export default function UserProfilePage() {
     }
   }, [userId]);
 
-  useEffect(() => {
-    async function fetchUserPosts() {
-      if (!user) return;
+  const fetchUserWallPosts = async () => {
+    if (!user) return;
 
-      try {
-        setPostsLoading(true);
-        // Fetch all posts and filter by user (if the API supports filtering by user_id)
-        // For now, we'll fetch all posts - you may want to add a user-specific endpoint
-        const response = await posts.getAll({ per_page: 50 });
-        setUserPosts(response.data);
-      } catch (err) {
-        console.error('Error fetching user posts:', err);
-        setUserPosts([]);
-      } finally {
-        setPostsLoading(false);
-      }
+    try {
+      setPostsLoading(true);
+      // Fetch posts from the user's wall
+      const response = await posts.userWall(user.id, { per_page: 50 });
+      setUserPosts(response.data);
+    } catch (err) {
+      console.error('Error fetching user wall posts:', err);
+      setUserPosts([]);
+    } finally {
+      setPostsLoading(false);
     }
+  };
 
-    fetchUserPosts();
+  useEffect(() => {
+    fetchUserWallPosts();
   }, [user]);
 
   const handleSendFriendRequest = async () => {
@@ -263,9 +267,9 @@ export default function UserProfilePage() {
                   <p className="text-gray-500 text-sm">User ID: {user.id}</p>
                 </div>
 
-                {/* Friend Action Buttons */}
+                {/* Action Buttons */}
                 {!isOwnProfile && currentUser && (
-                  <div className="flex gap-2">
+                  <div className="flex flex-col gap-3">
                     {user.is_friend ? (
                       // Already friends - show unfriend button
                       <button
@@ -326,6 +330,28 @@ export default function UserProfilePage() {
                         {friendActionLoading ? 'Sending...' : 'Add Friend'}
                       </button>
                     )}
+                    {/* Post on Wall Button */}
+                    <button
+                      onClick={() => setShowShareModal(true)}
+                      disabled={friendActionLoading}
+                      className="flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                      </svg>
+                      Post on Wall
+                    </button>
+                    {/* Create New Post on Wall Button */}
+                    <button
+                      onClick={() => setShowCreateModal(true)}
+                      disabled={friendActionLoading}
+                      className="flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      </svg>
+                      Create Post
+                    </button>
                   </div>
                 )}
               </div>
@@ -396,61 +422,24 @@ export default function UserProfilePage() {
           </div>
         </div>
 
-        {/* User Posts Section */}
+        {/* User Wall Posts Section */}
         <div className="bg-white rounded-lg shadow-lg p-8 border border-gray-200">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2 flex items-center gap-2">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
-            Posts by {user.name}
+            {user.name}'s Wall
           </h2>
+          <p className="text-gray-600 mb-6 text-sm">Posts shared to {user.name}'s wall</p>
 
           {postsLoading ? (
-            <div className="flex justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <div className="flex justify-center py-12">
+              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
             </div>
           ) : userPosts.length > 0 ? (
-            <div className="grid gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {userPosts.map((post) => (
-                <Link
-                  key={post.id}
-                  href={`/posts/${post.id}`}
-                  className="block p-4 border border-gray-200 rounded-lg hover:shadow-md hover:border-blue-300 transition-all"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-gray-900 hover:text-blue-600 mb-1">
-                        {post.title}
-                      </h3>
-                      {post.excerpt && (
-                        <p className="text-gray-600 text-sm mb-2 line-clamp-2">{post.excerpt}</p>
-                      )}
-                      <div className="flex items-center gap-3 text-xs text-gray-500">
-                        <span className="flex items-center gap-1">
-                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                          </svg>
-                          {post.type}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                          </svg>
-                          {new Date(post.created_at).toLocaleDateString()}
-                        </span>
-                      </div>
-                    </div>
-                    <span
-                      className={`px-2 py-1 text-xs font-medium rounded-full whitespace-nowrap ${
-                        post.status === 'publish'
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-yellow-100 text-yellow-800'
-                      }`}
-                    >
-                      {post.status}
-                    </span>
-                  </div>
-                </Link>
+                <WallPostCard key={post.id} post={post} />
               ))}
             </div>
           ) : (
@@ -458,11 +447,36 @@ export default function UserProfilePage() {
               <svg className="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
-              <p className="text-lg">No posts yet</p>
-              <p className="text-sm mt-1">This user hasn't created any posts.</p>
+              <p className="text-lg">No posts on wall</p>
+              <p className="text-sm mt-1">No posts have been shared to {user.name}'s wall yet.</p>
             </div>
           )}
         </div>
+
+        {/* Share to Wall Modal */}
+        <ShareToWallModal
+          isOpen={showShareModal}
+          onClose={() => setShowShareModal(false)}
+          wallUserId={user.id}
+          wallUserName={user.name}
+          onSuccess={() => {
+            // Refresh the wall posts
+            fetchUserWallPosts();
+          }}
+        />
+
+        {/* Create Post on Wall Modal */}
+        <CreateWallPostModal
+          isOpen={showCreateModal}
+          onClose={() => setShowCreateModal(false)}
+          wallUserId={user.id}
+          wallUserName={user.name}
+          currentUser={currentUser}
+          onSuccess={() => {
+            // Refresh the wall posts
+            fetchUserWallPosts();
+          }}
+        />
       </div>
     </div>
   );
