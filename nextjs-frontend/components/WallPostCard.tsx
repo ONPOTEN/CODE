@@ -1,33 +1,108 @@
 'use client';
 
 import Link from 'next/link';
-import { Post } from '@/lib/api';
+import { useState } from 'react';
+import { Post, GroupPost, WallPost, wallPosts } from '@/lib/api';
 
 interface WallPostCardProps {
-  post: Post;
+  wallPost: WallPost;
+  isCurrentUserModerator?: boolean;
+  onApproved?: (wallPostId: number) => void;
+  onRejected?: (wallPostId: number) => void;
 }
 
-export function WallPostCard({ post }: WallPostCardProps) {
+export function WallPostCard({ wallPost, isCurrentUserModerator = false, onApproved, onRejected }: WallPostCardProps) {
+  const [isApproving, setIsApproving] = useState(false);
+  const [isRejecting, setIsRejecting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Determine post type and get appropriate data
+  const isGroupPost = wallPost.post_type === 'grouppost';
+  const post = wallPost.post as any;
+
   // Get featured image - prioritize featured_image, then first image from images array
-  const featuredImageUrl = post.featured_image ||
-    (post.images && post.images.length > 0 ? post.images[0] : null);
+  const featuredImageUrl = post?.featured_image ||
+    (post?.images && post.images.length > 0 ? post.images[0] : null);
+
+  // Get post title based on type
+  const postTitle = isGroupPost ? post?.post_title : post?.title;
+
+  // Get post excerpt based on type
+  const postExcerpt = isGroupPost ? post?.post_excerpt : post?.excerpt;
+
+  // Get post status based on type
+  const postStatus = isGroupPost ? post?.post_status : post?.status;
+
+  // Get post type label
+  const postTypeLabel = isGroupPost ? 'Group Post' : 'Wall Post';
+
+  // Get post date based on type
+  const postDate = isGroupPost ? post?.post_date : post?.created_at;
+
+  // Get post ID for linking
+  const postId = isGroupPost ? wallPost.group_post_id : wallPost.post_id;
+  const postLink = isGroupPost ? `/group-posts/${postId}` : `/posts/${postId}`;
 
   // Format date
-  const formattedDate = new Date(post.created_at).toLocaleDateString('en-US', {
+  const formattedDate = new Date(postDate).toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
   });
 
+  const handleApprove = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (isApproving || isRejecting) return;
+
+    try {
+      setIsApproving(true);
+      setError(null);
+      await wallPosts.accept(wallPost.id);
+      if (onApproved) {
+        onApproved(wallPost.id);
+      }
+    } catch (err: any) {
+      console.error('Error approving wall post:', err);
+      setError(err.message || 'Failed to approve wall post');
+    } finally {
+      setIsApproving(false);
+    }
+  };
+
+  const handleReject = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (isApproving || isRejecting) return;
+
+    if (!confirm('Are you sure you want to reject this post?')) return;
+
+    try {
+      setIsRejecting(true);
+      setError(null);
+      await wallPosts.reject(wallPost.id);
+      if (onRejected) {
+        onRejected(wallPost.id);
+      }
+    } catch (err: any) {
+      console.error('Error rejecting wall post:', err);
+      setError(err.message || 'Failed to reject wall post');
+    } finally {
+      setIsRejecting(false);
+    }
+  };
+
   return (
-    <Link href={`/posts/${post.id}`}>
-      <article className="bg-white rounded-lg shadow-sm hover:shadow-lg transition-shadow border border-gray-200 overflow-hidden hover:border-blue-300 cursor-pointer h-full flex flex-col">
+    <article className="bg-white rounded-lg shadow-sm hover:shadow-lg transition-shadow border border-gray-200 overflow-hidden hover:border-blue-300 h-full flex flex-col">
+      <Link href={postLink} className="flex-1 flex flex-col">
         {/* Featured Image */}
         {featuredImageUrl && (
           <div className="relative h-48 bg-gray-200 overflow-hidden">
             <img
               src={typeof featuredImageUrl === 'string' ? featuredImageUrl : featuredImageUrl.url || ''}
-              alt={post.title}
+              alt={postTitle}
               className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
               onError={(e) => {
                 // Fallback if image fails to load
@@ -58,27 +133,28 @@ export function WallPostCard({ post }: WallPostCardProps) {
 
         {/* Content */}
         <div className="p-4 flex-1 flex flex-col">
+          {/* Post Type Badge */}
+          <div className="mb-2">
+            <span className="inline-block px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+              {postTypeLabel}
+            </span>
+          </div>
+
           {/* Title */}
           <h3 className="text-lg font-semibold text-gray-900 hover:text-blue-600 transition-colors mb-2 line-clamp-2">
-            {post.title}
+            {postTitle}
           </h3>
 
           {/* Excerpt */}
-          {post.excerpt && (
+          {postExcerpt && (
             <p className="text-gray-600 text-sm mb-3 line-clamp-2 flex-1">
-              {post.excerpt}
+              {postExcerpt}
             </p>
           )}
 
           {/* Meta Information */}
           <div className="flex items-center justify-between pt-3 border-t border-gray-100">
             <div className="flex items-center gap-3 text-xs text-gray-500">
-              <span className="flex items-center gap-1">
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                </svg>
-                {post.type}
-              </span>
               <span className="flex items-center gap-1">
                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -90,17 +166,19 @@ export function WallPostCard({ post }: WallPostCardProps) {
             {/* Status Badge */}
             <span
               className={`px-2 py-1 text-xs font-medium rounded-full whitespace-nowrap ${
-                post.status === 'publish'
+                postStatus === 'publish'
                   ? 'bg-green-100 text-green-800'
-                  : 'bg-yellow-100 text-yellow-800'
+                  : postStatus === 'pending'
+                  ? 'bg-yellow-100 text-yellow-800'
+                  : 'bg-red-100 text-red-800'
               }`}
             >
-              {post.status}
+              {postStatus}
             </span>
           </div>
 
           {/* Image Count Badge */}
-          {post.images && post.images.length > 1 && (
+          {post?.images && post.images.length > 1 && (
             <div className="mt-3 pt-3 border-t border-gray-100">
               <span className="text-xs text-blue-600 font-medium">
                 📷 +{post.images.length - 1} more {post.images.length === 2 ? 'image' : 'images'}
@@ -108,8 +186,51 @@ export function WallPostCard({ post }: WallPostCardProps) {
             </div>
           )}
         </div>
-      </article>
-    </Link>
+      </Link>
+
+      {/* Wall Post Status */}
+      {wallPost.status === 'pending' && (
+        <div className="px-4 py-2 bg-yellow-50 border-t border-yellow-200">
+          <p className="text-xs text-yellow-800 font-medium">⏳ Pending Wall Approval</p>
+        </div>
+      )}
+
+      {wallPost.status === 'rejected' && (
+        <div className="px-4 py-3 bg-red-50 border-t border-red-200">
+          <p className="text-xs text-red-800 font-medium mb-1">🚫 Rejected from Wall</p>
+          {wallPost.rejection_reason && (
+            <p className="text-xs text-red-700">{wallPost.rejection_reason}</p>
+          )}
+        </div>
+      )}
+
+      {/* Error Message */}
+      {error && (
+        <div className="px-4 py-3 bg-red-50 border-t border-red-200">
+          <p className="text-xs text-red-700">{error}</p>
+        </div>
+      )}
+
+      {/* Moderation Buttons - only for pending posts and authorized users */}
+      {isCurrentUserModerator && wallPost.status === 'pending' && (
+        <div className="px-4 py-3 bg-gray-50 border-t border-gray-200 flex gap-2">
+          <button
+            onClick={handleApprove}
+            disabled={isApproving || isRejecting}
+            className="flex-1 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+          >
+            {isApproving ? 'Approving...' : '✓ Approve'}
+          </button>
+          <button
+            onClick={handleReject}
+            disabled={isApproving || isRejecting}
+            className="flex-1 px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+          >
+            {isRejecting ? 'Rejecting...' : '✗ Reject'}
+          </button>
+        </div>
+      )}
+    </article>
   );
 }
 

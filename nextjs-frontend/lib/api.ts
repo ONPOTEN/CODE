@@ -684,6 +684,325 @@ export const users = {
   },
 };
 
+// Group interfaces
+export interface Group {
+  group_id: number;
+  group_name: string;
+  description?: string;
+  group_owner_id: number;
+  status: 'active' | 'inactive';
+  visibility: 'public' | 'private';
+  avatar?: string;
+  cover_image?: string;
+  owner?: User;
+  posts_count?: number;
+  members_count?: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface GroupPost {
+  id: number;
+  group_id: number;
+  post_author: number;
+  post_title: string;
+  post_content: string;
+  post_excerpt?: string;
+  post_status: 'draft' | 'publish' | 'pending' | 'trash';
+  post_type: string;
+  post_date: string;
+  post_modified: string;
+  comment_status: string;
+  ping_status: string;
+  visibility: 'public' | 'private';
+  featured_image?: string;
+  comment_count?: number;
+  author?: User;
+  group?: Group;
+  images?: string[];
+  likes_count?: number;
+  dislikes_count?: number;
+  comments_count?: number;
+}
+
+// Groups API
+export const groups = {
+  index: async (params?: { per_page?: number; page?: number; search?: string; visibility?: string; status?: string }) => {
+    const searchParams = new URLSearchParams();
+    if (params?.per_page) searchParams.append('per_page', params.per_page.toString());
+    if (params?.page) searchParams.append('page', params.page.toString());
+    if (params?.search) searchParams.append('search', params.search);
+    if (params?.visibility) searchParams.append('visibility', params.visibility);
+    if (params?.status) searchParams.append('status', params.status);
+
+    const query = searchParams.toString() ? `?${searchParams}` : '';
+    return apiRequest<PaginatedResponse<Group>>(`/groups${query}`);
+  },
+
+  getById: async (id: number) => {
+    return apiRequest<{ data: Group }>(`/groups/${id}`);
+  },
+
+  popular: async (params?: { per_page?: number; page?: number }) => {
+    const searchParams = new URLSearchParams();
+    if (params?.per_page) searchParams.append('per_page', params.per_page.toString());
+    if (params?.page) searchParams.append('page', params.page.toString());
+
+    const query = searchParams.toString() ? `?${searchParams}` : '';
+    return apiRequest<PaginatedResponse<Group>>(`/groups/popular${query}`);
+  },
+
+  userGroups: async (userId: number, params?: { per_page?: number; page?: number }) => {
+    const searchParams = new URLSearchParams();
+    if (params?.per_page) searchParams.append('per_page', params.per_page.toString());
+    if (params?.page) searchParams.append('page', params.page.toString());
+
+    const query = searchParams.toString() ? `?${searchParams}` : '';
+    return apiRequest<PaginatedResponse<Group>>(`/users/${userId}/groups${query}`);
+  },
+
+  create: async (data: { group_name: string; description?: string; visibility: string }): Promise<{ data: Group; message: string }> => {
+    return apiRequest('/groups', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  update: async (id: number, data: Partial<Group>): Promise<{ data: Group; message: string }> => {
+    return apiRequest(`/groups/${id}`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  delete: async (id: number): Promise<{ message: string }> => {
+    return apiRequest(`/groups/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  myGroups: async (params?: { per_page?: number; page?: number }) => {
+    const searchParams = new URLSearchParams();
+    if (params?.per_page) searchParams.append('per_page', params.per_page.toString());
+    if (params?.page) searchParams.append('page', params.page.toString());
+
+    const query = searchParams.toString() ? `?${searchParams}` : '';
+    return apiRequest<PaginatedResponse<Group>>(`/my-groups${query}`);
+  },
+
+  bulkDelete: async (groupIds: number[]): Promise<{ message: string; deleted_count: number }> => {
+    return apiRequest('/groups/bulk-delete', {
+      method: 'POST',
+      body: JSON.stringify({ group_ids: groupIds }),
+    });
+  },
+
+  checkMembership: async (groupId: number): Promise<{ is_member: boolean; group_id: number }> => {
+    return apiRequest(`/groups/${groupId}/check-membership`);
+  },
+
+  joinGroup: async (groupId: number): Promise<{ message: string; is_member: boolean }> => {
+    return apiRequest(`/groups/${groupId}/join`, {
+      method: 'POST',
+    });
+  },
+
+  leaveGroup: async (groupId: number): Promise<{ message: string; is_member: boolean }> => {
+    return apiRequest(`/groups/${groupId}/leave`, {
+      method: 'POST',
+    });
+  },
+
+  getPendingRequests: async (groupId: number): Promise<{ data: any[]; total: number }> => {
+    return apiRequest(`/groups/${groupId}/pending-requests`);
+  },
+
+  acceptJoinRequest: async (groupId: number, userId: number): Promise<{ message: string; user_id: number; status: string }> => {
+    return apiRequest(`/groups/${groupId}/requests/${userId}/accept`, {
+      method: 'POST',
+    });
+  },
+
+  rejectJoinRequest: async (groupId: number, userId: number): Promise<{ message: string; user_id: number }> => {
+    return apiRequest(`/groups/${groupId}/requests/${userId}/reject`, {
+      method: 'POST',
+    });
+  },
+};
+
+// Group Posts API
+export const groupPosts = {
+  index: async (params?: { per_page?: number; page?: number; group_id?: number; status?: string; type?: string; sort_by?: string; order?: string }) => {
+    const searchParams = new URLSearchParams();
+    if (params?.per_page) searchParams.append('per_page', params.per_page.toString());
+    if (params?.page) searchParams.append('page', params.page.toString());
+    if (params?.group_id) searchParams.append('group_id', params.group_id.toString());
+    if (params?.status) searchParams.append('status', params.status);
+    if (params?.type) searchParams.append('type', params.type);
+    if (params?.sort_by) searchParams.append('sort_by', params.sort_by);
+    if (params?.order) searchParams.append('order', params.order);
+
+    const query = searchParams.toString() ? `?${searchParams}` : '';
+    return apiRequest<PaginatedResponse<GroupPost>>(`/group-posts${query}`);
+  },
+
+  getById: async (id: number) => {
+    return apiRequest<{ data: GroupPost }>(`/group-posts/${id}`);
+  },
+
+  getByGroupId: async (groupId: number, params?: { per_page?: number; page?: number; status?: string; sort_by?: string; order?: string }) => {
+    const searchParams = new URLSearchParams();
+    if (params?.per_page) searchParams.append('per_page', params.per_page.toString());
+    if (params?.page) searchParams.append('page', params.page.toString());
+    if (params?.status) searchParams.append('status', params.status);
+    if (params?.sort_by) searchParams.append('sort_by', params.sort_by);
+    if (params?.order) searchParams.append('order', params.order);
+
+    const query = searchParams.toString() ? `?${searchParams}` : '';
+    return apiRequest<PaginatedResponse<GroupPost>>(`/groups/${groupId}/posts${query}`);
+  },
+
+  userPosts: async (userId: number, params?: { per_page?: number; page?: number; group_id?: number; status?: string }) => {
+    const searchParams = new URLSearchParams();
+    if (params?.per_page) searchParams.append('per_page', params.per_page.toString());
+    if (params?.page) searchParams.append('page', params.page.toString());
+    if (params?.group_id) searchParams.append('group_id', params.group_id.toString());
+    if (params?.status) searchParams.append('status', params.status);
+
+    const query = searchParams.toString() ? `?${searchParams}` : '';
+    return apiRequest<PaginatedResponse<GroupPost>>(`/users/${userId}/group-posts${query}`);
+  },
+
+  popular: async (params?: { per_page?: number; page?: number; days?: number }) => {
+    const searchParams = new URLSearchParams();
+    if (params?.per_page) searchParams.append('per_page', params.per_page.toString());
+    if (params?.page) searchParams.append('page', params.page.toString());
+    if (params?.days) searchParams.append('days', params.days.toString());
+
+    const query = searchParams.toString() ? `?${searchParams}` : '';
+    return apiRequest<PaginatedResponse<GroupPost>>(`/group-posts/popular${query}`);
+  },
+
+  create: async (data: any): Promise<{ data: GroupPost; message: string }> => {
+    // Support both FormData (with file uploads) and regular objects
+    if (data instanceof FormData) {
+      return apiRequestWithFiles('/group-posts', data);
+    }
+    return apiRequest('/group-posts', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  update: async (id: number, data: Partial<GroupPost>): Promise<{ data: GroupPost; message: string }> => {
+    return apiRequest(`/group-posts/${id}`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  delete: async (id: number): Promise<{ message: string }> => {
+    return apiRequest(`/group-posts/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  bulkDelete: async (postIds: number[]): Promise<{ message: string; deleted_count: number }> => {
+    return apiRequest('/group-posts/bulk-delete', {
+      method: 'POST',
+      body: JSON.stringify({ post_ids: postIds }),
+    });
+  },
+
+  like: async (id: number): Promise<{ message: string; likes_count: number }> => {
+    return apiRequest(`/group-posts/${id}/like`, {
+      method: 'POST',
+    });
+  },
+
+  unlike: async (id: number): Promise<{ message: string; likes_count: number }> => {
+    return apiRequest(`/group-posts/${id}/like`, {
+      method: 'DELETE',
+    });
+  },
+
+  dislike: async (id: number): Promise<{ message: string }> => {
+    return apiRequest(`/group-posts/${id}/dislike`, {
+      method: 'POST',
+    });
+  },
+
+  removeDislike: async (id: number): Promise<{ message: string }> => {
+    return apiRequest(`/group-posts/${id}/dislike`, {
+      method: 'DELETE',
+    });
+  },
+
+  getEngagementStats: async (id: number) => {
+    return apiRequest<{ data: { likes: number; dislikes: number; comments: number; total_engagement: number } }>(`/group-posts/${id}/engagement`);
+  },
+
+  getLikes: async (id: number, params?: { per_page?: number; page?: number }) => {
+    const searchParams = new URLSearchParams();
+    if (params?.per_page) searchParams.append('per_page', params.per_page.toString());
+    if (params?.page) searchParams.append('page', params.page.toString());
+
+    const query = searchParams.toString() ? `?${searchParams}` : '';
+    return apiRequest<{ data: any[]; pagination: any }>(`/group-posts/${id}/likes${query}`);
+  },
+
+  getComments: async (id: number, params?: { per_page?: number; page?: number; status?: string }) => {
+    const searchParams = new URLSearchParams();
+    if (params?.per_page) searchParams.append('per_page', params.per_page.toString());
+    if (params?.page) searchParams.append('page', params.page.toString());
+    if (params?.status) searchParams.append('status', params.status);
+
+    const query = searchParams.toString() ? `?${searchParams}` : '';
+    return apiRequest<PaginatedResponse<any>>(`/group-posts/${id}/comments${query}`);
+  },
+
+  createComment: async (id: number, data: { comment_content: string; parent_id?: number }): Promise<{ data: any; message: string }> => {
+    return apiRequest(`/group-posts/${id}/comments`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  updateComment: async (postId: number, commentId: number, data: { comment_content: string }): Promise<{ data: any; message: string }> => {
+    return apiRequest(`/group-posts/${postId}/comments/${commentId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  deleteComment: async (postId: number, commentId: number): Promise<{ message: string }> => {
+    return apiRequest(`/group-posts/${postId}/comments/${commentId}`, {
+      method: 'DELETE',
+    });
+  },
+
+  setFeaturedImage: async (id: number, formData: FormData): Promise<{ data: GroupPost; message: string }> => {
+    return apiRequestWithFiles(`/group-posts/${id}/featured-image`, formData);
+  },
+
+  // Post Moderation (admin/moderator only)
+  approvePost: async (groupId: number, postId: number): Promise<{ data: GroupPost; message: string }> => {
+    return apiRequest(`/groups/${groupId}/posts/${postId}/approve`, {
+      method: 'POST',
+    });
+  },
+
+  rejectPost: async (groupId: number, postId: number): Promise<{ message: string; post_id: number; status: string }> => {
+    return apiRequest(`/groups/${groupId}/posts/${postId}/reject`, {
+      method: 'POST',
+    });
+  },
+
+  getPendingPosts: async (groupId: number): Promise<{ data: GroupPost[]; total: number }> => {
+    return apiRequest(`/groups/${groupId}/posts/pending`);
+  },
+};
+
 // Shop interfaces
 export interface Shop {
   id: number;
@@ -928,6 +1247,100 @@ export interface Conversation {
   updated_at: string;
 }
 
+// Wall Post interfaces
+export interface WallPost {
+  id: number;
+  wall_id: number;
+  post_id?: number;
+  group_post_id?: number;
+  post_type: 'wppost' | 'grouppost';
+  status: 'pending' | 'accepted' | 'rejected';
+  rejection_reason?: string;
+  post: GroupPost | Post;
+  wall_owner: User;
+  moderator?: User;
+  moderated_at?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface WallPostStatistics {
+  total: number;
+  pending: number;
+  accepted: number;
+  rejected: number;
+  wppost_count: number;
+  grouppost_count: number;
+}
+
+// Wall Posts API
+export const wallPosts = {
+  getAll: async (params?: {
+    per_page?: number;
+    page?: number;
+    status?: string;
+    post_type?: 'wppost' | 'grouppost';
+    order_by?: string;
+    order?: 'asc' | 'desc';
+  }): Promise<{
+    data: WallPost[];
+    pagination: {
+      current_page: number;
+      per_page: number;
+      total: number;
+      last_page: number;
+    };
+  }> => {
+    const queryParams = new URLSearchParams();
+    if (params?.per_page) queryParams.append('per_page', params.per_page.toString());
+    if (params?.page) queryParams.append('page', params.page.toString());
+    if (params?.status) queryParams.append('status', params.status);
+    if (params?.post_type) queryParams.append('post_type', params.post_type);
+    if (params?.order_by) queryParams.append('order_by', params.order_by);
+    if (params?.order) queryParams.append('order', params.order);
+
+    const query = queryParams.toString();
+    return apiRequest(`/wall-posts${query ? '?' + query : ''}`);
+  },
+
+  getById: async (wallPostId: number): Promise<WallPost> => {
+    return apiRequest(`/wall-posts/${wallPostId}`);
+  },
+
+  accept: async (wallPostId: number): Promise<{ message: string; data: WallPost }> => {
+    return apiRequest(`/wall-posts/${wallPostId}/accept`, {
+      method: 'POST',
+    });
+  },
+
+  reject: async (wallPostId: number, rejectionReason?: string): Promise<{ message: string; data: WallPost }> => {
+    return apiRequest(`/wall-posts/${wallPostId}/reject`, {
+      method: 'POST',
+      body: JSON.stringify({
+        rejection_reason: rejectionReason || '',
+      }),
+    });
+  },
+
+  pendingCount: async (): Promise<{ count: number }> => {
+    return apiRequest('/wall-posts/pending-count');
+  },
+
+  statistics: async (): Promise<WallPostStatistics> => {
+    return apiRequest('/wall-posts/statistics');
+  },
+
+  batchAction: async (wallPostIds: number[], action: 'accept' | 'reject'): Promise<{ message: string; count: number }> => {
+    return apiRequest('/wall-posts/batch-action', {
+      method: 'POST',
+      body: JSON.stringify({
+        wall_post_ids: wallPostIds,
+        action,
+      }),
+    });
+  },
+};
+
 // Chat API
 export const chat = {
   getConversations: async (): Promise<Conversation[]> => {
@@ -994,6 +1407,8 @@ export default {
   posts,
   users,
   friends,
+  groups,
+  groupPosts,
   chat,
   shops,
   shopPosts,

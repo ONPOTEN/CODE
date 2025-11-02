@@ -5,6 +5,9 @@ use App\Http\Controllers\Api\ChatController;
 use App\Http\Controllers\Api\CommentController;
 use App\Http\Controllers\Api\EngagementController;
 use App\Http\Controllers\Api\FriendController;
+use App\Http\Controllers\Api\GroupController;
+use App\Http\Controllers\Api\GroupPostController;
+use App\Http\Controllers\Api\GroupCommentController;
 use App\Http\Controllers\Api\PostController;
 use App\Http\Controllers\Api\ShopController;
 use App\Http\Controllers\Api\ShopPostController;
@@ -67,6 +70,26 @@ Route::prefix('v1')->group(function () {
     // Shop Posts/Pages (public)
     Route::get('/shops/{shopId}/posts', [ShopPostController::class, 'index'])->where('shopId', '[0-9]+');
     Route::get('/shops/{shopId}/posts/{id}', [ShopPostController::class, 'show'])->where(['shopId' => '[0-9]+', 'id' => '[0-9]+']);
+
+    // Groups (public)
+    Route::get('/groups', [GroupController::class, 'index']);
+    Route::get('/groups/popular', [GroupController::class, 'popular']);
+    Route::get('/groups/{group}', [GroupController::class, 'show']);
+    Route::get('/users/{userId}/groups', [GroupController::class, 'userGroups'])->where('userId', '[0-9]+');
+
+    // Group Posts (public)
+    Route::get('/group-posts', [GroupPostController::class, 'index']);
+    Route::get('/group-posts/popular', [GroupPostController::class, 'popular']);
+    Route::get('/group-posts/{id}', [GroupPostController::class, 'show'])->where('id', '[0-9]+');
+    Route::get('/group-posts/{id}/engagement', [GroupPostController::class, 'getEngagementStats'])->where('id', '[0-9]+');
+    Route::get('/group-posts/{id}/likes', [GroupPostController::class, 'getLikes'])->where('id', '[0-9]+');
+    Route::get('/groups/{groupId}/posts', [GroupPostController::class, 'groupPosts'])->where('groupId', '[0-9]+');
+    Route::get('/users/{userId}/group-posts', [GroupPostController::class, 'userPosts'])->where('userId', '[0-9]+');
+
+    // Group Post Comments (public - read only)
+    Route::get('/group-posts/{postId}/comments', [GroupCommentController::class, 'index'])->where('postId', '[0-9]+');
+    Route::get('/group-posts/{postId}/comments/{commentId}', [GroupCommentController::class, 'show'])->where(['postId' => '[0-9]+', 'commentId' => '[0-9]+']);
+    Route::get('/group-posts/{postId}/comments/{commentId}/replies', [GroupCommentController::class, 'replies'])->where(['postId' => '[0-9]+', 'commentId' => '[0-9]+']);
 });
 
 // Protected routes
@@ -121,6 +144,38 @@ Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
     Route::put('/shops/{shopId}/posts/{id}', [ShopPostController::class, 'update'])->where(['shopId' => '[0-9]+', 'id' => '[0-9]+']);
     Route::delete('/shops/{shopId}/posts/{id}', [ShopPostController::class, 'destroy'])->where(['shopId' => '[0-9]+', 'id' => '[0-9]+']);
 
+    // Groups (authenticated)
+    Route::post('/groups', [GroupController::class, 'store']);
+    Route::post('/groups/{group}', [GroupController::class, 'update']);
+    Route::delete('/groups/{group}', [GroupController::class, 'destroy']);
+    Route::get('/my-groups', [GroupController::class, 'myGroups']);
+    Route::post('/groups/bulk-delete', [GroupController::class, 'bulkDelete']);
+    Route::get('/groups/{group}/check-membership', [GroupController::class, 'checkMembership']);
+    Route::post('/groups/{group}/join', [GroupController::class, 'joinGroup']);
+    Route::post('/groups/{group}/leave', [GroupController::class, 'leaveGroup']);
+    Route::get('/groups/{group}/pending-requests', [GroupController::class, 'getPendingRequests']);
+    Route::post('/groups/{group}/requests/{userId}/accept', [GroupController::class, 'acceptJoinRequest']);
+    Route::post('/groups/{group}/requests/{userId}/reject', [GroupController::class, 'rejectJoinRequest']);
+
+    // Group Posts (authenticated)
+    Route::post('/group-posts', [GroupPostController::class, 'store']);
+    Route::post('/group-posts/{id}', [GroupPostController::class, 'update'])->where('id', '[0-9]+');
+    Route::delete('/group-posts/{id}', [GroupPostController::class, 'destroy'])->where('id', '[0-9]+');
+    Route::post('/group-posts/bulk-delete', [GroupPostController::class, 'bulkDelete']);
+
+    // Group Post Engagement (authenticated)
+    Route::post('/group-posts/{id}/like', [GroupPostController::class, 'like'])->where('id', '[0-9]+');
+    Route::delete('/group-posts/{id}/like', [GroupPostController::class, 'unlike'])->where('id', '[0-9]+');
+    Route::post('/group-posts/{id}/dislike', [GroupPostController::class, 'dislike'])->where('id', '[0-9]+');
+    Route::delete('/group-posts/{id}/dislike', [GroupPostController::class, 'removeDislike'])->where('id', '[0-9]+');
+    Route::post('/group-posts/{id}/featured-image', [GroupPostController::class, 'setFeaturedImage'])->where('id', '[0-9]+');
+    Route::post('/group-posts/{id}/share-to-wall', [GroupPostController::class, 'shareToWall'])->where('id', '[0-9]+');
+
+    // Group Post Comments (authenticated - read, create, update, delete)
+    Route::post('/group-posts/{postId}/comments', [GroupCommentController::class, 'store'])->where('postId', '[0-9]+');
+    Route::put('/group-posts/{postId}/comments/{commentId}', [GroupCommentController::class, 'update'])->where(['postId' => '[0-9]+', 'commentId' => '[0-9]+']);
+    Route::delete('/group-posts/{postId}/comments/{commentId}', [GroupCommentController::class, 'destroy'])->where(['postId' => '[0-9]+', 'commentId' => '[0-9]+']);
+
     // Wall Post Moderation (authenticated - for current user's wall)
     Route::prefix('wall-posts')->group(function () {
         Route::get('/', [WallPostModerationController::class, 'index']);
@@ -159,5 +214,14 @@ Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
         // Comment moderation
         Route::post('/admin/comments/{commentId}/approve', [CommentController::class, 'approveComment'])->where('commentId', '[0-9]+');
         Route::post('/admin/comments/{commentId}/reject', [CommentController::class, 'rejectComment'])->where('commentId', '[0-9]+');
+
+        // Group Post Comment moderation
+        Route::post('/admin/group-posts/{postId}/comments/{commentId}/approve', [GroupCommentController::class, 'approve'])->where(['postId' => '[0-9]+', 'commentId' => '[0-9]+']);
+        Route::post('/admin/group-posts/{postId}/comments/{commentId}/reject', [GroupCommentController::class, 'reject'])->where(['postId' => '[0-9]+', 'commentId' => '[0-9]+']);
+
+        // Group Post moderation - admin/moderator approve or reject posts
+        Route::get('/groups/{groupId}/posts/pending', [GroupPostController::class, 'getPendingPosts'])->where('groupId', '[0-9]+');
+        Route::post('/groups/{groupId}/posts/{postId}/approve', [GroupPostController::class, 'approvePost'])->where(['groupId' => '[0-9]+', 'postId' => '[0-9]+']);
+        Route::post('/groups/{groupId}/posts/{postId}/reject', [GroupPostController::class, 'rejectPost'])->where(['groupId' => '[0-9]+', 'postId' => '[0-9]+']);
     });
 });

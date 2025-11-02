@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\WallPostResource;
 use App\Models\ShareWall;
 use App\Models\WpPost;
+use App\Models\GroupPost;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -14,14 +15,21 @@ class WallPostModerationController extends Controller
 {
     /**
      * Get all wall posts on current user's wall (for moderation)
+     * Includes both WpPost and GroupPost ordered by latest
      */
     public function index(Request $request): AnonymousResourceCollection
     {
         $user = auth()->user();
 
-        $query = ShareWall::with(['post' => function ($q) {
-            $q->with(['author', 'meta']);
-        }, 'moderator'])
+        $query = ShareWall::with([
+            'post' => function ($q) {
+                $q->with(['author', 'meta']);
+            },
+            'groupPost' => function ($q) {
+                $q->with(['author']);
+            },
+            'moderator'
+        ])
             ->where('user_id', $user->ID);
 
         // Filter by status
@@ -32,7 +40,17 @@ class WallPostModerationController extends Controller
             }
         }
 
-        // Order by
+        // Filter by post type
+        if ($request->has('post_type')) {
+            $postType = $request->input('post_type');
+            if ($postType === 'wppost') {
+                $query->whereNull('post_type');
+            } elseif ($postType === 'grouppost') {
+                $query->where('post_type', 'grouppost');
+            }
+        }
+
+        // Order by - default is created_at descending (latest first)
         $orderBy = $request->input('order_by', 'created_at');
         $order = $request->input('order', 'desc');
         $query->orderBy($orderBy, $order);
@@ -90,9 +108,15 @@ class WallPostModerationController extends Controller
 
         return response()->json([
             'message' => 'Wall post accepted successfully',
-            'data' => new WallPostResource($wallPost->load(['post' => function ($q) {
-                $q->with(['author', 'meta']);
-            }, 'moderator'])),
+            'data' => new WallPostResource($wallPost->load([
+                'post' => function ($q) {
+                    $q->with(['author', 'meta']);
+                },
+                'groupPost' => function ($q) {
+                    $q->with(['author']);
+                },
+                'moderator'
+            ])),
         ]);
     }
 
@@ -132,9 +156,15 @@ class WallPostModerationController extends Controller
 
         return response()->json([
             'message' => 'Wall post rejected successfully',
-            'data' => new WallPostResource($wallPost->load(['post' => function ($q) {
-                $q->with(['author', 'meta']);
-            }, 'moderator'])),
+            'data' => new WallPostResource($wallPost->load([
+                'post' => function ($q) {
+                    $q->with(['author', 'meta']);
+                },
+                'groupPost' => function ($q) {
+                    $q->with(['author']);
+                },
+                'moderator'
+            ])),
         ]);
     }
 
@@ -145,9 +175,15 @@ class WallPostModerationController extends Controller
     {
         $user = auth()->user();
 
-        $wallPost = ShareWall::with(['post' => function ($q) {
-            $q->with(['author', 'meta']);
-        }, 'moderator'])->findOrFail($wallPostId);
+        $wallPost = ShareWall::with([
+            'post' => function ($q) {
+                $q->with(['author', 'meta']);
+            },
+            'groupPost' => function ($q) {
+                $q->with(['author']);
+            },
+            'moderator'
+        ])->findOrFail($wallPostId);
 
         // Check if this wall post belongs to the current user
         if ($wallPost->user_id !== $user->ID) {

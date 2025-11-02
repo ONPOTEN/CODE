@@ -98,6 +98,28 @@ export default function Menu() {
                   </Link>
 
                   <Link
+                    href="/groups"
+                    className="block px-6 py-4 hover:bg-cyan-50 transition-colors"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    <h3 className="font-semibold text-lg mb-1">Groups</h3>
+                    <p className="text-gray-600 text-sm">
+                      Browse and manage community groups
+                    </p>
+                  </Link>
+
+                  <Link
+                    href="/my-groups"
+                    className="block px-6 py-4 hover:bg-sky-50 transition-colors"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    <h3 className="font-semibold text-lg mb-1">My Groups</h3>
+                    <p className="text-gray-600 text-sm">
+                      Manage groups you own
+                    </p>
+                  </Link>
+
+                  <Link
                     href="/admin/shops"
                     className="block px-6 py-4 hover:bg-yellow-50 transition-colors"
                     onClick={() => setIsOpen(false)}
@@ -118,6 +140,17 @@ export default function Menu() {
                     <h3 className="font-semibold text-lg mb-1">Browse Posts</h3>
                     <p className="text-gray-600 text-sm">
                       Explore content from our community
+                    </p>
+                  </Link>
+
+                  <Link
+                    href="/groups"
+                    className="block px-6 py-4 hover:bg-cyan-50 transition-colors"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    <h3 className="font-semibold text-lg mb-1">Browse Groups</h3>
+                    <p className="text-gray-600 text-sm">
+                      Discover community groups and join
                     </p>
                   </Link>
 

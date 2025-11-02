@@ -10,6 +10,8 @@ class ShareWall extends Model
     protected $fillable = [
         'user_id',
         'post_id',
+        'post_type',
+        'group_post_id',
         'status',
         'rejection_reason',
         'moderated_by',
@@ -27,6 +29,10 @@ class ShareWall extends Model
     const STATUS_ACCEPTED = 'accepted';
     const STATUS_REJECTED = 'rejected';
 
+    // Post type constants
+    const POST_TYPE_WPPOST = null; // blank/null for WpPost
+    const POST_TYPE_GROUPPOST = 'grouppost';
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(WpUser::class, 'user_id', 'ID');
@@ -35,6 +41,11 @@ class ShareWall extends Model
     public function post(): BelongsTo
     {
         return $this->belongsTo(WpPost::class, 'post_id', 'ID');
+    }
+
+    public function groupPost(): BelongsTo
+    {
+        return $this->belongsTo(GroupPost::class, 'group_post_id', 'id');
     }
 
     public function moderator(): BelongsTo
@@ -56,5 +67,15 @@ class ShareWall extends Model
     public function scopeRejected($query)
     {
         return $query->where('status', self::STATUS_REJECTED);
+    }
+
+    public function scopeWpPost($query)
+    {
+        return $query->whereNull('post_type');
+    }
+
+    public function scopeGroupPost($query)
+    {
+        return $query->where('post_type', self::POST_TYPE_GROUPPOST);
     }
 }

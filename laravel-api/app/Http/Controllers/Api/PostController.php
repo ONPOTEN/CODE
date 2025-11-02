@@ -216,6 +216,7 @@ class PostController extends Controller
             ShareWall::create([
                 'user_id' => $wallId,
                 'post_id' => $post->ID,
+                'post_type' => null, // null for WpPost
             ]);
         }
 
@@ -626,6 +627,7 @@ class PostController extends Controller
             ShareWall::create([
                 'user_id' => $wallId,
                 'post_id' => $post->ID,
+                'post_type' => null, // null for WpPost
             ]);
 
             \Log::info('[PostController::shareToWall] Share successful', [
