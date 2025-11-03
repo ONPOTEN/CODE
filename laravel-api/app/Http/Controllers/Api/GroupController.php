@@ -90,6 +90,13 @@ class GroupController extends Controller
                 'visibility' => $request->input('visibility', 'public'),
             ]);
 
+            if (!$group) {
+                return response()->json([
+                    'error' => 'Failed to create group',
+                    'message' => 'Could not create group record',
+                ], 400);
+            }
+
             // Handle avatar upload
             if ($request->hasFile('avatar')) {
                 $avatarPath = $request->file('avatar')->store('group-avatars', 'public');
@@ -102,6 +109,21 @@ class GroupController extends Controller
                 $group->update(['cover_image' => $coverPath]);
             }
 
+            // Add group creator as admin member
+            $groupUser = GroupUser::create([
+                'group_id' => $group->group_id,
+                'group_user_id' => auth()->id(),
+                'group_role' => GroupUser::ROLE_ADMIN,
+                'status' => 'approved',
+            ]);
+
+            if (!$groupUser) {
+                return response()->json([
+                    'error' => 'Failed to create group',
+                    'message' => 'Could not add group creator as admin member',
+                ], 400);
+            }
+
             $group->load('owner');
 
             return response()->json([
@@ -109,6 +131,12 @@ class GroupController extends Controller
                 'message' => 'Group created successfully',
             ], 201);
         } catch (\Exception $e) {
+            \Log::error('Group creation error: ' . $e->getMessage(), [
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
             return response()->json([
                 'error' => 'Failed to create group',
                 'message' => $e->getMessage(),

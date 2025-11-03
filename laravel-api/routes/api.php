@@ -146,10 +146,10 @@ Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
 
     // Groups (authenticated)
     Route::post('/groups', [GroupController::class, 'store']);
-    Route::post('/groups/{group}', [GroupController::class, 'update']);
-    Route::delete('/groups/{group}', [GroupController::class, 'destroy']);
     Route::get('/my-groups', [GroupController::class, 'myGroups']);
     Route::post('/groups/bulk-delete', [GroupController::class, 'bulkDelete']);
+    Route::post('/groups/{group}', [GroupController::class, 'update']);
+    Route::delete('/groups/{group}', [GroupController::class, 'destroy']);
     Route::get('/groups/{group}/check-membership', [GroupController::class, 'checkMembership']);
     Route::post('/groups/{group}/join', [GroupController::class, 'joinGroup']);
     Route::post('/groups/{group}/leave', [GroupController::class, 'leaveGroup']);
@@ -159,9 +159,9 @@ Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
 
     // Group Posts (authenticated)
     Route::post('/group-posts', [GroupPostController::class, 'store']);
+    Route::post('/group-posts/bulk-delete', [GroupPostController::class, 'bulkDelete']);
     Route::post('/group-posts/{id}', [GroupPostController::class, 'update'])->where('id', '[0-9]+');
     Route::delete('/group-posts/{id}', [GroupPostController::class, 'destroy'])->where('id', '[0-9]+');
-    Route::post('/group-posts/bulk-delete', [GroupPostController::class, 'bulkDelete']);
 
     // Group Post Engagement (authenticated)
     Route::post('/group-posts/{id}/like', [GroupPostController::class, 'like'])->where('id', '[0-9]+');

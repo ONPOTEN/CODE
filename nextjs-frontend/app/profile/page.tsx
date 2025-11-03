@@ -99,7 +99,7 @@ export default function ProfilePage() {
             <div className="w-24 h-24 rounded-full overflow-hidden bg-gray-200 border-2 border-gray-300">
               {user.avatar ? (
                 <img
-                  src={`${process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '')}/storage/avatars/${user.avatar}`}
+                  src={user.avatar}
                   alt="User avatar"
                   className="w-full h-full object-cover"
                 />

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { users, ApiException } from '@/lib/api';
+import AvatarCropper from '@/components/AvatarCropper';
 
 export default function EditProfilePage() {
   const { user, isAuthenticated, isLoading, updateUserAvatar, updateUserProfile } = useAuth();
@@ -36,6 +37,8 @@ export default function EditProfilePage() {
   const [avatarLoading, setAvatarLoading] = useState(false);
   const [avatarError, setAvatarError] = useState<string | null>(null);
   const [avatarSuccess, setAvatarSuccess] = useState(false);
+  const [showAvatarCropper, setShowAvatarCropper] = useState(false);
+  const [imageToCrop, setImageToCrop] = useState<string | null>(null);
 
   // Password form state
   const [currentPassword, setCurrentPassword] = useState('');
@@ -249,16 +252,83 @@ export default function EditProfilePage() {
       setAvatarError(null);
       setAvatarFile(file);
 
-      // Create preview URL
+      // Create image data URL for cropper
       const reader = new FileReader();
       reader.onloadend = () => {
-        setAvatarPreview(reader.result as string);
+        const imageData = reader.result as string;
+        setImageToCrop(imageData);
+        setShowAvatarCropper(true);
       };
       reader.onerror = () => {
         setAvatarError('Failed to read file');
         setAvatarFile(null);
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const handleAvatarCropComplete = async (croppedBlob: Blob) => {
+    try {
+      console.log('[handleAvatarCropComplete] Crop complete, uploading:', {
+        blobSize: croppedBlob.size,
+        blobType: croppedBlob.type,
+      });
+
+      setAvatarLoading(true);
+      setShowAvatarCropper(false);
+      setImageToCrop(null);
+
+      // Create a File object from the blob
+      const croppedFile = new File([croppedBlob], 'avatar-cropped.jpg', {
+        type: 'image/jpeg',
+      });
+
+      // Upload the cropped image
+      const response = await users.uploadAvatar(croppedFile);
+
+      console.log('[handleAvatarCropComplete] Upload successful:', {
+        avatarUrl: response.avatar_url,
+      });
+
+      // Create preview from cropped blob
+      const previewUrl = URL.createObjectURL(croppedBlob);
+      setAvatarPreview(previewUrl);
+
+      // Update user avatar in auth context
+      if (response.avatar_url) {
+        updateUserAvatar(response.avatar_url);
+      }
+
+      setAvatarSuccess(true);
+      setAvatarFile(null);
+
+      // Clear success message after 3 seconds
+      setTimeout(() => {
+        setAvatarSuccess(false);
+        // Clean up the preview URL
+        if (previewUrl) {
+          URL.revokeObjectURL(previewUrl);
+        }
+      }, 3000);
+    } catch (err) {
+      console.error('[handleAvatarCropComplete] Error uploading cropped avatar:', err);
+
+      if (err instanceof ApiException) {
+        if (err.errors?.avatar) {
+          const avatarErrors = Array.isArray(err.errors.avatar)
+            ? err.errors.avatar.join(', ')
+            : err.errors.avatar;
+          setAvatarError(`Validation error: ${avatarErrors}`);
+        } else {
+          setAvatarError(err.message);
+        }
+      } else if (err instanceof Error) {
+        setAvatarError(err.message);
+      } else {
+        setAvatarError('Failed to upload avatar');
+      }
+    } finally {
+      setAvatarLoading(false);
     }
   };
 
@@ -673,7 +743,7 @@ export default function EditProfilePage() {
                     {avatarPreview ? (
                       <img src={avatarPreview} alt="Avatar preview" className="w-full h-full object-cover" />
                     ) : user?.avatar ? (
-                      <img src={`${process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '')}/storage/avatars/${user.avatar}`} alt="Current avatar" className="w-full h-full object-cover" />
+                      <img src={user.avatar} alt="Current avatar" className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600 text-white text-3xl font-bold">
                         {user?.display_name?.charAt(0).toUpperCase() || 'U'}
@@ -787,6 +857,20 @@ export default function EditProfilePage() {
           </form>
         </div>
       </div>
+
+      {/* Avatar Cropper Modal */}
+      {showAvatarCropper && imageToCrop && (
+        <AvatarCropper
+          imageSrc={imageToCrop}
+          onCropComplete={handleAvatarCropComplete}
+          onCancel={() => {
+            setShowAvatarCropper(false);
+            setImageToCrop(null);
+            setAvatarFile(null);
+            setAvatarError(null);
+          }}
+        />
+      )}
     </div>
   );
 }

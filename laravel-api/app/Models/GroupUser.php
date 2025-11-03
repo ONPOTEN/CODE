@@ -31,9 +31,12 @@ class GroupUser extends Model
     const ROLE_USER = 'user';
 
     // Status constants
-    const STATUS_ACTIVE = 'active';
+    const STATUS_APPROVED = 'approved';
     const STATUS_PENDING = 'pending';
     const STATUS_BANNED = 'banned';
+    const STATUS_INACTIVE = 'inactive';
+    // Deprecated: kept for backward compatibility
+    const STATUS_ACTIVE = 'approved';
 
     /**
      * Get available roles
@@ -53,9 +56,10 @@ class GroupUser extends Model
     public static function getStatuses(): array
     {
         return [
-            self::STATUS_ACTIVE => 'Active',
+            self::STATUS_APPROVED => 'Approved',
             self::STATUS_PENDING => 'Pending',
             self::STATUS_BANNED => 'Banned',
+            self::STATUS_INACTIVE => 'Inactive',
         ];
     }
 
@@ -100,11 +104,19 @@ class GroupUser extends Model
     }
 
     /**
-     * Scope: Get active members
+     * Scope: Get active/approved members
      */
     public function scopeActive($query)
     {
-        return $query->where('status', self::STATUS_ACTIVE);
+        return $query->where('status', self::STATUS_APPROVED);
+    }
+
+    /**
+     * Scope: Get approved members
+     */
+    public function scopeApproved($query)
+    {
+        return $query->where('status', self::STATUS_APPROVED);
     }
 
     /**
@@ -164,11 +176,19 @@ class GroupUser extends Model
     }
 
     /**
-     * Check if member is active
+     * Check if member is approved/active
      */
     public function isActive(): bool
     {
-        return $this->status === self::STATUS_ACTIVE;
+        return $this->status === self::STATUS_APPROVED;
+    }
+
+    /**
+     * Check if member is approved
+     */
+    public function isApproved(): bool
+    {
+        return $this->status === self::STATUS_APPROVED;
     }
 
     /**

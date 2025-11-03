@@ -1,17 +1,66 @@
 'use client';
 
 import Link from 'next/link';
-import { Group } from '@/lib/api';
+import { useState, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { Group, groups as groupsApi } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface GroupCardProps {
   group: Group;
+  onDeleted?: (groupId: number) => void;
 }
 
-export function GroupCard({ group }: GroupCardProps) {
+export function GroupCard({ group, onDeleted }: GroupCardProps) {
+  const router = useRouter();
+  const { user: currentUser } = useAuth();
+  const [showMenu, setShowMenu] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowMenu(false);
+      }
+    };
+
+    if (showMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [showMenu]);
+
+  // Check if current user is the group admin/owner
+  const isGroupAdmin = currentUser && currentUser.id === group.group_owner_id;
+
+  const handleDeleteGroup = async () => {
+    if (!confirm('Are you sure you want to delete this group? This action cannot be undone.')) return;
+
+    try {
+      setIsDeleting(true);
+      await groupsApi.delete(group.group_id);
+      setShowMenu(false);
+      if (onDeleted) {
+        onDeleted(group.group_id);
+      }
+      // Redirect to groups list
+      router.push('/groups?message=Group deleted successfully');
+    } catch (err) {
+      console.error('Error deleting group:', err);
+      alert('Failed to delete group');
+      setIsDeleting(false);
+    }
+  };
+
   return (
-    <Link href={`/groups/${group.group_id}`}>
-      <article className="bg-white rounded-lg shadow-sm hover:shadow-lg transition-shadow border border-gray-200 overflow-hidden hover:border-blue-300 cursor-pointer h-full flex flex-col">
-        {/* Cover Image */}
+    <>
+      <Link href={`/groups/${group.group_id}`}>
+        <article className="bg-white rounded-lg shadow-sm hover:shadow-lg transition-shadow border border-gray-200 overflow-hidden hover:border-blue-300 cursor-pointer h-full flex flex-col">
+        {/* Cover Image with Menu Button */}
         {group.cover_image ? (
           <div className="relative h-40 bg-gray-200 overflow-hidden">
             <img
@@ -33,12 +82,88 @@ export function GroupCard({ group }: GroupCardProps) {
                 }
               }}
             />
+            {/* Three Dot Menu - Only show for group admin */}
+            {isGroupAdmin && (
+              <div className="absolute top-2 right-2" ref={menuRef}>
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setShowMenu(!showMenu);
+                  }}
+                  className="p-2 hover:bg-white/20 rounded-full transition-colors"
+                  title="Group options"
+                >
+                  <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M10.5 1.5H9.5V3.5H10.5V1.5ZM10.5 8.5H9.5V10.5H10.5V8.5ZM10.5 15.5H9.5V17.5H10.5V15.5Z" />
+                  </svg>
+                </button>
+
+                {/* Dropdown Menu */}
+                {showMenu && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-20 py-1">
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleDeleteGroup();
+                      }}
+                      disabled={isDeleting}
+                      className="w-full text-left px-4 py-2 hover:bg-red-50 transition-colors flex items-center gap-2 text-red-600 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                      {isDeleting ? 'Deleting...' : 'Delete Group'}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         ) : (
           <div className="relative h-40 bg-gradient-to-br from-blue-400 to-blue-500 flex items-center justify-center">
             <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.856-1.487M15 10a3 3 0 11-6 0 3 3 0 016 0zM15 20H9m6 0h6" />
             </svg>
+            {/* Three Dot Menu - Only show for group admin */}
+            {isGroupAdmin && (
+              <div className="absolute top-2 right-2" ref={menuRef}>
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setShowMenu(!showMenu);
+                  }}
+                  className="p-2 hover:bg-white/20 rounded-full transition-colors"
+                  title="Group options"
+                >
+                  <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M10.5 1.5H9.5V3.5H10.5V1.5ZM10.5 8.5H9.5V10.5H10.5V8.5ZM10.5 15.5H9.5V17.5H10.5V15.5Z" />
+                  </svg>
+                </button>
+
+                {/* Dropdown Menu */}
+                {showMenu && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-20 py-1">
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleDeleteGroup();
+                      }}
+                      disabled={isDeleting}
+                      className="w-full text-left px-4 py-2 hover:bg-red-50 transition-colors flex items-center gap-2 text-red-600 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                      {isDeleting ? 'Deleting...' : 'Delete Group'}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 
@@ -123,7 +248,8 @@ export function GroupCard({ group }: GroupCardProps) {
           </div>
         </div>
       </article>
-    </Link>
+      </Link>
+    </>
   );
 }
 

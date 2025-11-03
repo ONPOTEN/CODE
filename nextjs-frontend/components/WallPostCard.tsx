@@ -5,20 +5,30 @@ import { useState } from 'react';
 import { Post, GroupPost, WallPost, wallPosts } from '@/lib/api';
 
 interface WallPostCardProps {
-  wallPost: WallPost;
+  wallPost?: WallPost;
+  post?: Post; // Legacy prop for backward compatibility
   isCurrentUserModerator?: boolean;
   onApproved?: (wallPostId: number) => void;
   onRejected?: (wallPostId: number) => void;
 }
 
-export function WallPostCard({ wallPost, isCurrentUserModerator = false, onApproved, onRejected }: WallPostCardProps) {
+export function WallPostCard({ wallPost, post: legacyPost, isCurrentUserModerator = false, onApproved, onRejected }: WallPostCardProps) {
   const [isApproving, setIsApproving] = useState(false);
   const [isRejecting, setIsRejecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Support both new WallPost structure and legacy Post structure
+  const isLegacyPost = !wallPost && legacyPost;
+  const actualWallPost = wallPost || ({
+    id: (legacyPost as any)?.id,
+    post_type: 'wppost',
+    status: 'accepted',
+    post: legacyPost,
+  } as unknown as WallPost);
+
   // Determine post type and get appropriate data
-  const isGroupPost = wallPost.post_type === 'grouppost';
-  const post = wallPost.post as any;
+  const isGroupPost = actualWallPost.post_type === 'grouppost';
+  const post = actualWallPost.post as any;
 
   // Get featured image - prioritize featured_image, then first image from images array
   const featuredImageUrl = post?.featured_image ||
@@ -40,8 +50,12 @@ export function WallPostCard({ wallPost, isCurrentUserModerator = false, onAppro
   const postDate = isGroupPost ? post?.post_date : post?.created_at;
 
   // Get post ID for linking
-  const postId = isGroupPost ? wallPost.group_post_id : wallPost.post_id;
-  const postLink = isGroupPost ? `/group-posts/${postId}` : `/posts/${postId}`;
+  const postId = isLegacyPost
+    ? (legacyPost as any)?.id
+    : (isGroupPost ? actualWallPost.group_post_id : actualWallPost.post_id);
+  const postLink = isLegacyPost
+    ? `/posts/${postId}`
+    : (isGroupPost ? `/group-posts/${postId}` : `/posts/${postId}`);
 
   // Format date
   const formattedDate = new Date(postDate).toLocaleDateString('en-US', {
@@ -59,9 +73,9 @@ export function WallPostCard({ wallPost, isCurrentUserModerator = false, onAppro
     try {
       setIsApproving(true);
       setError(null);
-      await wallPosts.accept(wallPost.id);
+      await wallPosts.accept(actualWallPost.id);
       if (onApproved) {
-        onApproved(wallPost.id);
+        onApproved(actualWallPost.id);
       }
     } catch (err: any) {
       console.error('Error approving wall post:', err);
@@ -82,9 +96,9 @@ export function WallPostCard({ wallPost, isCurrentUserModerator = false, onAppro
     try {
       setIsRejecting(true);
       setError(null);
-      await wallPosts.reject(wallPost.id);
+      await wallPosts.reject(actualWallPost.id);
       if (onRejected) {
-        onRejected(wallPost.id);
+        onRejected(actualWallPost.id);
       }
     } catch (err: any) {
       console.error('Error rejecting wall post:', err);
@@ -189,17 +203,17 @@ export function WallPostCard({ wallPost, isCurrentUserModerator = false, onAppro
       </Link>
 
       {/* Wall Post Status */}
-      {wallPost.status === 'pending' && (
+      {actualWallPost.status === 'pending' && (
         <div className="px-4 py-2 bg-yellow-50 border-t border-yellow-200">
           <p className="text-xs text-yellow-800 font-medium">⏳ Pending Wall Approval</p>
         </div>
       )}
 
-      {wallPost.status === 'rejected' && (
+      {actualWallPost.status === 'rejected' && (
         <div className="px-4 py-3 bg-red-50 border-t border-red-200">
           <p className="text-xs text-red-800 font-medium mb-1">🚫 Rejected from Wall</p>
-          {wallPost.rejection_reason && (
-            <p className="text-xs text-red-700">{wallPost.rejection_reason}</p>
+          {actualWallPost.rejection_reason && (
+            <p className="text-xs text-red-700">{actualWallPost.rejection_reason}</p>
           )}
         </div>
       )}
@@ -212,7 +226,7 @@ export function WallPostCard({ wallPost, isCurrentUserModerator = false, onAppro
       )}
 
       {/* Moderation Buttons - only for pending posts and authorized users */}
-      {isCurrentUserModerator && wallPost.status === 'pending' && (
+      {isCurrentUserModerator && actualWallPost.status === 'pending' && (
         <div className="px-4 py-3 bg-gray-50 border-t border-gray-200 flex gap-2">
           <button
             onClick={handleApprove}

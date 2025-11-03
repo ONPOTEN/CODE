@@ -35,7 +35,7 @@ class UserResource extends JsonResource
             'location' => $shouldShowLocation ? $this->location : null,
             'role' => $this->role,
             'avatar' => $this->avatar,
-            'avatar_url' => $this->avatar ? url('storage/avatars/' . $this->avatar) : null,
+            'avatar_url' => $this->avatar,  // Avatar field now stores full S3 URL directly
             'profile_visibility' => $this->profile_visibility,
             'phone' => $shouldShowPhone ? $this->phone : null,
             'email_public' => $isOwnProfile ? $this->email_public : null,

@@ -1,40 +1,69 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { groups, groupPosts, Group, GroupPost } from '@/lib/api';
-import GroupPostCard from '@/components/GroupPostCard';
+import { groups, Group, auth } from '@/lib/api';
 import GroupPostForm from '@/components/GroupPostForm';
+import InfiniteScrollGroupPosts from '@/components/InfiniteScrollGroupPosts';
 
 export default function GroupWallPage() {
   const params = useParams();
+  const router = useRouter();
   const groupId = params.id as string;
   const [group, setGroup] = useState<Group | null>(null);
-  const [posts, setPosts] = useState<GroupPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isMember, setIsMember] = useState(false);
   const [isCheckingMembership, setIsCheckingMembership] = useState(true);
   const [isJoiningOrLeaving, setIsJoiningOrLeaving] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [sortBy, setSortBy] = useState<'post_date' | 'comment_count'>('post_date');
   const [order, setOrder] = useState<'asc' | 'desc'>('desc');
-  const [isUserModerator, setIsUserModerator] = useState(false);
-  const perPage = 10;
 
   useEffect(() => {
-    fetchGroupAndPosts();
+    fetchGroupDetails();
     checkUserMembership();
-  }, [groupId, currentPage, sortBy, order]);
+  }, [groupId]);
 
   const checkUserMembership = async () => {
     try {
       setIsCheckingMembership(true);
-      const response = await groups.checkMembership(parseInt(groupId));
-      setIsMember(response.is_member);
+
+      // Check if user is authenticated
+      const token = auth.getToken();
+      const isAuth = auth.isAuthenticated();
+
+      console.log('[GroupPage] Auth check:', {
+        isAuth,
+        token: token ? token.substring(0, 20) + '...' : null,
+      });
+
+      setIsAuthenticated(isAuth);
+
+      // If not authenticated, don't check membership
+      if (!isAuth) {
+        setIsMember(false);
+        setCurrentUserId(null);
+        return;
+      }
+
+      // User is authenticated, check membership
+      try {
+        const response = await groups.checkMembership(parseInt(groupId));
+        setIsMember(response.is_member);
+        console.log('[GroupPage] Membership check successful:', response);
+      } catch (memberErr) {
+        console.error('[GroupPage] Membership check failed, token might be invalid:', memberErr);
+        // If membership check fails, token might be invalid
+        setIsMember(false);
+        // If 401 error, clear the invalid token
+        if (memberErr instanceof ApiException && memberErr.status === 401) {
+          console.log('[GroupPage] Token is invalid (401), clearing');
+          auth.logout();
+        }
+      }
 
       // Get current user ID from localStorage or auth context
       const userStr = localStorage.getItem('user');
@@ -50,29 +79,17 @@ export default function GroupWallPage() {
     }
   };
 
-  const fetchGroupAndPosts = async () => {
+  const fetchGroupDetails = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      // Fetch group details
+      // Fetch group details only
       const groupResponse = await groups.getById(parseInt(groupId));
       setGroup(groupResponse.data);
-
-      // Fetch group posts
-      const postsResponse = await groupPosts.getByGroupId(parseInt(groupId), {
-        per_page: perPage,
-        page: currentPage,
-        status: 'publish',
-        sort_by: sortBy,
-        order: order,
-      });
-
-      setPosts(postsResponse.data);
-      setTotalPages(postsResponse.pagination.last_page);
     } catch (err) {
-      console.error('Error fetching group and posts:', err);
-      setError('Failed to load group or posts');
+      console.error('Error fetching group:', err);
+      setError('Failed to load group');
     } finally {
       setLoading(false);
     }
@@ -106,16 +123,6 @@ export default function GroupWallPage() {
     } finally {
       setIsJoiningOrLeaving(false);
     }
-  };
-
-  const handlePostApproved = (postId: number) => {
-    // Remove the approved post from the list
-    setPosts(posts.filter(p => p.id !== postId));
-  };
-
-  const handlePostRejected = (postId: number) => {
-    // Remove the rejected post from the list
-    setPosts(posts.filter(p => p.id !== postId));
   };
 
   if (loading && !group) {
@@ -224,12 +231,21 @@ export default function GroupWallPage() {
               <div className="flex gap-3 flex-wrap">
                 {isMember ? (
                   <>
-                    <Link
-                      href={`/groups/${group.group_id}/create-post`}
+                    <button
+                      onClick={() => {
+                        // Check if authenticated before navigating
+                        if (!auth.isAuthenticated()) {
+                          console.log('[CreatePost] Not authenticated, redirecting to login');
+                          router.push('/login');
+                          return;
+                        }
+                        // If authenticated, navigate to create post
+                        router.push(`/groups/${group.group_id}/create-post`);
+                      }}
                       className="inline-block px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors"
                     >
                       Create Post
-                    </Link>
+                    </button>
                     {currentUserId === group.group_owner_id && (
                       <Link
                         href={`/groups/${group.group_id}/requests`}
@@ -263,22 +279,69 @@ export default function GroupWallPage() {
 
       {/* Posts Section */}
       <div className="max-w-4xl mx-auto px-4 py-8">
-        {/* Post Form - Only visible to approved members */}
-        {isMember && !isCheckingMembership && (
-          <GroupPostForm
-            groupId={parseInt(groupId)}
-            onPostCreated={fetchGroupAndPosts}
-          />
+        {/* Post Form - Only visible to authenticated group members */}
+        {!isCheckingMembership && (
+          <>
+            {!isAuthenticated ? (
+              // User is not authenticated - show login prompt
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mb-8 text-center">
+                <svg className="w-12 h-12 mx-auto mb-4 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"
+                  />
+                </svg>
+                <h3 className="text-lg font-semibold text-yellow-900 mb-2">Sign In to Create Posts</h3>
+                <p className="text-yellow-700 mb-4">You must be signed in to create posts in this group. Please log in to continue.</p>
+                <Link
+                  href="/login"
+                  className="inline-block px-6 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 font-medium transition-colors"
+                >
+                  Sign In
+                </Link>
+              </div>
+            ) : isMember ? (
+              // User is authenticated and is a member - show post form
+              <GroupPostForm
+                groupId={parseInt(groupId)}
+                onPostCreated={() => {
+                  // Refresh will happen automatically with infinite scroll
+                }}
+              />
+            ) : (
+              // User is authenticated but not a member - show join prompt
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8 text-center">
+                <svg className="w-12 h-12 mx-auto mb-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                  />
+                </svg>
+                <h3 className="text-lg font-semibold text-blue-900 mb-2">Join to Create Posts</h3>
+                <p className="text-blue-700 mb-4">You must be a member of this group to create posts. Join the group to get started!</p>
+                <button
+                  onClick={handleJoinGroup}
+                  disabled={isJoiningOrLeaving}
+                  className="inline-block px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isJoiningOrLeaving ? 'Joining...' : 'Join Group'}
+                </button>
+              </div>
+            )}
+          </>
         )}
 
         {/* Sort Options */}
-        <div className="flex gap-4 mb-6 items-center">
+        <div className="flex gap-4 mb-6 items-center flex-wrap">
           <label className="text-sm font-medium text-gray-700">Sort by:</label>
           <select
             value={sortBy}
             onChange={(e) => {
               setSortBy(e.target.value as any);
-              setCurrentPage(1);
             }}
             className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
           >
@@ -290,7 +353,6 @@ export default function GroupWallPage() {
             value={order}
             onChange={(e) => {
               setOrder(e.target.value as any);
-              setCurrentPage(1);
             }}
             className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
           >
@@ -306,93 +368,12 @@ export default function GroupWallPage() {
           </div>
         )}
 
-        {/* Loading State */}
-        {loading && (
-          <div className="flex justify-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          </div>
-        )}
-
-        {/* Posts List */}
-        {!loading && posts.length === 0 ? (
-          <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
-            <svg
-              className="w-16 h-16 mx-auto mb-4 text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-              />
-            </svg>
-            <p className="text-gray-500 text-lg mb-4">No posts yet</p>
-            <Link
-              href={`/groups/${group.group_id}/create-post`}
-              className="inline-block px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors"
-            >
-              Create the first post
-            </Link>
-          </div>
-        ) : (
-          <>
-            <div className="space-y-6">
-              {posts.map((post) => (
-                <GroupPostCard
-                  key={post.id}
-                  post={post}
-                  groupId={parseInt(groupId)}
-                  groupOwnerId={group?.group_owner_id}
-                  isUserModerator={currentUserId === group?.group_owner_id}
-                  onPostApproved={handlePostApproved}
-                  onPostRejected={handlePostRejected}
-                />
-              ))}
-            </div>
-
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="flex justify-center items-center gap-2 mt-8">
-                <button
-                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                  disabled={currentPage === 1}
-                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-                >
-                  Previous
-                </button>
-
-                <div className="flex gap-1">
-                  {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-                    const page = i + 1;
-                    return (
-                      <button
-                        key={page}
-                        onClick={() => setCurrentPage(page)}
-                        className={`px-3 py-2 rounded-lg font-medium ${
-                          currentPage === page ? 'bg-blue-600 text-white' : 'border border-gray-300 hover:bg-gray-50'
-                        }`}
-                      >
-                        {page}
-                      </button>
-                    );
-                  })}
-                  {totalPages > 5 && <span className="px-2 py-2 text-gray-500">...</span>}
-                </div>
-
-                <button
-                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={currentPage === totalPages}
-                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-                >
-                  Next
-                </button>
-              </div>
-            )}
-          </>
-        )}
+        {/* Infinite Scroll Posts */}
+        <InfiniteScrollGroupPosts
+          groupId={parseInt(groupId)}
+          sortBy={sortBy}
+          order={order}
+        />
       </div>
     </div>
   );

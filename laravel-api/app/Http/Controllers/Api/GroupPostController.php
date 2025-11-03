@@ -67,11 +67,32 @@ class GroupPostController extends Controller
     /**
      * Show a single group post
      */
-    public function show(GroupPost $post): JsonResponse
+    public function show($id): JsonResponse
     {
-        return response()->json([
-            'data' => new GroupPostResource($post),
-        ]);
+        try {
+            // Manually fetch with all necessary relationships
+            $post = GroupPost::with(['group', 'author', 'meta'])
+                ->findOrFail($id);
+
+            return response()->json([
+                'data' => new GroupPostResource($post),
+            ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'error' => 'Not found',
+                'message' => 'Group post not found',
+            ], 404);
+        } catch (\Exception $e) {
+            \Log::error('[GroupPostController::show] Failed to fetch post', [
+                'post_id' => $id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'error' => 'Failed to fetch post',
+                'message' => $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**
@@ -102,10 +123,19 @@ class GroupPostController extends Controller
                 'comment_count' => 0,
             ]);
 
-            // Handle image uploads if provided
+            // Handle featured image if provided
+            if ($request->hasFile('featured_image')) {
+                $path = $request->file('featured_image')->store('group-posts/featured', 's3');
+                $post->meta()->create([
+                    'meta_key' => 'featured_image',
+                    'meta_value' => $path,
+                ]);
+            }
+
+            // Handle gallery image uploads if provided
             if ($request->hasFile('images')) {
                 foreach ($request->file('images') as $image) {
-                    $path = $image->store('group-posts', 'public');
+                    $path = $image->store('group-posts', 's3');
                     $post->meta()->create([
                         'meta_key' => 'image',
                         'meta_value' => $path,
@@ -128,11 +158,19 @@ class GroupPostController extends Controller
     /**
      * Update the specified group post
      */
-    public function update(UpdateGroupPostRequest $request, GroupPost $post): JsonResponse
+    public function update(UpdateGroupPostRequest $request, $id): JsonResponse
     {
         try {
-            // Check authorization - only post author or admin can update
-            if ($post->post_author !== auth()->id() && !auth()->user()->isAdmin()) {
+            // Manually fetch the post with group relationship (since route uses {id}, not implicit model binding)
+            $post = GroupPost::with('group')->findOrFail($id);
+
+            $userId = auth()->id();
+            $isPostAuthor = $post->post_author === $userId;
+            $isGroupOwner = $post->group && $post->group->group_owner_id === $userId;
+            $isGlobalAdmin = auth()->user() && auth()->user()->isAdmin();
+
+            // Check authorization - post author, group owner, or global admin can update
+            if (!$isPostAuthor && !$isGroupOwner && !$isGlobalAdmin) {
                 return response()->json([
                     'error' => 'Unauthorized',
                     'message' => 'You do not have permission to update this post',
@@ -153,15 +191,35 @@ class GroupPostController extends Controller
                 'post_modified_gmt' => now(),
             ]);
 
-            // Handle image uploads if provided
+            // Handle featured image if provided
+            if ($request->hasFile('featured_image')) {
+                // Remove old featured image if replacing
+                $oldFeaturedImage = $post->meta()->where('meta_key', 'featured_image')->first();
+                if ($oldFeaturedImage) {
+                    \Storage::disk('s3')->delete($oldFeaturedImage->meta_value);
+                    $oldFeaturedImage->delete();
+                }
+
+                $path = $request->file('featured_image')->store('group-posts/featured', 's3');
+                $post->meta()->create([
+                    'meta_key' => 'featured_image',
+                    'meta_value' => $path,
+                ]);
+            }
+
+            // Handle gallery image uploads if provided
             if ($request->hasFile('images')) {
                 // Remove old images if replacing
                 if ($request->input('replace_images') === true) {
+                    $oldImages = $post->meta()->where('meta_key', 'image')->get();
+                    foreach ($oldImages as $oldImage) {
+                        \Storage::disk('s3')->delete($oldImage->meta_value);
+                    }
                     $post->meta()->where('meta_key', 'image')->delete();
                 }
 
                 foreach ($request->file('images') as $image) {
-                    $path = $image->store('group-posts', 'public');
+                    $path = $image->store('group-posts', 's3');
                     $post->meta()->create([
                         'meta_key' => 'image',
                         'meta_value' => $path,
@@ -184,15 +242,35 @@ class GroupPostController extends Controller
     /**
      * Delete the specified group post
      */
-    public function destroy(GroupPost $post): JsonResponse
+    public function destroy($id): JsonResponse
     {
         try {
-            // Check authorization - only post author or admin can delete
-            if ($post->post_author !== auth()->id() && !auth()->user()->isAdmin()) {
+            // Manually fetch the post with group relationship (since route uses {id}, not implicit model binding)
+            $post = GroupPost::with('group')->findOrFail($id);
+
+            $userId = auth()->id();
+            $isPostAuthor = $post->post_author === $userId;
+            $isGroupOwner = $post->group && $post->group->group_owner_id === $userId;
+            $isGlobalAdmin = auth()->user() && auth()->user()->isAdmin();
+
+            // Check authorization - post author, group owner, or global admin can delete
+            if (!$isPostAuthor && !$isGroupOwner && !$isGlobalAdmin) {
                 return response()->json([
                     'error' => 'Unauthorized',
                     'message' => 'You do not have permission to delete this post',
                 ], 403);
+            }
+
+            // Delete images from S3 before deleting post
+            $images = $post->meta()->where('meta_key', 'image')->get();
+            foreach ($images as $image) {
+                \Storage::disk('s3')->delete($image->meta_value);
+            }
+
+            // Delete featured image from S3
+            $featuredImage = $post->meta()->where('meta_key', 'featured_image')->first();
+            if ($featuredImage) {
+                \Storage::disk('s3')->delete($featuredImage->meta_value);
             }
 
             $post->delete();
@@ -283,14 +361,41 @@ class GroupPostController extends Controller
                 ], 400);
             }
 
-            // Only allow deletion of own posts or admin
+            $userId = auth()->id();
+            $isGlobalAdmin = auth()->user() && auth()->user()->isAdmin();
+
+            // Build query - if not admin, can only delete own posts or posts in groups user owns
             $query = GroupPost::whereIn('id', $postIds);
 
-            if (!auth()->user()->isAdmin()) {
-                $query->where('post_author', auth()->id());
+            if (!$isGlobalAdmin) {
+                // User can delete: posts they authored OR posts in groups they own
+                $query->where(function ($q) use ($userId) {
+                    $q->where('post_author', $userId)
+                      ->orWhereHas('group', function ($g) use ($userId) {
+                          $g->where('group_owner_id', $userId);
+                      });
+                });
             }
 
-            $deletedCount = $query->delete();
+            // Get posts before deleting so we can clean up images
+            $postsToDelete = $query->get();
+
+            // Delete all images from S3 before deleting posts
+            foreach ($postsToDelete as $post) {
+                // Delete gallery images
+                $images = $post->meta()->where('meta_key', 'image')->get();
+                foreach ($images as $image) {
+                    \Storage::disk('s3')->delete($image->meta_value);
+                }
+
+                // Delete featured image
+                $featuredImage = $post->meta()->where('meta_key', 'featured_image')->first();
+                if ($featuredImage) {
+                    \Storage::disk('s3')->delete($featuredImage->meta_value);
+                }
+            }
+
+            $deletedCount = GroupPost::whereIn('id', $postsToDelete->pluck('id'))->delete();
 
             return response()->json([
                 'message' => "Deleted $deletedCount group posts successfully",
@@ -517,11 +622,19 @@ class GroupPostController extends Controller
     /**
      * Set featured image for a post
      */
-    public function setFeaturedImage(Request $request, GroupPost $post): JsonResponse
+    public function setFeaturedImage(Request $request, $id): JsonResponse
     {
         try {
-            // Check authorization
-            if ($post->post_author !== auth()->id() && !auth()->user()->isAdmin()) {
+            // Manually fetch the post with group relationship (since route uses {id}, not implicit model binding)
+            $post = GroupPost::with('group')->findOrFail($id);
+
+            $userId = auth()->id();
+            $isPostAuthor = $post->post_author === $userId;
+            $isGroupOwner = $post->group && $post->group->group_owner_id === $userId;
+            $isGlobalAdmin = auth()->user() && auth()->user()->isAdmin();
+
+            // Check authorization - post author, group owner, or global admin can update featured image
+            if (!$isPostAuthor && !$isGroupOwner && !$isGlobalAdmin) {
                 return response()->json([
                     'error' => 'Unauthorized',
                     'message' => 'You do not have permission to update this post',
@@ -532,12 +645,20 @@ class GroupPostController extends Controller
                 'featured_image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
             ]);
 
-            // Store the featured image
-            $path = $request->file('featured_image')->store('group-posts/featured', 'public');
+            // Delete old featured image if exists
+            $oldFeaturedImage = $post->meta()->where('meta_key', 'featured_image')->first();
+            if ($oldFeaturedImage) {
+                \Storage::disk('s3')->delete($oldFeaturedImage->meta_value);
+                $oldFeaturedImage->delete();
+            }
 
-            // Update post with featured image path
-            $post->update([
-                'featured_image' => $path,
+            // Store the featured image to S3
+            $path = $request->file('featured_image')->store('group-posts/featured', 's3');
+
+            // Save featured image path to meta table
+            $post->meta()->create([
+                'meta_key' => 'featured_image',
+                'meta_value' => $path,
             ]);
 
             return response()->json([

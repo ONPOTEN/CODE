@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, FormEvent } from 'react';
-import { groupPosts } from '@/lib/api';
+import { useRouter } from 'next/navigation';
+import { groupPosts, auth } from '@/lib/api';
 
 interface GroupPostFormProps {
   groupId: number;
@@ -10,6 +11,7 @@ interface GroupPostFormProps {
 }
 
 export default function GroupPostForm({ groupId, onPostCreated, onCancel }: GroupPostFormProps) {
+  const router = useRouter();
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [excerpt, setExcerpt] = useState('');
@@ -28,6 +30,13 @@ export default function GroupPostForm({ groupId, onPostCreated, onCancel }: Grou
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    // Check if user is authenticated
+    if (!auth.isAuthenticated()) {
+      console.log('[GroupPostForm] Not authenticated, redirecting to login');
+      router.push('/login');
+      return;
+    }
 
     if (!title.trim() || !content.trim()) {
       setError('Title and content are required');

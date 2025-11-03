@@ -24,7 +24,7 @@ class GroupPostUserResource extends JsonResource
             'name' => $this->display_name,
             'username' => $this->user_login,
             'avatar' => $this->avatar,
-            'avatar_url' => $this->avatar ? url('storage/avatars/' . $this->avatar) : null,
+            'avatar_url' => $this->avatar,  // Avatar field now stores full S3 URL directly
             'role' => $this->role,
         ];
     }

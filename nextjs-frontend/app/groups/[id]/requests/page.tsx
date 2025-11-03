@@ -150,12 +150,21 @@ export default function GroupJoinRequestsPage() {
         <div className="max-w-4xl mx-auto px-4 py-6">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <Link
-                href={`/groups/${group.group_id}`}
-                className="text-blue-600 hover:text-blue-700 font-medium mb-2 inline-block"
-              >
-                ← Back to {group.group_name}
-              </Link>
+              <div className="flex items-center gap-2 mb-2">
+                <Link
+                  href="/"
+                  className="text-gray-600 hover:text-gray-900 font-medium"
+                >
+                  🏠 Home
+                </Link>
+                <span className="text-gray-400">/</span>
+                <Link
+                  href={`/groups/${group.group_id}`}
+                  className="text-blue-600 hover:text-blue-700 font-medium"
+                >
+                  ← Back to {group.group_name}
+                </Link>
+              </div>
               <h1 className="text-3xl font-bold text-gray-900">Join Requests</h1>
               <p className="text-gray-600 mt-1">{requests.length} pending request(s)</p>
             </div>

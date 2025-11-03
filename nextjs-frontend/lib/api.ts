@@ -404,6 +404,7 @@ export interface Post {
   visibility?: string;
   featured_image?: string;
   images?: PostImage[];
+  author?: User;  // Author information with avatar
   created_at: string;
   updated_at: string;
 }
@@ -766,6 +767,10 @@ export const groups = {
       method: 'POST',
       body: JSON.stringify(data),
     });
+  },
+
+  store: async (data: FormData): Promise<{ data: Group; message: string }> => {
+    return apiRequestWithFiles('/groups', data);
   },
 
   update: async (id: number, data: Partial<Group>): Promise<{ data: Group; message: string }> => {

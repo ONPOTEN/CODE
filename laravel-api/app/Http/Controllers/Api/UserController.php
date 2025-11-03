@@ -309,7 +309,13 @@ class UserController extends Controller
 
             // Delete old avatar if exists
             if ($user->avatar) {
-                \Storage::disk('s3')->delete('avatars/' . $user->avatar);
+                // Extract filename from either full URL or just filename
+                $oldFilename = $user->avatar;
+                if (strpos($oldFilename, 'http') === 0) {
+                    // If it's a full URL, extract just the filename
+                    $oldFilename = basename($oldFilename);
+                }
+                \Storage::disk('s3')->delete('avatars/' . $oldFilename);
             }
 
             // Store file using Laravel Storage (handles directory creation)
@@ -323,18 +329,21 @@ class UserController extends Controller
                 ], 500);
             }
 
-            // Update user avatar
-            $user->avatar = $filename;
+            // Get the full S3 URL
+            $avatarUrl = \Storage::disk('s3')->url('avatars/' . $filename);
+
+            // Update user avatar with full S3 URL
+            $user->avatar = $avatarUrl;
             $user->save();
 
-            \Log::info('Avatar uploaded successfully', ['user_id' => $user->ID, 'filename' => $filename]);
+            \Log::info('Avatar uploaded successfully', ['user_id' => $user->ID, 'filename' => $filename, 'avatar_url' => $avatarUrl]);
 
             // Return complete user data with avatar_url
             return response()->json([
                 'message' => 'Avatar uploaded successfully',
                 'user' => new \App\Http\Resources\UserResource($user),
                 'avatar' => $filename,
-                'avatar_url' => \Storage::disk('s3')->url('avatars/' . $filename),
+                'avatar_url' => $avatarUrl,
             ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
             \Log::error('Avatar validation error', ['errors' => $e->errors()]);

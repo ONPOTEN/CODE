@@ -348,7 +348,7 @@ export default function InfiniteScrollPosts() {
                           author={post.author}
                           createdAt={post.created_at}
                           compact={true}
-                          showAvatar={false}
+                          showAvatar={true}
                         />
                       )}
 
