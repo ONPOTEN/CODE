@@ -159,12 +159,40 @@ class GroupController extends Controller
             }
 
             // Update basic fields
-            $group->update([
+            $updateData = [
                 'group_name' => $request->input('group_name', $group->group_name),
                 'description' => $request->input('description', $group->description),
                 'visibility' => $request->input('visibility', $group->visibility),
                 'status' => $request->input('status', $group->status),
-            ]);
+            ];
+
+            // Handle requires_approval if provided
+            if ($request->has('requires_approval')) {
+                $requiresApprovalInput = $request->input('requires_approval');
+                // Convert string values to boolean
+                $updateData['requires_approval'] = in_array($requiresApprovalInput, ['1', 'true', 'yes', 'on'], true);
+
+                \Log::info('[GroupController] Update requires_approval', [
+                    'input' => $requiresApprovalInput,
+                    'converted' => $updateData['requires_approval'],
+                    'group_id' => $group->group_id,
+                ]);
+            }
+
+            // Handle requires_approval_posts if provided
+            if ($request->has('requires_approval_posts')) {
+                $requiresApprovalPostsInput = $request->input('requires_approval_posts');
+                // Convert string values to boolean
+                $updateData['requires_approval_posts'] = in_array($requiresApprovalPostsInput, ['1', 'true', 'yes', 'on'], true);
+
+                \Log::info('[GroupController] Update requires_approval_posts', [
+                    'input' => $requiresApprovalPostsInput,
+                    'converted' => $updateData['requires_approval_posts'],
+                    'group_id' => $group->group_id,
+                ]);
+            }
+
+            $group->update($updateData);
 
             // Handle avatar upload
             if ($request->hasFile('avatar')) {
@@ -364,6 +392,21 @@ class GroupController extends Controller
         try {
             $userId = auth()->id();
 
+            // Log group data for debugging
+            \Log::info('[GroupController::joinGroup] Starting join process', [
+                'group_id' => $group->group_id,
+                'group_name' => $group->group_name,
+                'requires_approval' => $group->requires_approval,
+                'requires_approval_type' => gettype($group->requires_approval),
+                'requires_approval_value_check' => [
+                    'is_true' => $group->requires_approval === true,
+                    'is_one' => $group->requires_approval === 1,
+                    'is_truthy' => (bool) $group->requires_approval,
+                ],
+                'user_id' => $userId,
+                'group_attributes' => $group->getAttributes(),
+            ]);
+
             // Check if already a member
             $existingMember = GroupUser::where('group_id', $group->group_id)
                 ->where('group_user_id', $userId)
@@ -388,17 +431,37 @@ class GroupController extends Controller
                             'message' => 'You have been banned from this group',
                         ], 403);
                     }
-                    // Reactivate inactive member
-                    $existingMember->update(['status' => 'approved']);
+                    // Reactivate inactive member - respect requires_approval setting
+                    $status = $group->requires_approval ? 'pending' : 'approved';
+                    $existingMember->update(['status' => $status]);
+
+                    \Log::info('[GroupController::joinGroup] Reactivating member', [
+                        'group_id' => $group->group_id,
+                        'user_id' => $userId,
+                        'previous_status' => 'inactive',
+                        'new_status' => $status,
+                        'requires_approval' => $group->requires_approval,
+                    ]);
+
                     return response()->json([
-                        'message' => 'Successfully joined group',
-                        'is_member' => true,
+                        'message' => $status === 'pending'
+                            ? 'Join request submitted. Awaiting approval from group admin.'
+                            : 'Successfully joined group',
+                        'is_member' => $status === 'approved',
+                        'status' => $status,
                     ], 200);
                 }
             }
 
             // Create new membership - set as pending if group requires approval, approved otherwise
             $status = $group->requires_approval ? 'pending' : 'approved';
+
+            \Log::info('[GroupController::joinGroup] Creating membership', [
+                'group_id' => $group->group_id,
+                'user_id' => $userId,
+                'status' => $status,
+                'requires_approval' => $group->requires_approval,
+            ]);
 
             GroupUser::create([
                 'group_id' => $group->group_id,
@@ -608,6 +671,97 @@ class GroupController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'error' => 'Failed to reject join request',
+                'message' => $e->getMessage(),
+            ], 400);
+        }
+    }
+
+    /**
+     * Get all members of a group
+     */
+    public function getMembers(Group $group): JsonResponse
+    {
+        try {
+            // Check authorization - only group owner can view members
+            if ($group->group_owner_id !== auth()->id() && !auth()->user()->isAdmin()) {
+                return response()->json([
+                    'error' => 'Unauthorized',
+                    'message' => 'You do not have permission to view group members',
+                ], 403);
+            }
+
+            $members = GroupUser::where('group_id', $group->group_id)
+                ->with('user')
+                ->orderByDesc('created_at')
+                ->get()
+                ->map(fn($member) => [
+                    'id' => $member->id,
+                    'group_user_id' => $member->group_user_id,
+                    'group_id' => $member->group_id,
+                    'status' => $member->status,
+                    'created_at' => $member->created_at,
+                    'user' => $member->user ? [
+                        'id' => $member->user->ID,
+                        'name' => $member->user->display_name,
+                        'email' => $member->user->user_email,
+                        'avatar' => $member->user->wp_user_avatar ?? null,
+                    ] : null,
+                ]);
+
+            return response()->json([
+                'data' => $members,
+                'total' => $members->count(),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Failed to fetch group members',
+                'message' => $e->getMessage(),
+            ], 400);
+        }
+    }
+
+    /**
+     * Remove a member from a group
+     */
+    public function removeMember(Group $group, $userId): JsonResponse
+    {
+        try {
+            // Check authorization - only group owner can remove members
+            if ($group->group_owner_id !== auth()->id() && !auth()->user()->isAdmin()) {
+                return response()->json([
+                    'error' => 'Unauthorized',
+                    'message' => 'You do not have permission to remove members from this group',
+                ], 403);
+            }
+
+            // Prevent owner from being removed
+            if ($userId == $group->group_owner_id) {
+                return response()->json([
+                    'error' => 'Invalid action',
+                    'message' => 'Cannot remove the group owner',
+                ], 400);
+            }
+
+            $membership = GroupUser::where('group_id', $group->group_id)
+                ->where('group_user_id', $userId)
+                ->first();
+
+            if (!$membership) {
+                return response()->json([
+                    'error' => 'Member not found',
+                    'message' => 'This user is not a member of the group',
+                ], 404);
+            }
+
+            $membership->delete();
+
+            return response()->json([
+                'message' => 'Member removed successfully',
+                'user_id' => $userId,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Failed to remove member',
                 'message' => $e->getMessage(),
             ], 400);
         }

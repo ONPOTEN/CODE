@@ -8,14 +8,20 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useEngagement } from '@/contexts/EngagementContext';
+import { useGroupEngagement } from '@/contexts/GroupEngagementContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Engagement } from '@/lib/engagementService';
+import { GroupEngagement } from '@/lib/groupEngagementService';
 import { handleSocialShare } from '@/lib/shareUtils';
 import { ShareToast } from '@/components/ShareToast';
 import { posts } from '@/lib/api';
 
 interface EngagementButtonsProps {
-  postId: number;
+  postId?: number;
+  entityId?: number;
+  entityType?: 'post' | 'group-post';
+  postType?: string; // Any value = group post, null/undefined = regular post
+  isGroupPost?: boolean; // Explicit flag to override detection
   postTitle?: string;
   postSlug?: string;
   postText?: string;
@@ -26,6 +32,10 @@ interface EngagementButtonsProps {
 
 export function EngagementButtons({
   postId,
+  entityId,
+  entityType,
+  postType,
+  isGroupPost,
   postTitle = 'Check out this post',
   postSlug,
   postText,
@@ -33,8 +43,35 @@ export function EngagementButtons({
   showLabels = true,
   compact = false,
 }: EngagementButtonsProps) {
+  // Support both old postId prop and new entityId/entityType pattern
+  const id = postId ?? entityId;
+
+  // Determine type based on priority:
+  // 1. Explicit isGroupPost flag
+  // 2. Explicit entityType
+  // 3. Check postType: if it has any value, it's a group post
+  // 4. Default to 'post'
+  let type: 'post' | 'group-post' = 'post';
+
+  if (isGroupPost === true) {
+    type = 'group-post';
+  } else if (isGroupPost === false) {
+    type = 'post';
+  } else if (entityType === 'group-post') {
+    type = 'group-post';
+  } else if (entityType === 'post') {
+    type = 'post';
+  } else if (postType) {
+    // postType has any value = group post
+    type = 'group-post';
+  }
   const router = useRouter();
   const { isAuthenticated } = useAuth();
+
+  // Use appropriate engagement context based on post type
+  const regularEngagement = useEngagement();
+  const groupEngagement = useGroupEngagement();
+
   const {
     engagements,
     toggleLike,
@@ -44,21 +81,21 @@ export function EngagementButtons({
     dislikeLoading,
     shareLoading,
     fetchEngagementStats,
-  } = useEngagement();
+  } = type === 'group-post' ? groupEngagement : regularEngagement;
 
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [isShareToWallLoading, setIsShareToWallLoading] = useState(false);
   const { user } = useAuth();
-  const engagement = engagements.get(postId);
+  const engagement = engagements.get(id!);
 
   // Load engagement stats on mount
   useEffect(() => {
-    if (!engagement) {
-      fetchEngagementStats(postId);
+    if (!engagement && id) {
+      fetchEngagementStats(id);
     }
-  }, [postId, engagement, fetchEngagementStats]);
+  }, [id, engagement, fetchEngagementStats]);
 
   if (!engagement) {
     return <div className={`bg-gray-100 rounded animate-pulse h-12 ${className}`} />;
@@ -69,7 +106,7 @@ export function EngagementButtons({
       router.push('/login');
       return;
     }
-    toggleLike(postId);
+    toggleLike(id!);
   };
 
   const handleDislikeClick = () => {
@@ -77,7 +114,7 @@ export function EngagementButtons({
       router.push('/login');
       return;
     }
-    toggleDislike(postId);
+    toggleDislike(id!);
   };
 
   const handleShareClick = () => {
@@ -94,12 +131,14 @@ export function EngagementButtons({
       return;
     }
     try {
-      // Track share in backend
-      await sharePost(postId, platform);
+      // Track share in backend (only for regular posts)
+      if (type === 'post') {
+        await sharePost(id!, platform);
+      }
       setShowShareMenu(false);
 
       // Open social media share dialog
-      await handleSocialShare(platform, postId, postTitle, postSlug, postText);
+      await handleSocialShare(platform, id!, postTitle, postSlug, postText);
 
       // Show success message for direct link
       if (platform === 'direct') {
@@ -116,7 +155,7 @@ export function EngagementButtons({
       router.push('/login');
       return;
     }
-    document.getElementById(`comments-section-${postId}`)?.scrollIntoView({ behavior: 'smooth' });
+    document.getElementById(`comments-section-${id}`)?.scrollIntoView({ behavior: 'smooth' });
   };
 
   const handleShareToMyWall = async () => {

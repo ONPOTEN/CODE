@@ -695,6 +695,7 @@ export interface Group {
   visibility: 'public' | 'private';
   avatar?: string;
   cover_image?: string;
+  requires_approval?: boolean;
   owner?: User;
   posts_count?: number;
   members_count?: number;
@@ -780,6 +781,10 @@ export const groups = {
     });
   },
 
+  updateWithFiles: async (id: number, data: FormData): Promise<{ data: Group; message: string }> => {
+    return apiRequestWithFiles<{ data: Group; message: string }>(`/groups/${id}`, data);
+  },
+
   delete: async (id: number): Promise<{ message: string }> => {
     return apiRequest(`/groups/${id}`, {
       method: 'DELETE',
@@ -806,7 +811,7 @@ export const groups = {
     return apiRequest(`/groups/${groupId}/check-membership`);
   },
 
-  joinGroup: async (groupId: number): Promise<{ message: string; is_member: boolean }> => {
+  joinGroup: async (groupId: number): Promise<{ message: string; is_member: boolean; status?: 'pending' | 'approved' }> => {
     return apiRequest(`/groups/${groupId}/join`, {
       method: 'POST',
     });
@@ -831,6 +836,16 @@ export const groups = {
   rejectJoinRequest: async (groupId: number, userId: number): Promise<{ message: string; user_id: number }> => {
     return apiRequest(`/groups/${groupId}/requests/${userId}/reject`, {
       method: 'POST',
+    });
+  },
+
+  getGroupMembers: async (groupId: number): Promise<{ data: any[] }> => {
+    return apiRequest(`/groups/${groupId}/members`);
+  },
+
+  removeMember: async (groupId: number, userId: number): Promise<{ message: string }> => {
+    return apiRequest(`/groups/${groupId}/members/${userId}`, {
+      method: 'DELETE',
     });
   },
 };
@@ -1005,6 +1020,24 @@ export const groupPosts = {
 
   getPendingPosts: async (groupId: number): Promise<{ data: GroupPost[]; total: number }> => {
     return apiRequest(`/groups/${groupId}/posts/pending`);
+  },
+
+  approvePost: async (groupId: number, postId: number): Promise<{ message: string }> => {
+    return apiRequest(`/groups/${groupId}/posts/${postId}/approve`, {
+      method: 'POST',
+    });
+  },
+
+  rejectPost: async (groupId: number, postId: number): Promise<{ message: string }> => {
+    return apiRequest(`/groups/${groupId}/posts/${postId}/reject`, {
+      method: 'POST',
+    });
+  },
+
+  deletePost: async (postId: number): Promise<{ message: string }> => {
+    return apiRequest(`/group-posts/${postId}`, {
+      method: 'DELETE',
+    });
   },
 };
 

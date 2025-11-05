@@ -22,6 +22,8 @@ class GroupResource extends JsonResource
             'owner' => new UserResource($this->whenLoaded('owner')),
             'status' => $this->status,
             'visibility' => $this->visibility,
+            'requires_approval' => $this->requires_approval,
+            'requires_approval_posts' => $this->requires_approval_posts,
             'avatar' => $this->avatar,
             'cover_image' => $this->cover_image,
             'created_at' => $this->created_at,

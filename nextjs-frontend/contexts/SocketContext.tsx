@@ -56,42 +56,58 @@ export function SocketProvider({ children }: { children: ReactNode }) {
 
     // Connect to Socket.IO server
     const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3000';
-    const newSocket = io(socketUrl);
+    console.log('[SocketContext] Attempting to connect to:', socketUrl);
 
-    newSocket.on('connect', () => {
-      console.log('Socket connected:', newSocket.id);
-      setIsConnected(true);
+    try {
+      const newSocket = io(socketUrl, {
+        reconnection: true,
+        reconnectionDelay: 1000,
+        reconnectionDelayMax: 5000,
+        reconnectionAttempts: 5,
+        transports: ['websocket', 'polling'], // Try websocket first, then fallback to polling
+        secure: true,
+      });
 
-      // Register user with socket server
-      newSocket.emit('chat:register', { userId: user.id });
-      console.log('Registered user with socket:', user.id);
-    });
+      newSocket.on('connect', () => {
+        console.log('[SocketContext] Connected successfully:', newSocket.id);
+        setIsConnected(true);
 
-    newSocket.on('disconnect', () => {
-      console.log('Socket disconnected');
+        // Register user with socket server
+        newSocket.emit('chat:register', { userId: user.id });
+        console.log('[SocketContext] Registered user with socket:', user.id);
+      });
+
+      newSocket.on('disconnect', () => {
+        console.log('[SocketContext] Disconnected');
+        setIsConnected(false);
+      });
+
+      newSocket.on('connect_error', (error) => {
+        console.error('[SocketContext] Connection error:', error);
+        setIsConnected(false);
+      });
+
+      // Debug: Log ALL events received
+      newSocket.onAny((eventName, ...args) => {
+        console.log('[SocketContext] Event Received:', eventName, args);
+      });
+
+      // Specifically log new:message events
+      newSocket.on('new:message', (message) => {
+        console.log('[SocketContext] new:message Event:', message);
+      });
+
+      setSocket(newSocket);
+
+      return () => {
+        console.log('[SocketContext] Cleaning up socket connection');
+        newSocket.disconnect();
+      };
+    } catch (error) {
+      console.error('[SocketContext] Failed to initialize Socket.IO:', error);
+      setSocket(null);
       setIsConnected(false);
-    });
-
-    newSocket.on('connect_error', (error) => {
-      console.error('Socket connection error:', error);
-      setIsConnected(false);
-    });
-
-    // Debug: Log ALL events received
-    newSocket.onAny((eventName, ...args) => {
-      console.log('🔵 Socket.IO Event Received:', eventName, args);
-    });
-
-    // Specifically log new:message events
-    newSocket.on('new:message', (message) => {
-      console.log('🟢 NEW:MESSAGE Event in SocketContext:', message);
-    });
-
-    setSocket(newSocket);
-
-    return () => {
-      newSocket.disconnect();
-    };
+    }
   }, [isAuthenticated, user]);
 
   const onNewMessage = useCallback((callback: (message: ChatMessage) => void) => {

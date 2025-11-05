@@ -145,8 +145,17 @@ export default function CreateGroupPostPage() {
       formData.append('title', title);
       formData.append('content', content);
       formData.append('excerpt', excerpt);
-      formData.append('status', 'publish');
+      // If group requires approval for posts, set status to 'pending', otherwise 'publish'
+      const postStatus = group.requires_approval_posts ? 'pending' : 'publish';
+      formData.append('status', postStatus);
       formData.append('visibility', visibility);
+
+      console.log('[CreatePost] Submitting post:', {
+        groupId,
+        requires_approval_posts: group.requires_approval_posts,
+        postStatus,
+        title: title.substring(0, 50),
+      });
 
       // Add featured image if provided
       if (featuredImageFile) {
@@ -158,7 +167,7 @@ export default function CreateGroupPostPage() {
         formData.append('images[]', image);
       });
 
-      await groupPosts.create(formData);
+      const response = await groupPosts.create(formData);
 
       // Clean up preview URLs
       imagePreviews.forEach((preview) => URL.revokeObjectURL(preview));
@@ -166,7 +175,13 @@ export default function CreateGroupPostPage() {
         URL.revokeObjectURL(featuredImagePreview);
       }
 
-      router.push(`/groups/${groupId}?message=Post created successfully`);
+      // Check if post is pending approval
+      const isPending = response.data?.post_status === 'pending';
+      const message = isPending
+        ? 'Post created successfully and is awaiting approval'
+        : 'Post created successfully';
+
+      router.push(`/groups/${groupId}?message=${encodeURIComponent(message)}`);
     } catch (err) {
       if (err instanceof ApiException) {
         setError(err.message);
@@ -274,6 +289,21 @@ export default function CreateGroupPostPage() {
           <h1 className="text-3xl font-bold text-gray-900 mt-4">Create a New Post</h1>
           <p className="text-gray-600 mt-2">Share your thoughts with the group</p>
         </div>
+
+        {/* Approval Notice */}
+        {group.requires_approval_posts && (
+          <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+            <div className="flex gap-3">
+              <svg className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+              <div>
+                <p className="text-sm font-medium text-amber-900">Posts require approval</p>
+                <p className="text-sm text-amber-700 mt-1">Your post will be reviewed by group moderators before being published.</p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Form */}
         <div className="bg-white rounded-lg shadow p-6">

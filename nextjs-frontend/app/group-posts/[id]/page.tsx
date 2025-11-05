@@ -5,7 +5,8 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { groupPosts, GroupPost, User, ApiException } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
-import { EngagementButtons } from '@/components/EngagementButtons';
+import { GroupEngagementProvider } from '@/contexts/GroupEngagementContext';
+import { GroupEngagementButtons } from '@/components/GroupEngagementButtons';
 import { CommentsSection } from '@/components/CommentsSection';
 
 export default function GroupPostDetailPage() {
@@ -112,8 +113,9 @@ export default function GroupPostDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto px-4 py-8">
+    <GroupEngagementProvider token={localStorage.getItem('api_token') || ''}>
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Back Button */}
         <Link
           href={post.group ? `/groups/${post.group_id}` : '/'}
@@ -385,11 +387,9 @@ export default function GroupPostDetailPage() {
                   </svg>
                   Engagement
                 </h3>
-                <EngagementButtons
-                  entityType="group-post"
-                  entityId={post.id}
-                  initialLikes={post.likes_count || 0}
-                  initialDislikes={post.dislikes_count || 0}
+                <GroupEngagementButtons
+                  postId={post.id}
+                  postTitle={post.post_title}
                 />
               </div>
             )}
@@ -569,6 +569,7 @@ export default function GroupPostDetailPage() {
           </Link>
         </div>
       </div>
-    </div>
+      </div>
+    </GroupEngagementProvider>
   );
 }

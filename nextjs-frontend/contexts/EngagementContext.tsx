@@ -20,13 +20,13 @@ interface EngagementContextType {
   shareLoading: Map<number, boolean>;
 
   // Actions
-  toggleLike: (postId: number) => Promise<void>;
-  toggleDislike: (postId: number) => Promise<void>;
+  toggleLike: (postId: number, type?: 'post' | 'group-post') => Promise<void>;
+  toggleDislike: (postId: number, type?: 'post' | 'group-post') => Promise<void>;
   sharePost: (postId: number, platform: string) => Promise<void>;
   addComment: (postId: number, content: string, parentId?: number) => Promise<void>;
   updateComment: (commentId: number, content: string) => Promise<void>;
   deleteComment: (postId: number, commentId: number) => Promise<void>;
-  fetchEngagementStats: (postId: number) => Promise<void>;
+  fetchEngagementStats: (postId: number, type?: 'post' | 'group-post') => Promise<void>;
   fetchComments: (postId: number, page?: number) => Promise<void>;
   fetchLikes: (postId: number, page?: number) => Promise<any>;
   fetchShares: (postId: number, page?: number) => Promise<any>;
@@ -228,36 +228,36 @@ export function EngagementProvider({ children, token }: { children: React.ReactN
   }, []);
 
   // Fetch engagement stats
-  const fetchEngagementStats = useCallback(async (postId: number) => {
+  const fetchEngagementStats = useCallback(async (postId: number, type: 'post' | 'group-post' = 'post') => {
     try {
-      const stats = await engagementService.getEngagementStats(postId);
+      const stats = await engagementService.getEngagementStats(postId, type);
       setEngagements((prev) => {
         const updated = new Map(prev);
         updated.set(postId, stats);
         return updated;
       });
     } catch (error) {
-      console.error(`Failed to fetch engagement stats for post ${postId}:`, error);
+      console.error(`Failed to fetch engagement stats for ${type} ${postId}:`, error);
     }
   }, []);
 
   // Toggle like
   const toggleLike = useCallback(
-    async (postId: number) => {
+    async (postId: number, type: 'post' | 'group-post' = 'post') => {
       try {
         setLikeLoading((prev) => new Map(prev).set(postId, true));
         const engagement = engagements.get(postId);
 
         if (engagement?.likes.user_liked) {
-          await engagementService.unlikePost(postId);
+          await engagementService.unlikePost(postId, type);
         } else {
-          await engagementService.likePost(postId);
+          await engagementService.likePost(postId, type);
         }
 
         // Refresh stats
-        await fetchEngagementStats(postId);
+        await fetchEngagementStats(postId, type);
       } catch (error) {
-        console.error(`Failed to toggle like for post ${postId}:`, error);
+        console.error(`Failed to toggle like for ${type} ${postId}:`, error);
       } finally {
         setLikeLoading((prev) => {
           const updated = new Map(prev);
@@ -271,21 +271,21 @@ export function EngagementProvider({ children, token }: { children: React.ReactN
 
   // Toggle dislike
   const toggleDislike = useCallback(
-    async (postId: number) => {
+    async (postId: number, type: 'post' | 'group-post' = 'post') => {
       try {
         setDislikeLoading((prev) => new Map(prev).set(postId, true));
         const engagement = engagements.get(postId);
 
         if (engagement?.dislikes.user_disliked) {
-          await engagementService.removeDislikePost(postId);
+          await engagementService.removeDislikePost(postId, type);
         } else {
-          await engagementService.dislikePost(postId);
+          await engagementService.dislikePost(postId, type);
         }
 
         // Refresh stats
-        await fetchEngagementStats(postId);
+        await fetchEngagementStats(postId, type);
       } catch (error) {
-        console.error(`Failed to toggle dislike for post ${postId}:`, error);
+        console.error(`Failed to toggle dislike for ${type} ${postId}:`, error);
       } finally {
         setDislikeLoading((prev) => {
           const updated = new Map(prev);
@@ -305,7 +305,7 @@ export function EngagementProvider({ children, token }: { children: React.ReactN
         await engagementService.sharePost(postId, platform);
 
         // Refresh stats
-        await fetchEngagementStats(postId);
+        await fetchEngagementStats(postId, 'post');
       } catch (error) {
         console.error(`Failed to share post ${postId}:`, error);
       } finally {

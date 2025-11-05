@@ -69,10 +69,11 @@ class EngagementService {
   /**
    * Initialize Socket.io connection for real-time engagement updates
    */
-  initializeSocket(token: string, socketUrl: string = this.apiBaseUrl): Promise<void> {
+  initializeSocket(token: string, socketUrl: string = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3000'): Promise<void> {
     return new Promise((resolve, reject) => {
       try {
         this.token = token;
+        console.log('[EngagementService] Initializing socket with URL:', socketUrl);
 
         const socketOptions = {
           auth: {
@@ -88,14 +89,24 @@ class EngagementService {
         this.socket = io(socketUrl, socketOptions);
 
         this.socket.on('connect', () => {
-          console.log('Engagement socket connected');
+          console.log('[EngagementService] Socket connected successfully:', this.socket?.id);
           this.emit('connected', { connected: true });
           resolve();
         });
 
         this.socket.on('disconnect', () => {
-          console.log('Engagement socket disconnected');
+          console.log('[EngagementService] Socket disconnected');
           this.emit('disconnected', { connected: false });
+        });
+
+        this.socket.on('connect_error', (error) => {
+          console.error('[EngagementService] Socket connection error:', error);
+          this.emit('connection-error', { error: error.message });
+        });
+
+        this.socket.on('error', (error) => {
+          console.error('[EngagementService] Socket error:', error);
+          this.emit('error', { error });
         });
 
         this.socket.on('engagement:like-added', (data) => {
@@ -192,8 +203,9 @@ class EngagementService {
   /**
    * Like a post
    */
-  async likePost(postId: number): Promise<any> {
-    const response = await fetch(`${this.apiBaseUrl}/posts/${postId}/like`, {
+  async likePost(postId: number, type: 'post' | 'group-post' = 'post'): Promise<any> {
+    const endpoint = type === 'group-post' ? 'group-posts' : 'posts';
+    const response = await fetch(`${this.apiBaseUrl}/${endpoint}/${postId}/like`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${this.token}`,
@@ -202,7 +214,7 @@ class EngagementService {
     });
 
     if (!response.ok) {
-      throw new Error(`Failed to like post: ${response.statusText}`);
+      throw new Error(`Failed to like ${type}: ${response.statusText}`);
     }
 
     return await response.json();
@@ -211,8 +223,9 @@ class EngagementService {
   /**
    * Unlike a post
    */
-  async unlikePost(postId: number): Promise<any> {
-    const response = await fetch(`${this.apiBaseUrl}/posts/${postId}/like`, {
+  async unlikePost(postId: number, type: 'post' | 'group-post' = 'post'): Promise<any> {
+    const endpoint = type === 'group-post' ? 'group-posts' : 'posts';
+    const response = await fetch(`${this.apiBaseUrl}/${endpoint}/${postId}/like`, {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${this.token}`,
@@ -221,7 +234,7 @@ class EngagementService {
     });
 
     if (!response.ok) {
-      throw new Error(`Failed to unlike post: ${response.statusText}`);
+      throw new Error(`Failed to unlike ${type}: ${response.statusText}`);
     }
 
     return await response.json();
@@ -230,8 +243,9 @@ class EngagementService {
   /**
    * Dislike a post
    */
-  async dislikePost(postId: number): Promise<any> {
-    const response = await fetch(`${this.apiBaseUrl}/posts/${postId}/dislike`, {
+  async dislikePost(postId: number, type: 'post' | 'group-post' = 'post'): Promise<any> {
+    const endpoint = type === 'group-post' ? 'group-posts' : 'posts';
+    const response = await fetch(`${this.apiBaseUrl}/${endpoint}/${postId}/dislike`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${this.token}`,
@@ -240,7 +254,7 @@ class EngagementService {
     });
 
     if (!response.ok) {
-      throw new Error(`Failed to dislike post: ${response.statusText}`);
+      throw new Error(`Failed to dislike ${type}: ${response.statusText}`);
     }
 
     return await response.json();
@@ -249,8 +263,9 @@ class EngagementService {
   /**
    * Remove dislike from a post
    */
-  async removeDislikePost(postId: number): Promise<any> {
-    const response = await fetch(`${this.apiBaseUrl}/posts/${postId}/dislike`, {
+  async removeDislikePost(postId: number, type: 'post' | 'group-post' = 'post'): Promise<any> {
+    const endpoint = type === 'group-post' ? 'group-posts' : 'posts';
+    const response = await fetch(`${this.apiBaseUrl}/${endpoint}/${postId}/dislike`, {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${this.token}`,
@@ -259,7 +274,7 @@ class EngagementService {
     });
 
     if (!response.ok) {
-      throw new Error(`Failed to remove dislike: ${response.statusText}`);
+      throw new Error(`Failed to remove dislike from ${type}: ${response.statusText}`);
     }
 
     return await response.json();
@@ -288,15 +303,16 @@ class EngagementService {
   /**
    * Get engagement stats for a post
    */
-  async getEngagementStats(postId: number): Promise<Engagement> {
-    const response = await fetch(`${this.apiBaseUrl}/posts/${postId}/engagement`, {
+  async getEngagementStats(postId: number, type: 'post' | 'group-post' = 'post'): Promise<Engagement> {
+    const endpoint = type === 'group-post' ? 'group-posts' : 'posts';
+    const response = await fetch(`${this.apiBaseUrl}/${endpoint}/${postId}/engagement`, {
       headers: {
         'Authorization': this.token ? `Bearer ${this.token}` : '',
       },
     });
 
     if (!response.ok) {
-      throw new Error(`Failed to fetch engagement stats: ${response.statusText}`);
+      throw new Error(`Failed to fetch engagement stats for ${type}: ${response.statusText}`);
     }
 
     return await response.json();

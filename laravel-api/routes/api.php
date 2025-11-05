@@ -156,6 +156,8 @@ Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
     Route::get('/groups/{group}/pending-requests', [GroupController::class, 'getPendingRequests']);
     Route::post('/groups/{group}/requests/{userId}/accept', [GroupController::class, 'acceptJoinRequest']);
     Route::post('/groups/{group}/requests/{userId}/reject', [GroupController::class, 'rejectJoinRequest']);
+    Route::get('/groups/{group}/members', [GroupController::class, 'getMembers']);
+    Route::delete('/groups/{group}/members/{userId}', [GroupController::class, 'removeMember']);
 
     // Group Posts (authenticated)
     Route::post('/group-posts', [GroupPostController::class, 'store']);
@@ -219,9 +221,11 @@ Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
         Route::post('/admin/group-posts/{postId}/comments/{commentId}/approve', [GroupCommentController::class, 'approve'])->where(['postId' => '[0-9]+', 'commentId' => '[0-9]+']);
         Route::post('/admin/group-posts/{postId}/comments/{commentId}/reject', [GroupCommentController::class, 'reject'])->where(['postId' => '[0-9]+', 'commentId' => '[0-9]+']);
 
-        // Group Post moderation - admin/moderator approve or reject posts
-        Route::get('/groups/{groupId}/posts/pending', [GroupPostController::class, 'getPendingPosts'])->where('groupId', '[0-9]+');
-        Route::post('/groups/{groupId}/posts/{postId}/approve', [GroupPostController::class, 'approvePost'])->where(['groupId' => '[0-9]+', 'postId' => '[0-9]+']);
-        Route::post('/groups/{groupId}/posts/{postId}/reject', [GroupPostController::class, 'rejectPost'])->where(['groupId' => '[0-9]+', 'postId' => '[0-9]+']);
+        // Group Post Comment moderation (admin only)
     });
+
+    // Group Post moderation - group owner/admin/moderator approve or reject posts
+    Route::get('/groups/{group}/posts/pending', [GroupPostController::class, 'getPendingPosts']);
+    Route::post('/groups/{groupId}/posts/{postId}/approve', [GroupPostController::class, 'approvePost'])->where(['groupId' => '[0-9]+', 'postId' => '[0-9]+']);
+    Route::post('/groups/{groupId}/posts/{postId}/reject', [GroupPostController::class, 'rejectPost'])->where(['groupId' => '[0-9]+', 'postId' => '[0-9]+']);
 });

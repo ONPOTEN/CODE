@@ -15,6 +15,7 @@ export default function GroupWallPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isMember, setIsMember] = useState(false);
+  const [membershipStatus, setMembershipStatus] = useState<'pending' | 'approved' | 'none'>('none');
   const [isCheckingMembership, setIsCheckingMembership] = useState(true);
   const [isJoiningOrLeaving, setIsJoiningOrLeaving] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
@@ -99,8 +100,24 @@ export default function GroupWallPage() {
     if (isJoiningOrLeaving) return;
     try {
       setIsJoiningOrLeaving(true);
-      await groups.joinGroup(parseInt(groupId));
-      setIsMember(true);
+      const response = await groups.joinGroup(parseInt(groupId));
+
+      console.log('[GroupPage] Join response:', {
+        message: response.message,
+        is_member: response.is_member,
+        status: response.status,
+        group_id: groupId,
+      });
+
+      // Set membership status based on response
+      if (response.status === 'pending') {
+        setMembershipStatus('pending');
+        setIsMember(false); // Not a full member yet
+        alert('Join request submitted! Your request is pending approval from the group admin.');
+      } else {
+        setMembershipStatus('approved');
+        setIsMember(true);
+      }
     } catch (err) {
       console.error('Error joining group:', err);
       alert('Failed to join group');
@@ -228,7 +245,7 @@ export default function GroupWallPage() {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex gap-3 flex-wrap">
+              <div className="flex gap-3 flex-wrap items-center">
                 {isMember ? (
                   <>
                     <button
@@ -262,6 +279,13 @@ export default function GroupWallPage() {
                       {isJoiningOrLeaving ? 'Leaving...' : 'Leave Group'}
                     </button>
                   </>
+                ) : membershipStatus === 'pending' ? (
+                  <div className="flex items-center gap-2 px-6 py-2 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <svg className="w-5 h-5 text-yellow-600 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span className="text-yellow-800 font-medium">Request Pending</span>
+                  </div>
                 ) : (
                   <button
                     onClick={handleJoinGroup}

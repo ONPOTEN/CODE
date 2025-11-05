@@ -21,11 +21,13 @@ class Group extends Model
         'avatar',
         'cover_image',
         'requires_approval',
+        'requires_approval_posts',
     ];
 
     protected $casts = [
         'group_owner_id' => 'integer',
         'requires_approval' => 'boolean',
+        'requires_approval_posts' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];

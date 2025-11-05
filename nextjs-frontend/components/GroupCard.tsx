@@ -37,6 +37,20 @@ export function GroupCard({ group, onDeleted }: GroupCardProps) {
   // Check if current user is the group admin/owner
   const isGroupAdmin = currentUser && currentUser.id === group.group_owner_id;
 
+  const handleEditGroup = () => {
+    router.push(`/groups/${group.group_id}/edit`);
+  };
+
+  const handleManageUsers = () => {
+    router.push(`/groups/${group.group_id}/manage-users`);
+    setShowMenu(false);
+  };
+
+  const handleManagePosts = () => {
+    router.push(`/groups/${group.group_id}/manage-posts`);
+    setShowMenu(false);
+  };
+
   const handleDeleteGroup = async () => {
     if (!confirm('Are you sure you want to delete this group? This action cannot be undone.')) return;
 
@@ -106,6 +120,45 @@ export function GroupCard({ group, onDeleted }: GroupCardProps) {
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
+                        handleManageUsers();
+                      }}
+                      className="w-full text-left px-4 py-2 hover:bg-purple-50 transition-colors flex items-center gap-2 text-purple-600 font-medium"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 8.308 4 4 0 010-8.308M15 21H9a6 6 0 01-6-6v-1h18v1a6 6 0 01-6 6z" />
+                      </svg>
+                      Manage Users
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleManagePosts();
+                      }}
+                      className="w-full text-left px-4 py-2 hover:bg-amber-50 transition-colors flex items-center gap-2 text-amber-600 font-medium"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v11l-5-5H5" />
+                      </svg>
+                      Manage Posts
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleEditGroup();
+                      }}
+                      className="w-full text-left px-4 py-2 hover:bg-blue-50 transition-colors flex items-center gap-2 text-blue-600 font-medium"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                      Edit Group
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
                         handleDeleteGroup();
                       }}
                       disabled={isDeleting}
@@ -146,6 +199,45 @@ export function GroupCard({ group, onDeleted }: GroupCardProps) {
                 {/* Dropdown Menu */}
                 {showMenu && (
                   <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-20 py-1">
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleManageUsers();
+                      }}
+                      className="w-full text-left px-4 py-2 hover:bg-purple-50 transition-colors flex items-center gap-2 text-purple-600 font-medium"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 8.308 4 4 0 010-8.308M15 21H9a6 6 0 01-6-6v-1h18v1a6 6 0 01-6 6z" />
+                      </svg>
+                      Manage Users
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleManagePosts();
+                      }}
+                      className="w-full text-left px-4 py-2 hover:bg-amber-50 transition-colors flex items-center gap-2 text-amber-600 font-medium"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v11l-5-5H5" />
+                      </svg>
+                      Manage Posts
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleEditGroup();
+                      }}
+                      className="w-full text-left px-4 py-2 hover:bg-blue-50 transition-colors flex items-center gap-2 text-blue-600 font-medium"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                      Edit Group
+                    </button>
                     <button
                       onClick={(e) => {
                         e.preventDefault();

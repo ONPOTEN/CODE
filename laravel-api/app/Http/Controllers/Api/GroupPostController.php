@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Models\GroupPost;
 use App\Models\Group;
+use App\Models\GroupUser;
 use App\Models\GroupPostLike;
 use App\Models\GroupPostDislike;
 use App\Models\GroupComment;
@@ -104,6 +105,37 @@ class GroupPostController extends Controller
             // Verify group exists
             $group = Group::findOrFail($request->input('group_id'));
 
+            $currentUser = auth()->user();
+            $isGroupOwner = $group->group_owner_id === $currentUser->ID;
+            $isGlobalAdmin = $currentUser->isAdmin();
+
+            // Check if user is group admin/moderator
+            $isGroupAdmin = false;
+            if (!$isGroupOwner && !$isGlobalAdmin) {
+                $userRole = GroupUser::where('group_id', $group->group_id)
+                    ->where('group_user_id', $currentUser->ID)
+                    ->first();
+                $isGroupAdmin = $userRole && in_array($userRole->group_role, ['admin', 'moderator']);
+            }
+
+            // Determine post status:
+            // - If group requires approval AND user is not owner/admin/moderator: set to 'pending'
+            // - Otherwise: use the provided status (default 'draft')
+            $postStatus = $request->input('status', 'draft');
+
+            if ($group->requires_approval_posts && !$isGroupOwner && !$isGlobalAdmin && !$isGroupAdmin) {
+                $postStatus = 'pending';
+
+                \Log::info('[GroupPostController::store] Post set to pending for approval', [
+                    'user_id' => $currentUser->ID,
+                    'group_id' => $group->group_id,
+                    'requires_approval_posts' => $group->requires_approval_posts,
+                    'user_is_owner' => $isGroupOwner,
+                    'user_is_admin' => $isGlobalAdmin,
+                    'user_is_group_admin' => $isGroupAdmin,
+                ]);
+            }
+
             // Create the post
             $post = GroupPost::create([
                 'group_id' => $request->input('group_id'),
@@ -115,7 +147,7 @@ class GroupPostController extends Controller
                 'post_title' => $request->input('title'),
                 'post_content' => $request->input('content'),
                 'post_excerpt' => $request->input('excerpt'),
-                'post_status' => $request->input('status', 'draft'),
+                'post_status' => $postStatus,
                 'post_type' => $request->input('type', 'post'),
                 'comment_status' => $request->input('comment_status', 'closed'),
                 'ping_status' => $request->input('ping_status', 'closed'),
@@ -143,11 +175,20 @@ class GroupPostController extends Controller
                 }
             }
 
+            $message = $postStatus === 'pending'
+                ? 'Group post created successfully and is awaiting approval'
+                : 'Group post created successfully';
+
             return response()->json([
                 'data' => new GroupPostResource($post),
-                'message' => 'Group post created successfully',
+                'message' => $message,
             ], 201);
         } catch (\Exception $e) {
+            \Log::error('[GroupPostController::store] Error', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
             return response()->json([
                 'error' => 'Failed to create group post',
                 'message' => $e->getMessage(),
@@ -569,19 +610,40 @@ class GroupPostController extends Controller
     public function getEngagementStats(GroupPost $post): JsonResponse
     {
         try {
+            $user = auth()->user();
+
             $likesCount = GroupPostLike::where('post_id', $post->id)->count();
             $dislikesCount = GroupPostDislike::where('post_id', $post->id)->count();
             $commentsCount = GroupComment::where('post_id', $post->id)->count();
 
+            $userLiked = false;
+            $userDisliked = false;
+
+            if ($user) {
+                $userLiked = GroupPostLike::where('post_id', $post->id)
+                    ->where('user_id', $user->ID)
+                    ->exists();
+
+                $userDisliked = GroupPostDislike::where('post_id', $post->id)
+                    ->where('user_id', $user->ID)
+                    ->exists();
+            }
+
             return response()->json([
-                'data' => [
-                    'likes' => $likesCount,
-                    'dislikes' => $dislikesCount,
-                    'comments' => $commentsCount,
-                    'total_engagement' => $likesCount + $dislikesCount + $commentsCount,
+                'likes' => [
+                    'count' => $likesCount,
+                    'user_liked' => $userLiked,
+                ],
+                'dislikes' => [
+                    'count' => $dislikesCount,
+                    'user_disliked' => $userDisliked,
+                ],
+                'comments' => [
+                    'count' => $commentsCount,
                 ],
             ]);
         } catch (\Exception $e) {
+            \Log::error('Error fetching group post engagement stats: ' . $e->getMessage());
             return response()->json([
                 'error' => 'Failed to get engagement stats',
                 'message' => $e->getMessage(),
@@ -708,9 +770,15 @@ class GroupPostController extends Controller
     /**
      * Approve a pending group post (admin/moderator only)
      */
-    public function approvePost(GroupPost $post, Group $group): JsonResponse
+    public function approvePost($groupId, $postId): JsonResponse
     {
         try {
+            // Fetch group
+            $group = Group::findOrFail($groupId);
+
+            // Fetch post
+            $post = GroupPost::findOrFail($postId);
+
             // Verify post belongs to the group
             if ($post->group_id !== $group->group_id) {
                 return response()->json([
@@ -721,11 +789,37 @@ class GroupPostController extends Controller
 
             // Check authorization - only group owner, admin, or moderator can approve
             $currentUser = auth()->user();
-            $userRole = GroupUser::where('group_id', $group->group_id)
-                ->where('group_user_id', $currentUser->ID)
-                ->first();
 
-            if ($group->group_owner_id !== $currentUser->ID && !$currentUser->isAdmin() && (!$userRole || !in_array($userRole->group_role, ['admin', 'moderator']))) {
+            \Log::info('[GroupPostController::approvePost] Checking authorization', [
+                'user_id' => $currentUser->ID,
+                'post_id' => $post->id,
+                'group_id' => $group->group_id,
+                'group_owner_id' => $group->group_owner_id,
+                'is_group_owner' => $group->group_owner_id === $currentUser->ID,
+            ]);
+
+            // Authorization: allow if user is group owner, global admin, or group admin/moderator
+            $isGroupOwner = $group->group_owner_id === $currentUser->ID;
+            $isGlobalAdmin = $currentUser->isAdmin();
+
+            // Only check group_users table if not owner or global admin
+            $isGroupAdmin = false;
+            if (!$isGroupOwner && !$isGlobalAdmin) {
+                $userRole = GroupUser::where('group_id', $group->group_id)
+                    ->where('group_user_id', $currentUser->ID)
+                    ->first();
+
+                $isGroupAdmin = $userRole && in_array($userRole->group_role, ['admin', 'moderator']);
+            }
+
+            if (!$isGroupOwner && !$isGlobalAdmin && !$isGroupAdmin) {
+                \Log::warning('[GroupPostController::approvePost] Authorization failed', [
+                    'user_id' => $currentUser->ID,
+                    'is_group_owner' => $isGroupOwner,
+                    'is_global_admin' => $isGlobalAdmin,
+                    'is_group_admin' => $isGroupAdmin,
+                ]);
+
                 return response()->json([
                     'error' => 'Unauthorized',
                     'message' => 'You do not have permission to approve posts',
@@ -740,6 +834,11 @@ class GroupPostController extends Controller
                 'message' => 'Post approved successfully',
             ]);
         } catch (\Exception $e) {
+            \Log::error('[GroupPostController::approvePost] Error', [
+                'error' => $e->getMessage(),
+                'post_id' => $post->id,
+            ]);
+
             return response()->json([
                 'error' => 'Failed to approve post',
                 'message' => $e->getMessage(),
@@ -750,9 +849,15 @@ class GroupPostController extends Controller
     /**
      * Reject/trash a group post (admin/moderator only)
      */
-    public function rejectPost(GroupPost $post, Group $group): JsonResponse
+    public function rejectPost($groupId, $postId): JsonResponse
     {
         try {
+            // Fetch group
+            $group = Group::findOrFail($groupId);
+
+            // Fetch post
+            $post = GroupPost::findOrFail($postId);
+
             // Verify post belongs to the group
             if ($post->group_id !== $group->group_id) {
                 return response()->json([
@@ -763,11 +868,37 @@ class GroupPostController extends Controller
 
             // Check authorization - only group owner, admin, or moderator can reject
             $currentUser = auth()->user();
-            $userRole = GroupUser::where('group_id', $group->group_id)
-                ->where('group_user_id', $currentUser->ID)
-                ->first();
 
-            if ($group->group_owner_id !== $currentUser->ID && !$currentUser->isAdmin() && (!$userRole || !in_array($userRole->group_role, ['admin', 'moderator']))) {
+            \Log::info('[GroupPostController::rejectPost] Checking authorization', [
+                'user_id' => $currentUser->ID,
+                'post_id' => $post->id,
+                'group_id' => $group->group_id,
+                'group_owner_id' => $group->group_owner_id,
+                'is_group_owner' => $group->group_owner_id === $currentUser->ID,
+            ]);
+
+            // Authorization: allow if user is group owner, global admin, or group admin/moderator
+            $isGroupOwner = $group->group_owner_id === $currentUser->ID;
+            $isGlobalAdmin = $currentUser->isAdmin();
+
+            // Only check group_users table if not owner or global admin
+            $isGroupAdmin = false;
+            if (!$isGroupOwner && !$isGlobalAdmin) {
+                $userRole = GroupUser::where('group_id', $group->group_id)
+                    ->where('group_user_id', $currentUser->ID)
+                    ->first();
+
+                $isGroupAdmin = $userRole && in_array($userRole->group_role, ['admin', 'moderator']);
+            }
+
+            if (!$isGroupOwner && !$isGlobalAdmin && !$isGroupAdmin) {
+                \Log::warning('[GroupPostController::rejectPost] Authorization failed', [
+                    'user_id' => $currentUser->ID,
+                    'is_group_owner' => $isGroupOwner,
+                    'is_global_admin' => $isGlobalAdmin,
+                    'is_group_admin' => $isGroupAdmin,
+                ]);
+
                 return response()->json([
                     'error' => 'Unauthorized',
                     'message' => 'You do not have permission to reject posts',
@@ -783,6 +914,11 @@ class GroupPostController extends Controller
                 'status' => 'trash',
             ]);
         } catch (\Exception $e) {
+            \Log::error('[GroupPostController::rejectPost] Error', [
+                'error' => $e->getMessage(),
+                'post_id' => $post->id,
+            ]);
+
             return response()->json([
                 'error' => 'Failed to reject post',
                 'message' => $e->getMessage(),
@@ -798,11 +934,46 @@ class GroupPostController extends Controller
         try {
             // Check authorization - only group owner, admin, or moderator can view pending
             $currentUser = auth()->user();
-            $userRole = GroupUser::where('group_id', $group->group_id)
-                ->where('group_user_id', $currentUser->ID)
-                ->first();
 
-            if ($group->group_owner_id !== $currentUser->ID && !$currentUser->isAdmin() && (!$userRole || !in_array($userRole->group_role, ['admin', 'moderator']))) {
+            \Log::info('[GroupPostController::getPendingPosts] Checking authorization', [
+                'user_id' => $currentUser->ID,
+                'user_type' => $currentUser->ID ? 'authenticated' : 'guest',
+                'group_id' => $group->group_id,
+                'group_owner_id' => $group->group_owner_id,
+                'comparison_result' => $group->group_owner_id === $currentUser->ID ? 'IS_OWNER' : 'NOT_OWNER',
+                'is_global_admin' => $currentUser->isAdmin(),
+            ]);
+
+            // Authorization: allow if user is group owner, global admin, or group admin/moderator
+            $isGroupOwner = $group->group_owner_id === $currentUser->ID;
+            $isGlobalAdmin = $currentUser->isAdmin();
+
+            // Only check group_users table if not owner or global admin
+            $isGroupAdmin = false;
+            if (!$isGroupOwner && !$isGlobalAdmin) {
+                $userRole = GroupUser::where('group_id', $group->group_id)
+                    ->where('group_user_id', $currentUser->ID)
+                    ->first();
+
+                \Log::info('[GroupPostController::getPendingPosts] Checking group user role', [
+                    'user_id' => $currentUser->ID,
+                    'user_role' => $userRole ? $userRole->group_role : 'not_found',
+                    'user_status' => $userRole ? $userRole->status : 'not_found',
+                ]);
+
+                $isGroupAdmin = $userRole && in_array($userRole->group_role, ['admin', 'moderator']);
+            }
+
+            if (!$isGroupOwner && !$isGlobalAdmin && !$isGroupAdmin) {
+                \Log::warning('[GroupPostController::getPendingPosts] Authorization failed', [
+                    'user_id' => $currentUser->ID,
+                    'is_group_owner' => $isGroupOwner,
+                    'is_global_admin' => $isGlobalAdmin,
+                    'is_group_admin' => $isGroupAdmin,
+                    'group_id' => $group->group_id,
+                    'group_owner_id' => $group->group_owner_id,
+                ]);
+
                 return response()->json([
                     'error' => 'Unauthorized',
                     'message' => 'You do not have permission to view pending posts',
@@ -820,6 +991,11 @@ class GroupPostController extends Controller
                 'total' => count($pendingPosts),
             ]);
         } catch (\Exception $e) {
+            \Log::error('[GroupPostController::getPendingPosts] Error', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
             return response()->json([
                 'error' => 'Failed to get pending posts',
                 'message' => $e->getMessage(),

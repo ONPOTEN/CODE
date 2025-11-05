@@ -294,39 +294,52 @@ class EngagementController extends Controller
      */
     public function getEngagementStats(Request $request, $postId): JsonResponse
     {
-        $post = WpPost::with(['likes', 'dislikes', 'shares', 'comments'])->findOrFail($postId);
-        $user = $request->user();
+        try {
+            $post = WpPost::with(['likes', 'dislikes', 'shares', 'comments'])->findOrFail($postId);
+            $user = $request->user();
 
-        $userLiked = false;
-        $userDisliked = false;
+            $userLiked = false;
+            $userDisliked = false;
 
-        if ($user) {
-            $userLiked = Like::where('post_id', $postId)
-                ->where('user_id', $user->ID)
-                ->exists();
+            if ($user) {
+                $userLiked = Like::where('post_id', $postId)
+                    ->where('user_id', $user->ID)
+                    ->exists();
 
-            $userDisliked = Dislike::where('post_id', $postId)
-                ->where('user_id', $user->ID)
-                ->exists();
+                $userDisliked = Dislike::where('post_id', $postId)
+                    ->where('user_id', $user->ID)
+                    ->exists();
+            }
+
+            return response()->json([
+                'post_id' => $postId,
+                'likes' => [
+                    'count' => count($post->likes ?? []),
+                    'user_liked' => $userLiked,
+                ],
+                'dislikes' => [
+                    'count' => count($post->dislikes ?? []),
+                    'user_disliked' => $userDisliked,
+                ],
+                'comments' => [
+                    'count' => count($post->comments ?? []),
+                ],
+                'shares' => [
+                    'count' => count($post->shares ?? []),
+                ],
+            ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'error' => 'Post not found',
+                'message' => 'The requested post does not exist',
+            ], 404);
+        } catch (\Exception $e) {
+            \Log::error('Error fetching engagement stats: ' . $e->getMessage());
+            return response()->json([
+                'error' => 'Failed to fetch engagement stats',
+                'message' => $e->getMessage(),
+            ], 500);
         }
-
-        return response()->json([
-            'post_id' => $postId,
-            'likes' => [
-                'count' => $post->likes()->count(),
-                'user_liked' => $userLiked,
-            ],
-            'dislikes' => [
-                'count' => $post->dislikes()->count(),
-                'user_disliked' => $userDisliked,
-            ],
-            'comments' => [
-                'count' => $post->comments()->count(),
-            ],
-            'shares' => [
-                'count' => $post->shares()->count(),
-            ],
-        ]);
     }
 
     /**

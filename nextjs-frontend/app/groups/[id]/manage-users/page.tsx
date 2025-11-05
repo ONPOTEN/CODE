@@ -1,0 +1,283 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { groups, Group, ApiException } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
+
+interface GroupMember {
+  user_id: number;
+  group_id: number;
+  id: number;
+  group_user_id: number;
+  status: 'approved' | 'pending' | 'inactive' | 'banned';
+  created_at: string;
+  user?: {
+    id: number;
+    name: string;
+    email: string;
+    avatar?: string;
+  };
+}
+
+interface PendingRequest {
+  user_id: number;
+  id: number;
+  group_id: number;
+  status?: 'pending';
+  requested_at: string;
+  user?: {
+    id: number;
+    name: string;
+    username: string;
+    email: string;
+    avatar?: string;
+  };
+}
+
+export default function ManageUsersPage() {
+  const params = useParams();
+  const router = useRouter();
+  const groupId = parseInt(params.id as string);
+  const { user: currentUser } = useAuth();
+
+  const [group, setGroup] = useState<Group | null>(null);
+  const [approvedMembers, setApprovedMembers] = useState<GroupMember[]>([]);
+  const [pendingRequests, setPendingRequests] = useState<PendingRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [approvingId, setApprovingId] = useState<number | null>(null);
+  const [rejectingId, setRejectingId] = useState<number | null>(null);
+
+  useEffect(() => {
+    fetchData();
+  }, [groupId]);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Fetch group details
+      const groupResponse = await groups.getById(groupId);
+      const groupData = groupResponse.data;
+
+      // Check authorization
+      if (currentUser && groupData.group_owner_id !== currentUser.id) {
+        setError('You do not have permission to manage this group');
+        return;
+      }
+
+      setGroup(groupData);
+
+      // Fetch pending requests
+      const pendingResponse = await groups.getPendingRequests(groupId);
+      console.log('[ManageUsers] Pending requests response:', pendingResponse);
+      setPendingRequests(pendingResponse.data || []);
+
+      // Fetch group members
+      const membersResponse = await groups.getGroupMembers(groupId);
+      setApprovedMembers(membersResponse.data?.filter((m: GroupMember) => m.status === 'approved') || []);
+    } catch (err) {
+      if (err instanceof ApiException) {
+        setError(err.message);
+      } else {
+        setError('Failed to load data');
+      }
+      console.error('Error fetching data:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleApproveMember = async (userId: number) => {
+    try {
+      setApprovingId(userId);
+      console.log('[ManageUsers] Approving user:', { groupId, userId });
+      await groups.acceptJoinRequest(groupId, userId);
+      // Refresh data
+      await fetchData();
+    } catch (err) {
+      console.error('Error approving member:', err);
+      setError('Failed to approve member');
+    } finally {
+      setApprovingId(null);
+    }
+  };
+
+  const handleRejectMember = async (userId: number) => {
+    if (!confirm('Are you sure you want to reject this join request?')) return;
+
+    try {
+      setRejectingId(userId);
+      console.log('[ManageUsers] Rejecting user:', { groupId, userId });
+      await groups.rejectJoinRequest(groupId, userId);
+      // Refresh data
+      await fetchData();
+    } catch (err) {
+      console.error('Error rejecting member:', err);
+      setError('Failed to reject member');
+    } finally {
+      setRejectingId(null);
+    }
+  };
+
+  const handleDeleteMember = async (userId: number) => {
+    if (!confirm('Are you sure you want to remove this member from the group?')) return;
+
+    try {
+      setDeletingId(userId);
+      await groups.removeMember(groupId, userId);
+      // Refresh data
+      await fetchData();
+    } catch (err) {
+      console.error('Error deleting member:', err);
+      setError('Failed to remove member');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex justify-center items-center bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (error && !group) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-4xl mx-auto px-4 py-8">
+          <Link href="/my-groups" className="text-blue-600 hover:text-blue-700 font-medium">
+            ← Back to My Groups
+          </Link>
+          <div className="mt-8 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+            {error}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!group) {
+    return (
+      <div className="min-h-screen bg-gray-50 px-4 py-8">
+        <div className="max-w-4xl mx-auto text-center py-12">
+          <p className="text-gray-500 text-lg">Group not found</p>
+          <Link href="/my-groups" className="mt-4 inline-block px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+            Back to My Groups
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <Link href={`/groups/${groupId}`} className="text-blue-600 hover:text-blue-700 font-medium">
+            ← Back to {group.group_name}
+          </Link>
+          <h1 className="text-3xl font-bold text-gray-900 mt-4">Manage Users</h1>
+          <p className="text-gray-600 mt-2">Approve join requests and manage group members</p>
+        </div>
+
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+            {error}
+          </div>
+        )}
+
+        {/* Pending Requests Section */}
+        {pendingRequests.length > 0 && (
+          <div className="bg-white rounded-lg shadow p-6 mb-8">
+            <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <svg className="w-5 h-5 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M10 18a8 8 0 100-16 8 8 0 000 16zm0-2a6 6 0 100-12 6 6 0 000 12zm0-5a1 1 0 100-2 1 1 0 000 2z" />
+              </svg>
+              Pending Join Requests ({pendingRequests.length})
+            </h2>
+
+            <div className="space-y-3">
+              {pendingRequests.map((request) => (
+                <div key={request.id} className="flex items-center justify-between p-4 border border-yellow-200 bg-yellow-50 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    {request.user?.avatar && (
+                      <img src={request.user.avatar} alt={request.user.name} className="w-10 h-10 rounded-full object-cover" />
+                    )}
+                    <div>
+                      <p className="font-medium text-gray-900">{request.user?.name}</p>
+                      <p className="text-sm text-gray-600">{request.user?.email}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleApproveMember(request.user_id)}
+                      disabled={approvingId === request.user_id}
+                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {approvingId === request.user_id ? 'Approving...' : 'Approve'}
+                    </button>
+                    <button
+                      onClick={() => handleRejectMember(request.user_id)}
+                      disabled={rejectingId === request.user_id}
+                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {rejectingId === request.user_id ? 'Rejecting...' : 'Reject'}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Approved Members Section */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" />
+            </svg>
+            Approved Members ({approvedMembers.length})
+          </h2>
+
+          {approvedMembers.length === 0 ? (
+            <p className="text-gray-500 text-center py-8">No approved members yet</p>
+          ) : (
+            <div className="space-y-3">
+              {approvedMembers.map((member) => (
+                <div key={member.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                  <div className="flex items-center gap-3">
+                    {member.user?.avatar && (
+                      <img src={member.user.avatar} alt={member.user?.name} className="w-10 h-10 rounded-full object-cover" />
+                    )}
+                    <div>
+                      <p className="font-medium text-gray-900">{member.user?.name}</p>
+                      <p className="text-sm text-gray-600">{member.user?.email}</p>
+                      <p className="text-xs text-gray-500">Joined {new Date(member.created_at).toLocaleDateString('en-US')}</p>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => handleDeleteMember(member.group_user_id)}
+                    disabled={deletingId === member.group_user_id}
+                    className="px-4 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {deletingId === member.group_user_id ? 'Removing...' : 'Remove'}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -5,7 +5,8 @@ import { groupPosts, GroupPost, ApiException } from '@/lib/api';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { EngagementButtons } from '@/components/EngagementButtons';
+import { GroupEngagementProvider } from '@/contexts/GroupEngagementContext';
+import { GroupEngagementButtons } from '@/components/GroupEngagementButtons';
 
 interface InfiniteScrollGroupPostsProps {
   groupId: number;
@@ -184,7 +185,8 @@ export default function InfiniteScrollGroupPosts({
   }
 
   return (
-    <div className="space-y-6">
+    <GroupEngagementProvider token={localStorage.getItem('api_token') || ''}>
+      <div className="space-y-6">
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
           {error}
@@ -361,11 +363,9 @@ export default function InfiniteScrollGroupPosts({
               {/* Engagement Buttons */}
               {user ? (
                 <div className="space-y-2">
-                  <EngagementButtons
-                    entityType="group-post"
-                    entityId={post.id}
-                    initialLikes={post.likes_count || 0}
-                    initialDislikes={post.dislikes_count || 0}
+                  <GroupEngagementButtons
+                    postId={post.id}
+                    postTitle={post.post_title}
                   />
                   <button
                     onClick={() => handleViewPost(post.id)}
@@ -420,6 +420,7 @@ export default function InfiniteScrollGroupPosts({
       <div ref={observerTarget} className="py-8 text-center text-gray-500">
         {!hasMore && postsList.length > 0 && <p>No more posts to load</p>}
       </div>
-    </div>
+      </div>
+    </GroupEngagementProvider>
   );
 }

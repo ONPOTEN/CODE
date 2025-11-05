@@ -32,6 +32,8 @@ class UpdateGroupRequest extends FormRequest
             'description' => 'nullable|string|max:1000',
             'visibility' => 'nullable|in:public,private',
             'status' => 'nullable|in:active,inactive,banned',
+            'requires_approval' => 'nullable|boolean',
+            'requires_approval_posts' => 'nullable|boolean',
             'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
             'cover_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
         ];
