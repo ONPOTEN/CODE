@@ -99,13 +99,13 @@ class GroupController extends Controller
 
             // Handle avatar upload
             if ($request->hasFile('avatar')) {
-                $avatarPath = $request->file('avatar')->store('group-avatars', 'public');
+                $avatarPath = $request->file('avatar')->store('group-avatars', 's3');
                 $group->update(['avatar' => $avatarPath]);
             }
 
             // Handle cover image upload
             if ($request->hasFile('cover_image')) {
-                $coverPath = $request->file('cover_image')->store('group-covers', 'public');
+                $coverPath = $request->file('cover_image')->store('group-covers', 's3');
                 $group->update(['cover_image' => $coverPath]);
             }
 
@@ -196,13 +196,13 @@ class GroupController extends Controller
 
             // Handle avatar upload
             if ($request->hasFile('avatar')) {
-                $avatarPath = $request->file('avatar')->store('group-avatars', 'public');
+                $avatarPath = $request->file('avatar')->store('group-avatars', 's3');
                 $group->update(['avatar' => $avatarPath]);
             }
 
             // Handle cover image upload
             if ($request->hasFile('cover_image')) {
-                $coverPath = $request->file('cover_image')->store('group-covers', 'public');
+                $coverPath = $request->file('cover_image')->store('group-covers', 's3');
                 $group->update(['cover_image' => $coverPath]);
             }
 

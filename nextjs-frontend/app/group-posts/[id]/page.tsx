@@ -7,7 +7,7 @@ import { groupPosts, GroupPost, User, ApiException } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { GroupEngagementProvider } from '@/contexts/GroupEngagementContext';
 import { GroupEngagementButtons } from '@/components/GroupEngagementButtons';
-import { CommentsSection } from '@/components/CommentsSection';
+import { GroupCommentsSection } from '@/components/GroupCommentsSection';
 
 export default function GroupPostDetailPage() {
   const params = useParams();
@@ -295,7 +295,7 @@ export default function GroupPostDetailPage() {
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <h3 className="font-semibold text-gray-900">{post.author.name || post.author.username}</h3>
-                    {currentUser?.id === post.author.ID && (
+                    {currentUser?.id === post.author.id && (
                       <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded">You</span>
                     )}
                   </div>
@@ -427,7 +427,7 @@ export default function GroupPostDetailPage() {
 
             {/* Comments Section */}
             <div className="mb-8 p-6 border-t border-gray-200">
-              <CommentsSection postId={post.id} currentUserId={currentUser?.id} className="mt-6" />
+              <GroupCommentsSection postId={post.id} currentUserId={currentUser?.id} className="mt-6" />
             </div>
 
             {/* Group Info */}
@@ -445,8 +445,8 @@ export default function GroupPostDetailPage() {
                 >
                   🏘️ {post.group.group_name}
                 </Link>
-                {post.group.group_description && (
-                  <p className="text-gray-600 mt-3">{post.group.group_description}</p>
+                {post.group.description && (
+                  <p className="text-gray-600 mt-3">{post.group.description}</p>
                 )}
               </div>
             )}

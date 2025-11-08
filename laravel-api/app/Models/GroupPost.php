@@ -84,6 +84,63 @@ class GroupPost extends Model
         return $this->hasMany(GroupPostDislike::class, 'post_id', 'id');
     }
 
+    public function shares(): HasMany
+    {
+        return $this->hasMany(GroupPostShare::class, 'post_id', 'id');
+    }
+
+    /**
+     * Get likes count
+     */
+    public function getLikesCount(): int
+    {
+        return $this->likes()->count();
+    }
+
+    /**
+     * Get dislikes count
+     */
+    public function getDislikesCount(): int
+    {
+        return $this->dislikes()->count();
+    }
+
+    /**
+     * Get shares count
+     */
+    public function getSharesCount(): int
+    {
+        return $this->shares()->count();
+    }
+
+    /**
+     * Get comments count
+     */
+    public function getCommentsCountAttribute(): int
+    {
+        return $this->comments()->count();
+    }
+
+    /**
+     * Check if a user has liked this post
+     */
+    public function hasUserLiked($userId): bool
+    {
+        return $this->likes()
+            ->where('user_id', $userId)
+            ->exists();
+    }
+
+    /**
+     * Check if a user has disliked this post
+     */
+    public function hasUserDisliked($userId): bool
+    {
+        return $this->dislikes()
+            ->where('user_id', $userId)
+            ->exists();
+    }
+
     public function scopePublished($query)
     {
         return $query->where('post_status', 'publish');

@@ -146,13 +146,13 @@ export default function CreateGroupPostPage() {
       formData.append('content', content);
       formData.append('excerpt', excerpt);
       // If group requires approval for posts, set status to 'pending', otherwise 'publish'
-      const postStatus = group.requires_approval_posts ? 'pending' : 'publish';
+      const postStatus = group && group.requires_approval_posts ? 'pending' : 'publish';
       formData.append('status', postStatus);
       formData.append('visibility', visibility);
 
       console.log('[CreatePost] Submitting post:', {
         groupId,
-        requires_approval_posts: group.requires_approval_posts,
+        requires_approval_posts: group?.requires_approval_posts,
         postStatus,
         title: title.substring(0, 50),
       });

@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\EngagementController;
 use App\Http\Controllers\Api\FriendController;
 use App\Http\Controllers\Api\GroupController;
 use App\Http\Controllers\Api\GroupPostController;
+use App\Http\Controllers\Api\GroupPostEngagementController;
 use App\Http\Controllers\Api\GroupCommentController;
 use App\Http\Controllers\Api\PostController;
 use App\Http\Controllers\Api\ShopController;
@@ -111,12 +112,14 @@ Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
     Route::put('/comments/{commentId}', [CommentController::class, 'updateComment'])->where('commentId', '[0-9]+');
     Route::delete('/comments/{commentId}', [CommentController::class, 'deleteComment'])->where('commentId', '[0-9]+');
 
-    // Engagement (authenticated)
-    Route::post('/posts/{postId}/like', [EngagementController::class, 'likePost'])->where('postId', '[0-9]+');
-    Route::delete('/posts/{postId}/like', [EngagementController::class, 'unlikePost'])->where('postId', '[0-9]+');
-    Route::post('/posts/{postId}/dislike', [EngagementController::class, 'dislikePost'])->where('postId', '[0-9]+');
-    Route::delete('/posts/{postId}/dislike', [EngagementController::class, 'removeDislikePost'])->where('postId', '[0-9]+');
-    Route::post('/posts/{postId}/share', [EngagementController::class, 'sharePost'])->where('postId', '[0-9]+');
+    // Engagement (authenticated) - WpPost engagement using EngagementController
+    Route::prefix('posts')->group(function () {
+        Route::post('/{postId}/like', [EngagementController::class, 'likePost'])->where('postId', '[0-9]+');
+        Route::delete('/{postId}/like', [EngagementController::class, 'unlikePost'])->where('postId', '[0-9]+');
+        Route::post('/{postId}/dislike', [EngagementController::class, 'dislikePost'])->where('postId', '[0-9]+');
+        Route::delete('/{postId}/dislike', [EngagementController::class, 'removeDislikePost'])->where('postId', '[0-9]+');
+        Route::post('/{postId}/share', [EngagementController::class, 'sharePost'])->where('postId', '[0-9]+');
+    });
 
     // User Profile (authenticated)
     Route::put('/profile', [UserController::class, 'updateProfile']);
@@ -172,6 +175,18 @@ Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
     Route::delete('/group-posts/{id}/dislike', [GroupPostController::class, 'removeDislike'])->where('id', '[0-9]+');
     Route::post('/group-posts/{id}/featured-image', [GroupPostController::class, 'setFeaturedImage'])->where('id', '[0-9]+');
     Route::post('/group-posts/{id}/share-to-wall', [GroupPostController::class, 'shareToWall'])->where('id', '[0-9]+');
+
+    // Group Post Engagement API v2 (using dedicated engagement controller)
+    Route::prefix('group-posts')->group(function () {
+        Route::post('/{postId}/engage/like', [GroupPostEngagementController::class, 'likePost'])->where('postId', '[0-9]+');
+        Route::delete('/{postId}/engage/like', [GroupPostEngagementController::class, 'unlikePost'])->where('postId', '[0-9]+');
+        Route::post('/{postId}/engage/dislike', [GroupPostEngagementController::class, 'dislikePost'])->where('postId', '[0-9]+');
+        Route::delete('/{postId}/engage/dislike', [GroupPostEngagementController::class, 'removeDislikePost'])->where('postId', '[0-9]+');
+        Route::post('/{postId}/engage/share', [GroupPostEngagementController::class, 'sharePost'])->where('postId', '[0-9]+');
+        Route::get('/{postId}/engage/stats', [GroupPostEngagementController::class, 'getEngagementStats'])->where('postId', '[0-9]+');
+        Route::get('/{postId}/engage/likes', [GroupPostEngagementController::class, 'getPostLikes'])->where('postId', '[0-9]+');
+        Route::get('/{postId}/engage/shares', [GroupPostEngagementController::class, 'getPostShares'])->where('postId', '[0-9]+');
+    });
 
     // Group Post Comments (authenticated - read, create, update, delete)
     Route::post('/group-posts/{postId}/comments', [GroupCommentController::class, 'store'])->where('postId', '[0-9]+');

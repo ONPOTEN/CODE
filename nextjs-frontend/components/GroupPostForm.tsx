@@ -2,15 +2,16 @@
 
 import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import { groupPosts, auth } from '@/lib/api';
+import { groupPosts, auth, Group, chat } from '@/lib/api';
 
 interface GroupPostFormProps {
   groupId: number;
+  group?: Group;
   onPostCreated?: () => void;
   onCancel?: () => void;
 }
 
-export default function GroupPostForm({ groupId, onPostCreated, onCancel }: GroupPostFormProps) {
+export default function GroupPostForm({ groupId, group, onPostCreated, onCancel }: GroupPostFormProps) {
   const router = useRouter();
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -21,10 +22,36 @@ export default function GroupPostForm({ groupId, onPostCreated, onCancel }: Grou
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  const [showApprovalModal, setShowApprovalModal] = useState(false);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       setImages(Array.from(e.target.files));
+    }
+  };
+
+  const sendApprovalNotifications = async () => {
+    if (!group?.requires_approval_posts) return;
+
+    try {
+      const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+      const userName = currentUser.display_name || currentUser.name || 'A user';
+
+      // Notify group owner
+      if (group.group_owner_id) {
+        try {
+          const conversation = await chat.getOrCreateConversation(group.group_owner_id);
+          const message = `Your Group "${group.group_name}" has a new post that needs approval from: ${userName}`;
+          await chat.sendMessage(conversation.id, message);
+          console.log('[GroupPostForm] Notification sent to group owner');
+        } catch (err) {
+          console.error('[GroupPostForm] Failed to notify group owner:', err);
+        }
+      }
+
+      // TODO: Add notification to moderators when moderator system is implemented
+    } catch (err) {
+      console.error('[GroupPostForm] Error sending approval notifications:', err);
     }
   };
 
@@ -62,15 +89,35 @@ export default function GroupPostForm({ groupId, onPostCreated, onCancel }: Grou
 
       await groupPosts.create(formData);
 
-      setSuccess(true);
+      // Check if post requires approval
+      const requiresApproval = group?.requires_approval_posts;
+
+      // Check if current user is admin (group owner)
+      const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+      const isGroupOwner = currentUser.id === group?.group_owner_id;
+      const isAdmin = currentUser.role === 'admin' || currentUser.role === 'administrator';
+
+      // If user is admin/moderator or approval is not required, show success
+      if (isGroupOwner || isAdmin || !requiresApproval) {
+        setSuccess(true);
+        setTimeout(() => setSuccess(false), 3000);
+      } else {
+        // Regular member needs approval - send notifications and show modal
+        if (requiresApproval) {
+          await sendApprovalNotifications();
+          setShowApprovalModal(true);
+        } else {
+          setSuccess(true);
+          setTimeout(() => setSuccess(false), 3000);
+        }
+      }
+
       setTitle('');
       setContent('');
       setExcerpt('');
       setImages([]);
       setVisibility('public');
       setShowForm(false);
-
-      setTimeout(() => setSuccess(false), 3000);
 
       if (onPostCreated) {
         onPostCreated();
@@ -226,6 +273,39 @@ export default function GroupPostForm({ groupId, onPostCreated, onCancel }: Grou
             </button>
           </div>
         </form>
+      )}
+
+      {/* Post Approval Modal */}
+      {showApprovalModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 text-center">
+            {/* Icon */}
+            <div className="mx-auto w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+              <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+
+            {/* Title */}
+            <h3 className="text-lg font-bold text-gray-900 mb-2">Post Submitted for Review</h3>
+
+            {/* Message */}
+            <p className="text-gray-600 mb-6">
+              Your post needs {group?.requires_approval_posts ? 'Admin or Moderator verification' : 'verification'}. The group administrators will review and approve it shortly.
+            </p>
+
+            {/* Action Button */}
+            <button
+              onClick={() => {
+                setShowApprovalModal(false);
+                setShowForm(false);
+              }}
+              className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors"
+            >
+              Got it, Thanks!
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

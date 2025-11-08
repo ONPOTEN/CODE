@@ -161,20 +161,22 @@ export function GroupEngagementProvider({ children, token }: { children: React.R
   );
 
   // Update comment
-  const updateComment = useCallback(async (commentId: number, content: string) => {
+  const updateComment = useCallback(async (postId: number, commentId: number, content: string) => {
     try {
-      await groupEngagementService.updateGroupPostComment(commentId, content);
+      await groupEngagementService.updateGroupPostComment(postId, commentId, content);
+      // Refresh comments
+      await fetchComments(postId);
     } catch (error) {
       console.error(`Failed to update comment ${commentId}:`, error);
       throw error;
     }
-  }, []);
+  }, [fetchComments]);
 
   // Delete comment
   const deleteComment = useCallback(
     async (postId: number, commentId: number) => {
       try {
-        await groupEngagementService.deleteGroupPostComment(commentId);
+        await groupEngagementService.deleteGroupPostComment(postId, commentId);
         // Refresh comments
         await fetchComments(postId);
         // Refresh engagement stats

@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { groups as groupsApi, ApiException, Group } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
+import AvatarCropper from '@/components/AvatarCropper';
 
 export default function EditGroupPage() {
   const router = useRouter();
@@ -27,6 +28,8 @@ export default function EditGroupPage() {
   const [loading, setLoading] = useState(false);
   const [pageLoading, setPageLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showAvatarCropper, setShowAvatarCropper] = useState(false);
+  const [avatarToCrop, setAvatarToCrop] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchGroup = async () => {
@@ -91,13 +94,32 @@ export default function EditGroupPage() {
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setAvatar(file);
       const reader = new FileReader();
       reader.onloadend = () => {
-        setAvatarPreview(reader.result as string);
+        setAvatarToCrop(reader.result as string);
+        setShowAvatarCropper(true);
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  const handleAvatarCropComplete = (croppedBlob: Blob) => {
+    // Convert blob to file
+    const croppedFile = new File([croppedBlob], 'avatar.jpg', { type: 'image/jpeg' });
+    setAvatar(croppedFile);
+
+    // Create preview URL
+    const previewUrl = URL.createObjectURL(croppedBlob);
+    setAvatarPreview(previewUrl);
+
+    // Close cropper
+    setShowAvatarCropper(false);
+    setAvatarToCrop(null);
+  };
+
+  const handleAvatarCropCancel = () => {
+    setShowAvatarCropper(false);
+    setAvatarToCrop(null);
   };
 
   const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -413,6 +435,15 @@ export default function EditGroupPage() {
           </form>
         </div>
       </div>
+
+      {/* Avatar Cropper Modal */}
+      {showAvatarCropper && avatarToCrop && (
+        <AvatarCropper
+          imageSrc={avatarToCrop}
+          onCropComplete={handleAvatarCropComplete}
+          onCancel={handleAvatarCropCancel}
+        />
+      )}
     </div>
   );
 }

@@ -339,17 +339,24 @@ class EngagementService {
   }
 
   /**
-   * Create a comment on a post
+   * Create a comment on a post (WpPost or GroupPost)
+   * @param postId - The post ID
+   * @param content - The comment content
+   * @param parentId - Optional parent comment ID for nested replies
+   * @param type - 'post' for WpPost or 'group-post' for GroupPost (default: 'post')
    */
-  async createComment(postId: number, content: string, parentId?: number): Promise<any> {
-    const response = await fetch(`${this.apiBaseUrl}/posts/${postId}/comments`, {
+  async createComment(postId: number, content: string, parentId?: number, type: 'post' | 'group-post' = 'post'): Promise<any> {
+    const endpoint = type === 'group-post' ? `group-posts` : `posts`;
+    const fieldName = type === 'group-post' ? 'comment_content' : 'content';
+
+    const response = await fetch(`${this.apiBaseUrl}/${endpoint}/${postId}/comments`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${this.token}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        content,
+        [fieldName]: content,
         parent_id: parentId || null,
       }),
     });

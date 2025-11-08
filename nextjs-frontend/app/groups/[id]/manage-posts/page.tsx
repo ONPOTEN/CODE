@@ -48,10 +48,10 @@ export default function ManagePostsPage() {
       console.log('[ManagePosts] Pending posts response:', pendingResponse);
       setPendingPosts(pendingResponse.data || []);
 
-      // Fetch all posts and filter approved ones
+      // Fetch all posts and filter approved ones (all except pending)
       const allPostsResponse = await groupPosts.index({ group_id: groupId, per_page: 100 });
       console.log('[ManagePosts] All posts response:', allPostsResponse);
-      const approved = allPostsResponse.data?.filter((p: GroupPost) => p.post_status === 'published') || [];
+      const approved = allPostsResponse.data?.filter((p: GroupPost) => p.post_status !== 'pending') || [];
       setApprovedPosts(approved);
     } catch (err) {
       if (err instanceof ApiException) {
@@ -158,8 +158,8 @@ export default function ManagePostsPage() {
           <Link href={`/groups/${groupId}`} className="text-blue-600 hover:text-blue-700 font-medium">
             ← Back to {group.group_name}
           </Link>
-          <h1 className="text-3xl font-bold text-gray-900 mt-4">Manage Posts</h1>
-          <p className="text-gray-600 mt-2">Approve pending posts and manage approved posts</p>
+          <h1 className="text-3xl font-bold text-gray-900 mt-4">Group Manager</h1>
+          <p className="text-gray-600 mt-2">Manage group users and approve/manage posts</p>
         </div>
 
         {error && (
@@ -290,6 +290,12 @@ export default function ManagePostsPage() {
 
                         {/* Actions */}
                         <div className="flex gap-2 flex-shrink-0">
+                          <button
+                            onClick={() => router.push(`/groups/${groupId}/posts/${post.id}/edit`)}
+                            className="px-4 py-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 font-medium transition-colors whitespace-nowrap"
+                          >
+                            Edit
+                          </button>
                           <button
                             onClick={() => handleDeletePost(post.id)}
                             disabled={deletingId === post.id}

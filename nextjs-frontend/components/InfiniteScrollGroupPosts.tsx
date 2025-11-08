@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { groupPosts, GroupPost, ApiException } from '@/lib/api';
+import { groupPosts, GroupPost, ApiException, users, User } from '@/lib/api';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
@@ -29,8 +29,44 @@ export default function InfiniteScrollGroupPosts({
   const [openMenuId, setOpenMenuId] = useState<number | null>(null);
   const observerTarget = useRef<HTMLDivElement>(null);
   const menuRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
+  const userCache = useRef<Map<number, User>>(new Map());
   const router = useRouter();
   const { user } = useAuth();
+
+  const fetchAuthorData = useCallback(
+    async (post: GroupPost): Promise<GroupPost> => {
+      // If author data is already present with a name, return post as-is
+      if (post.author && (post.author.name || post.author.username)) {
+        return post;
+      }
+
+      // If post_author ID exists, try to fetch user data
+      if (post.post_author) {
+        try {
+          // Check cache first
+          if (userCache.current.has(post.post_author)) {
+            const cachedUser = userCache.current.get(post.post_author)!;
+            return { ...post, author: cachedUser };
+          }
+
+          // Fetch from API
+          const userResponse = await users.getById(post.post_author);
+          // Handle both direct User response and wrapped response
+          const userData = (userResponse as any).data || userResponse;
+          console.log(`[fetchAuthorData] Fetched user for post ${post.id}:`, userData);
+          userCache.current.set(post.post_author, userData);
+          return { ...post, author: userData };
+        } catch (err) {
+          console.error(`Failed to fetch author data for post ${post.id}:`, err);
+          // Return post as-is if fetch fails
+          return post;
+        }
+      }
+
+      return post;
+    },
+    []
+  );
 
   const fetchPosts = useCallback(
     async (pageNum: number) => {
@@ -51,10 +87,15 @@ export default function InfiniteScrollGroupPosts({
         if (response.data.length === 0) {
           setHasMore(false);
         } else {
+          // Fetch author data for posts that don't have it
+          const postsWithAuthors = await Promise.all(
+            response.data.map((post) => fetchAuthorData(post))
+          );
+
           setPostsList((prev) => {
             // Avoid duplicates
             const existingIds = new Set(prev.map((p) => p.id));
-            const newPosts = response.data.filter((p) => !existingIds.has(p.id));
+            const newPosts = postsWithAuthors.filter((p) => !existingIds.has(p.id));
             return [...prev, ...newPosts];
           });
 
@@ -74,7 +115,7 @@ export default function InfiniteScrollGroupPosts({
         setLoading(false);
       }
     },
-    [groupId, loading, sortBy, order]
+    [groupId, loading, sortBy, order, fetchAuthorData]
   );
 
   // Close menu when clicking outside
@@ -214,6 +255,36 @@ export default function InfiniteScrollGroupPosts({
 
           {/* Post Content */}
           <div className="p-6">
+            {/* Author Info */}
+            <div className="flex items-center gap-3 mb-4 pb-4 border-b border-gray-200">
+              {post.author?.avatar ? (
+                <img
+                  src={post.author.avatar}
+                  alt={post.author.name}
+                  className="w-10 h-10 rounded-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center flex-shrink-0">
+                  <svg className="w-6 h-6 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                  </svg>
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-gray-900">{post.author?.name || post.author?.username || 'Anonymous'}</p>
+                <p className="text-sm text-gray-600">
+                  {new Date(post.post_date).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                  })}
+                </p>
+              </div>
+            </div>
+
             {/* Post Header */}
             <div className="flex items-start justify-between gap-4 mb-4">
               <div className="flex-1 min-w-0">
@@ -225,16 +296,6 @@ export default function InfiniteScrollGroupPosts({
                     {post.post_title}
                   </button>
                 </h2>
-                <div className="flex flex-wrap items-center gap-2 text-sm text-gray-600">
-                  <span className="flex items-center gap-1">
-                    📅
-                    {new Date(post.post_date).toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: 'numeric',
-                      year: 'numeric',
-                    })}
-                  </span>
-                </div>
               </div>
 
               {/* Post Menu */}

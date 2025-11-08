@@ -73,32 +73,34 @@ export function GroupCard({ group, onDeleted }: GroupCardProps) {
   return (
     <>
       <Link href={`/groups/${group.group_id}`}>
-        <article className="bg-white rounded-lg shadow-sm hover:shadow-lg transition-shadow border border-gray-200 overflow-hidden hover:border-blue-300 cursor-pointer h-full flex flex-col">
+        <article className="bg-white rounded-lg shadow-sm hover:shadow-lg transition-shadow border border-gray-200 overflow-visible hover:border-blue-300 cursor-pointer h-full flex flex-col relative z-10">
         {/* Cover Image with Menu Button */}
         {group.cover_image ? (
-          <div className="relative h-40 bg-gray-200 overflow-hidden">
-            <img
-              src={group.cover_image}
-              alt={group.group_name}
-              className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-              onError={(e) => {
-                e.currentTarget.style.display = 'none';
-                if (e.currentTarget.parentElement) {
-                  const placeholder = document.createElement('div');
-                  placeholder.className =
-                    'w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-300 to-blue-400';
-                  placeholder.innerHTML = `
-                    <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.856-1.487M15 10a3 3 0 11-6 0 3 3 0 016 0zM15 20H9m6 0h6" />
-                    </svg>
-                  `;
-                  e.currentTarget.parentElement.appendChild(placeholder);
-                }
-              }}
-            />
+          <div className="relative h-40 bg-gray-200 overflow-visible">
+            <div className="absolute inset-0 overflow-hidden">
+              <img
+                src={group.cover_image}
+                alt={group.group_name}
+                className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                  if (e.currentTarget.parentElement) {
+                    const placeholder = document.createElement('div');
+                    placeholder.className =
+                      'w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-300 to-blue-400';
+                    placeholder.innerHTML = `
+                      <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.856-1.487M15 10a3 3 0 11-6 0 3 3 0 016 0zM15 20H9m6 0h6" />
+                      </svg>
+                    `;
+                    e.currentTarget.parentElement.appendChild(placeholder);
+                  }
+                }}
+              />
+            </div>
             {/* Three Dot Menu - Only show for group admin */}
             {isGroupAdmin && (
-              <div className="absolute top-2 right-2" ref={menuRef}>
+              <div className="absolute top-2 right-2 overflow-visible" ref={menuRef}>
                 <button
                   onClick={(e) => {
                     e.preventDefault();
@@ -115,7 +117,7 @@ export function GroupCard({ group, onDeleted }: GroupCardProps) {
 
                 {/* Dropdown Menu */}
                 {showMenu && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-20 py-1">
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-50 py-1">
                     <button
                       onClick={(e) => {
                         e.preventDefault();
@@ -181,7 +183,7 @@ export function GroupCard({ group, onDeleted }: GroupCardProps) {
             </svg>
             {/* Three Dot Menu - Only show for group admin */}
             {isGroupAdmin && (
-              <div className="absolute top-2 right-2" ref={menuRef}>
+              <div className="absolute top-2 right-2 overflow-visible" ref={menuRef}>
                 <button
                   onClick={(e) => {
                     e.preventDefault();
@@ -198,7 +200,7 @@ export function GroupCard({ group, onDeleted }: GroupCardProps) {
 
                 {/* Dropdown Menu */}
                 {showMenu && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-20 py-1">
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-50 py-1">
                     <button
                       onClick={(e) => {
                         e.preventDefault();

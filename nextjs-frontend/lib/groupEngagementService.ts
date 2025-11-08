@@ -1,11 +1,10 @@
 /**
- * Group Engagement Service - Real-time engagement features for group posts (likes, dislikes, comments)
- * Integrated with Socket.io for real-time updates and Laravel backend
+ * Group Engagement Service - Group-specific engagement features (likes, dislikes, shares, comments)
+ * Handles GroupPost engagement with proper API endpoints
  */
 
-import { io, Socket } from 'socket.io-client';
-
 export interface GroupEngagement {
+  post_id: number;
   likes: {
     count: number;
     user_liked: boolean;
@@ -17,246 +16,217 @@ export interface GroupEngagement {
   comments: {
     count: number;
   };
+  shares: {
+    count: number;
+  };
 }
 
 export interface GroupComment {
   id: number;
   post_id: number;
-  content: string;
-  author: {
+  comment_content: string;
+  user_id: number;
+  status: 'approved' | 'pending' | 'spam' | 'trash';
+  parent_id?: number;
+  author?: {
     id: number;
     name: string;
     email: string;
     avatar?: string;
   };
   author_name: string;
-  author_email: string;
   created_at: string;
   updated_at: string;
-  user_id: number;
 }
 
 class GroupEngagementService {
-  private socket: Socket | null = null;
   private apiBaseUrl: string;
-  private token: string | null = null;
-  private listeners: Map<string, Set<Function>> = new Map();
+  private token: string = '';
 
-  constructor(apiBaseUrl: string = process.env.NEXT_PUBLIC_API_URL || 'https://centimet2.com:8000/api/v1') {
-    this.apiBaseUrl = apiBaseUrl;
+  constructor() {
+    this.apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://centimet2.com:8000/api/v1';
   }
 
-  /**
-   * Set the authentication token for API requests
-   */
   setToken(token: string): void {
     this.token = token;
   }
 
-  /**
-   * Like a group post
-   */
   async likeGroupPost(postId: number): Promise<any> {
-    const response = await fetch(`${this.apiBaseUrl}/group-posts/${postId}/like`, {
+    const response = await fetch(`${this.apiBaseUrl}/group-posts/${postId}/engage/like`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${this.token}`,
         'Content-Type': 'application/json',
       },
     });
-
     if (!response.ok) {
-      throw new Error(`Failed to like group post: ${response.statusText}`);
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to like group post');
     }
-
     return await response.json();
   }
 
-  /**
-   * Unlike a group post
-   */
   async unlikeGroupPost(postId: number): Promise<any> {
-    const response = await fetch(`${this.apiBaseUrl}/group-posts/${postId}/like`, {
+    const response = await fetch(`${this.apiBaseUrl}/group-posts/${postId}/engage/like`, {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${this.token}`,
         'Content-Type': 'application/json',
       },
     });
-
     if (!response.ok) {
-      throw new Error(`Failed to unlike group post: ${response.statusText}`);
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to unlike group post');
     }
-
     return await response.json();
   }
 
-  /**
-   * Dislike a group post
-   */
   async dislikeGroupPost(postId: number): Promise<any> {
-    const response = await fetch(`${this.apiBaseUrl}/group-posts/${postId}/dislike`, {
+    const response = await fetch(`${this.apiBaseUrl}/group-posts/${postId}/engage/dislike`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${this.token}`,
         'Content-Type': 'application/json',
       },
     });
-
     if (!response.ok) {
-      throw new Error(`Failed to dislike group post: ${response.statusText}`);
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to dislike group post');
     }
-
     return await response.json();
   }
 
-  /**
-   * Remove dislike from a group post
-   */
   async removeDislikeGroupPost(postId: number): Promise<any> {
-    const response = await fetch(`${this.apiBaseUrl}/group-posts/${postId}/dislike`, {
+    const response = await fetch(`${this.apiBaseUrl}/group-posts/${postId}/engage/dislike`, {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${this.token}`,
         'Content-Type': 'application/json',
       },
     });
-
     if (!response.ok) {
-      throw new Error(`Failed to remove dislike from group post: ${response.statusText}`);
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to remove dislike from group post');
     }
-
     return await response.json();
   }
 
-  /**
-   * Get engagement stats for a group post
-   */
-  async getGroupPostEngagementStats(postId: number): Promise<GroupEngagement> {
-    const response = await fetch(`${this.apiBaseUrl}/group-posts/${postId}/engagement`, {
+  async shareGroupPost(postId: number, sharedVia: string = 'direct'): Promise<any> {
+    const response = await fetch(`${this.apiBaseUrl}/group-posts/${postId}/engage/share`, {
+      method: 'POST',
       headers: {
-        'Authorization': this.token ? `Bearer ${this.token}` : '',
+        'Authorization': `Bearer ${this.token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ shared_via: sharedVia }),
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to share group post');
+    }
+    return await response.json();
+  }
+
+  async getGroupPostEngagementStats(postId: number): Promise<GroupEngagement> {
+    const response = await fetch(`${this.apiBaseUrl}/group-posts/${postId}/engage/stats`, {
+      headers: {
+        'Authorization': `Bearer ${this.token}`,
+        'Content-Type': 'application/json',
       },
     });
-
     if (!response.ok) {
-      throw new Error(`Failed to fetch group post engagement stats: ${response.statusText}`);
+      throw new Error('Failed to fetch engagement stats');
     }
-
     return await response.json();
   }
 
-  /**
-   * Get all comments for a group post
-   */
-  async getGroupPostComments(postId: number, page: number = 1, perPage: number = 15): Promise<any> {
-    const response = await fetch(
-      `${this.apiBaseUrl}/group-posts/${postId}/comments?page=${page}&per_page=${perPage}`,
-      {
-        headers: {
-          'Authorization': this.token ? `Bearer ${this.token}` : '',
-        },
-      }
-    );
-
+  async getGroupPostComments(postId: number, page: number = 1): Promise<{ data: GroupComment[] }> {
+    const response = await fetch(`${this.apiBaseUrl}/group-posts/${postId}/comments?page=${page}`, {
+      headers: {
+        'Authorization': `Bearer ${this.token}`,
+        'Content-Type': 'application/json',
+      },
+    });
     if (!response.ok) {
-      throw new Error(`Failed to fetch group post comments: ${response.statusText}`);
+      throw new Error('Failed to fetch comments');
     }
-
     return await response.json();
   }
 
-  /**
-   * Add a comment to a group post
-   */
   async addGroupPostComment(postId: number, content: string, parentId?: number): Promise<any> {
-    const body: any = { content };
-    if (parentId) {
-      body.parent_id = parentId;
-    }
-
     const response = await fetch(`${this.apiBaseUrl}/group-posts/${postId}/comments`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${this.token}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify({
+        comment_content: content,
+        parent_id: parentId || null,
+      }),
     });
-
     if (!response.ok) {
-      throw new Error(`Failed to add comment: ${response.statusText}`);
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to add comment');
     }
-
     return await response.json();
   }
 
-  /**
-   * Update a comment on a group post
-   */
-  async updateGroupPostComment(commentId: number, content: string): Promise<any> {
-    const response = await fetch(`${this.apiBaseUrl}/group-comments/${commentId}`, {
+  async updateGroupPostComment(postId: number, commentId: number, content: string): Promise<any> {
+    const response = await fetch(`${this.apiBaseUrl}/group-posts/${postId}/comments/${commentId}`, {
       method: 'PUT',
       headers: {
         'Authorization': `Bearer ${this.token}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ content }),
+      body: JSON.stringify({ comment_content: content }),
     });
-
     if (!response.ok) {
-      throw new Error(`Failed to update comment: ${response.statusText}`);
+      throw new Error('Failed to update comment');
     }
-
     return await response.json();
   }
 
-  /**
-   * Delete a comment from a group post
-   */
-  async deleteGroupPostComment(commentId: number): Promise<any> {
-    const response = await fetch(`${this.apiBaseUrl}/group-comments/${commentId}`, {
+  async deleteGroupPostComment(postId: number, commentId: number): Promise<any> {
+    const response = await fetch(`${this.apiBaseUrl}/group-posts/${postId}/comments/${commentId}`, {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${this.token}`,
         'Content-Type': 'application/json',
       },
     });
-
     if (!response.ok) {
-      throw new Error(`Failed to delete comment: ${response.statusText}`);
+      throw new Error('Failed to delete comment');
     }
-
     return await response.json();
   }
 
-  /**
-   * Event listener management
-   */
-  on(event: string, callback: Function): void {
-    if (!this.listeners.has(event)) {
-      this.listeners.set(event, new Set());
+  async getGroupPostLikes(postId: number, page: number = 1): Promise<any> {
+    const response = await fetch(`${this.apiBaseUrl}/group-posts/${postId}/engage/likes?page=${page}`, {
+      headers: {
+        'Authorization': `Bearer ${this.token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    if (!response.ok) {
+      throw new Error('Failed to fetch likes');
     }
-    this.listeners.get(event)!.add(callback);
+    return await response.json();
   }
 
-  off(event: string, callback: Function): void {
-    if (this.listeners.has(event)) {
-      this.listeners.get(event)!.delete(callback);
+  async getGroupPostShares(postId: number, page: number = 1): Promise<any> {
+    const response = await fetch(`${this.apiBaseUrl}/group-posts/${postId}/engage/shares?page=${page}`, {
+      headers: {
+        'Authorization': `Bearer ${this.token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    if (!response.ok) {
+      throw new Error('Failed to fetch shares');
     }
-  }
-
-  private emit(event: string, data: any): void {
-    if (this.listeners.has(event)) {
-      this.listeners.get(event)!.forEach((callback) => {
-        try {
-          callback(data);
-        } catch (error) {
-          console.error(`Error in ${event} listener:`, error);
-        }
-      });
-    }
+    return await response.json();
   }
 }
 
-export default new GroupEngagementService();
+const groupEngagementService = new GroupEngagementService();
+export default groupEngagementService;

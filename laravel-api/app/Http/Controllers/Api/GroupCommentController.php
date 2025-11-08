@@ -59,8 +59,19 @@ class GroupCommentController extends Controller
     public function store(StoreGroupCommentRequest $request, $postId): JsonResponse
     {
         try {
+            // Log the request
+            \Log::info('[GroupCommentController.store] Creating comment', [
+                'postId' => $postId,
+                'userId' => auth()->id(),
+                'comment_content' => substr($request->input('comment_content'), 0, 50),
+            ]);
+
             // Verify post exists
             $post = GroupPost::findOrFail($postId);
+            \Log::info('[GroupCommentController.store] Post found', [
+                'postId' => $postId,
+                'post' => $post->id,
+            ]);
 
             // Create comment
             $comment = GroupComment::create([
@@ -71,11 +82,31 @@ class GroupCommentController extends Controller
                 'status' => 'approved', // Auto-approve authenticated user comments
             ]);
 
+            \Log::info('[GroupCommentController.store] Comment created successfully', [
+                'commentId' => $comment->id,
+                'postId' => $postId,
+            ]);
+
             return response()->json([
                 'data' => new GroupCommentResource($comment->load('user', 'replies')),
                 'message' => 'Comment created successfully',
             ], 201);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            \Log::error('[GroupCommentController.store] GroupPost not found', [
+                'postId' => $postId,
+                'error' => $e->getMessage(),
+            ]);
+            return response()->json([
+                'error' => 'Group post not found',
+                'message' => 'The group post with ID ' . $postId . ' does not exist',
+            ], 404);
         } catch (\Exception $e) {
+            \Log::error('[GroupCommentController.store] Failed to create comment', [
+                'postId' => $postId,
+                'userId' => auth()->id(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
             return response()->json([
                 'error' => 'Failed to create comment',
                 'message' => $e->getMessage(),

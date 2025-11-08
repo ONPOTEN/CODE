@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Storage;
 
 class GroupResource extends JsonResource
 {
@@ -24,8 +25,8 @@ class GroupResource extends JsonResource
             'visibility' => $this->visibility,
             'requires_approval' => $this->requires_approval,
             'requires_approval_posts' => $this->requires_approval_posts,
-            'avatar' => $this->avatar,
-            'cover_image' => $this->cover_image,
+            'avatar' => $this->avatar ? Storage::disk('s3')->url($this->avatar) : null,
+            'cover_image' => $this->cover_image ? Storage::disk('s3')->url($this->cover_image) : null,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
             'posts_count' => $this->whenLoaded('posts', fn () => $this->posts->count()),

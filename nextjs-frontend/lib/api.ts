@@ -696,6 +696,7 @@ export interface Group {
   avatar?: string;
   cover_image?: string;
   requires_approval?: boolean;
+  requires_approval_posts?: boolean;
   owner?: User;
   posts_count?: number;
   members_count?: number;
@@ -921,6 +922,10 @@ export const groupPosts = {
     });
   },
 
+  updateWithFiles: async (id: number, data: FormData): Promise<{ data: GroupPost; message: string }> => {
+    return apiRequestWithFiles(`/group-posts/${id}`, data);
+  },
+
   delete: async (id: number): Promise<{ message: string }> => {
     return apiRequest(`/group-posts/${id}`, {
       method: 'DELETE',
@@ -934,32 +939,46 @@ export const groupPosts = {
     });
   },
 
-  like: async (id: number): Promise<{ message: string; likes_count: number }> => {
-    return apiRequest(`/group-posts/${id}/like`, {
+  // GroupPost engagement using GroupPostEngagementController
+  like: async (id: number): Promise<{ message: string; likes_count: number; liked: boolean }> => {
+    return apiRequest(`/group-posts/${id}/engage/like`, {
       method: 'POST',
     });
   },
 
-  unlike: async (id: number): Promise<{ message: string; likes_count: number }> => {
-    return apiRequest(`/group-posts/${id}/like`, {
+  unlike: async (id: number): Promise<{ message: string; likes_count: number; liked: boolean }> => {
+    return apiRequest(`/group-posts/${id}/engage/like`, {
       method: 'DELETE',
     });
   },
 
-  dislike: async (id: number): Promise<{ message: string }> => {
-    return apiRequest(`/group-posts/${id}/dislike`, {
+  dislike: async (id: number): Promise<{ message: string; dislikes_count: number; disliked: boolean }> => {
+    return apiRequest(`/group-posts/${id}/engage/dislike`, {
       method: 'POST',
     });
   },
 
-  removeDislike: async (id: number): Promise<{ message: string }> => {
-    return apiRequest(`/group-posts/${id}/dislike`, {
+  removeDislike: async (id: number): Promise<{ message: string; dislikes_count: number; disliked: boolean }> => {
+    return apiRequest(`/group-posts/${id}/engage/dislike`, {
       method: 'DELETE',
+    });
+  },
+
+  share: async (id: number, sharedVia?: string): Promise<{ message: string; shares_count: number; shared_via: string }> => {
+    return apiRequest(`/group-posts/${id}/engage/share`, {
+      method: 'POST',
+      body: JSON.stringify({ shared_via: sharedVia || 'direct' }),
     });
   },
 
   getEngagementStats: async (id: number) => {
-    return apiRequest<{ data: { likes: number; dislikes: number; comments: number; total_engagement: number } }>(`/group-posts/${id}/engagement`);
+    return apiRequest<{
+      post_id: number;
+      likes: { count: number; user_liked: boolean };
+      dislikes: { count: number; user_disliked: boolean };
+      comments: { count: number };
+      shares: { count: number };
+    }>(`/group-posts/${id}/engage/stats`);
   },
 
   getLikes: async (id: number, params?: { per_page?: number; page?: number }) => {
@@ -968,7 +987,16 @@ export const groupPosts = {
     if (params?.page) searchParams.append('page', params.page.toString());
 
     const query = searchParams.toString() ? `?${searchParams}` : '';
-    return apiRequest<{ data: any[]; pagination: any }>(`/group-posts/${id}/likes${query}`);
+    return apiRequest<{ total: number; data: any[]; pagination: any }>(`/group-posts/${id}/engage/likes${query}`);
+  },
+
+  getShares: async (id: number, params?: { per_page?: number; page?: number }) => {
+    const searchParams = new URLSearchParams();
+    if (params?.per_page) searchParams.append('per_page', params.per_page.toString());
+    if (params?.page) searchParams.append('page', params.page.toString());
+
+    const query = searchParams.toString() ? `?${searchParams}` : '';
+    return apiRequest<{ total: number; data: any[]; pagination: any }>(`/group-posts/${id}/engage/shares${query}`);
   },
 
   getComments: async (id: number, params?: { per_page?: number; page?: number; status?: string }) => {
