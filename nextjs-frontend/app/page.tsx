@@ -3,6 +3,7 @@
 import HeroBanner from '@/components/HeroBanner';
 import Menu from '@/components/Menu';
 import GroupSearch from '@/components/GroupSearch';
+import ShopSearch from '@/components/ShopSearch';
 import InfiniteScrollPosts from '@/components/InfiniteScrollPosts';
 
 export default function HomePage() {
@@ -16,6 +17,9 @@ export default function HomePage() {
 
       {/* Group Search Section */}
       <GroupSearch />
+
+      {/* Shop Search Section */}
+      <ShopSearch />
 
       {/* Posts Section with Infinite Scroll */}
       <InfiniteScrollPosts />

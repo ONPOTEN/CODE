@@ -98,6 +98,35 @@ export default function Menu() {
                   </Link>
 
                   <Link
+                    href="/messages"
+                    className="block px-6 py-4 hover:bg-orange-50 transition-colors"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    <h3 className="font-semibold text-lg mb-1 flex items-center gap-2">
+                      📬 Inbox
+                    </h3>
+                    <p className="text-gray-600 text-sm">
+                      View all conversations, customer messages, and shop messages
+                    </p>
+                  </Link>
+
+                  <Link
+                    href="/shop-messages"
+                    className="block px-6 py-4 hover:bg-pink-50 transition-colors"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    <h3 className="font-semibold text-lg mb-1 flex items-center gap-2">
+                      Shop Messages
+                      <span className="inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold text-white bg-red-500 rounded-full">
+                        New
+                      </span>
+                    </h3>
+                    <p className="text-gray-600 text-sm">
+                      View customer messages for your shops
+                    </p>
+                  </Link>
+
+                  <Link
                     href="/groups"
                     className="block px-6 py-4 hover:bg-cyan-50 transition-colors"
                     onClick={() => setIsOpen(false)}

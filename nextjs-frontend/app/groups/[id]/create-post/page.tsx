@@ -24,6 +24,8 @@ export default function CreateGroupPostPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [groupLoading, setGroupLoading] = useState(true);
+  const [showApprovalModal, setShowApprovalModal] = useState(false);
+  const [approvalMessage, setApprovalMessage] = useState<string | null>(null);
 
   useEffect(() => {
     // Check authentication first
@@ -177,11 +179,20 @@ export default function CreateGroupPostPage() {
 
       // Check if post is pending approval
       const isPending = response.data?.post_status === 'pending';
-      const message = isPending
-        ? 'Post created successfully and is awaiting approval'
-        : 'Post created successfully';
 
-      router.push(`/groups/${groupId}?message=${encodeURIComponent(message)}`);
+      if (isPending) {
+        // Show approval modal and then redirect after a delay
+        setApprovalMessage('Your post is waiting for Admin approve');
+        setShowApprovalModal(true);
+
+        // Auto-redirect after 3 seconds
+        setTimeout(() => {
+          router.push(`/groups/${groupId}`);
+        }, 3000);
+      } else {
+        // Redirect immediately if post is published
+        router.push(`/groups/${groupId}?message=${encodeURIComponent('Post created successfully')}`);
+      }
     } catch (err) {
       if (err instanceof ApiException) {
         setError(err.message);
@@ -536,6 +547,50 @@ export default function CreateGroupPostPage() {
             </div>
           </form>
         </div>
+
+        {/* Approval Modal */}
+        {showApprovalModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-8 text-center animate-fade-in">
+              {/* Success Icon */}
+              <div className="mb-6 flex justify-center">
+                <div className="bg-amber-100 rounded-full p-4">
+                  <svg
+                    className="w-12 h-12 text-amber-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1.5}
+                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                </div>
+              </div>
+
+              {/* Message */}
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">Post Created!</h2>
+              <p className="text-gray-600 mb-6 text-lg font-medium">{approvalMessage}</p>
+              <p className="text-sm text-gray-500 mb-8">Redirecting to group in 3 seconds...</p>
+
+              {/* Progress bar */}
+              <div className="w-full bg-gray-200 rounded-full h-1 mb-6 overflow-hidden">
+                <div className="bg-amber-500 h-full animate-shrink"></div>
+              </div>
+
+              {/* Close Button */}
+              <button
+                onClick={() => router.push(`/groups/${groupId}`)}
+                className="w-full px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors"
+              >
+                Go to Group Now
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

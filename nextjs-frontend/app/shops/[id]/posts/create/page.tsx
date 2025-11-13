@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { shopPosts } from '@/lib/api';
+import { shopPosts, ApiException } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function CreateShopPostPage() {
@@ -33,19 +33,21 @@ export default function CreateShopPostPage() {
     if (files.length > 0) {
       setFeaturedImages((prev) => [...prev, ...files]);
 
-      // Generate previews
+      // Generate previews using blob URLs
       files.forEach((file) => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          setImagePreviews((prev) => [...prev, reader.result as string]);
-        };
-        reader.readAsDataURL(file);
+        const preview = URL.createObjectURL(file);
+        setImagePreviews((prev) => [...prev, preview]);
       });
     }
   };
 
   const removeImage = (index: number) => {
     setFeaturedImages((prev) => prev.filter((_, i) => i !== index));
+
+    // Revoke blob URL to prevent memory leaks
+    if (imagePreviews[index] && imagePreviews[index].startsWith('blob:')) {
+      URL.revokeObjectURL(imagePreviews[index]);
+    }
     setImagePreviews((prev) => prev.filter((_, i) => i !== index));
   };
 
@@ -65,39 +67,38 @@ export default function CreateShopPostPage() {
     try {
       setLoading(true);
 
-      // Create FormData for file upload
-      const submitData = new FormData();
-      submitData.append('title', formData.title);
-      submitData.append('content', formData.content);
-      if (formData.price_range) {
-        submitData.append('price_range', formData.price_range);
-      }
-      submitData.append('type', formData.type);
-      submitData.append('status', formData.status);
+      // Check if we have file uploads
+      if (featuredImages.length > 0) {
+        // Use FormData for file uploads with S3
+        const submitData = new FormData();
+        submitData.append('title', formData.title);
+        submitData.append('content', formData.content);
+        if (formData.price_range) {
+          submitData.append('price_range', formData.price_range);
+        }
+        submitData.append('type', formData.type);
+        submitData.append('status', formData.status);
 
-      // Append multiple images
-      featuredImages.forEach((image) => {
-        submitData.append('featured_images[]', image);
-      });
+        // Append multiple images
+        featuredImages.forEach((image) => {
+          submitData.append('featured_images[]', image);
+        });
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/shops/${shopId}/posts`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('api_token')}`,
-          'Accept': 'application/json',
-        },
-        body: submitData,
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to create post');
+        await shopPosts.create(shopId, submitData);
+      } else {
+        // Use regular JSON for text-only posts
+        await shopPosts.create(shopId, formData);
       }
 
       alert('Post created successfully!');
       router.push(`/shops/${shopId}/posts`);
     } catch (error) {
       console.error('Error creating post:', error);
-      alert('Failed to create post');
+      if (error instanceof ApiException) {
+        alert(`Failed to create post: ${error.message}`);
+      } else {
+        alert('Failed to create post');
+      }
     } finally {
       setLoading(false);
     }

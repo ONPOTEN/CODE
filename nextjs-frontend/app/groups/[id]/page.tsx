@@ -348,27 +348,27 @@ export default function GroupWallPage() {
     <div className="min-h-screen bg-gray-50">
       {/* Group Header */}
       <div className="bg-white border-b border-gray-200">
-        {/* Cover Image with Avatar Overlay */}
-        <div className="relative h-64 bg-gradient-to-r from-blue-400 to-blue-600 overflow-visible">
+        {/* Cover Image with Avatar */}
+        <div className="relative h-64 bg-gradient-to-r from-blue-400 to-blue-600 overflow-visible pb-16">
           {group.cover_image ? (
             <img
               src={group.cover_image}
               alt={group.group_name}
-              className="w-full h-full object-cover"
+              className="w-full h-64 object-cover"
               onError={(e) => {
                 e.currentTarget.style.display = 'none';
               }}
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-400 to-blue-600">
+            <div className="w-full h-64 flex items-center justify-center bg-gradient-to-br from-blue-400 to-blue-600">
               <svg className="w-24 h-24 text-blue-200 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.856-1.487M15 10a3 3 0 11-6 0 3 3 0 016 0zM15 20H9m6 0h6" />
               </svg>
             </div>
           )}
 
-          {/* Avatar - Centered on Cover Image */}
-          <div className="absolute inset-0 flex items-center justify-center">
+          {/* Avatar - Bottom Middle of Cover Image */}
+          <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 flex items-center justify-center z-10">
             {group.avatar ? (
               <img
                 src={group.avatar}
@@ -388,8 +388,8 @@ export default function GroupWallPage() {
           </div>
         </div>
 
-        {/* Group Info */}
-        <div className="max-w-4xl mx-auto px-4 py-8">
+        {/* Group Info - Below Avatar */}
+        <div className="max-w-4xl mx-auto px-4 pt-20 pb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-2 text-center">{group.group_name}</h1>
           {group.description && <p className="text-gray-600 text-lg mb-4 text-center">{group.description}</p>}
 

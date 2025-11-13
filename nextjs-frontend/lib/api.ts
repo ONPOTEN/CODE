@@ -189,6 +189,19 @@ async function handleResponse<T>(response: Response): Promise<T> {
 
   const data = await response.json();
   console.log(`[handleResponse] Success response (${response.status}):`, data);
+
+  // Debug logging for shop requests
+  if (typeof data === 'object' && data !== null && 'logo' in data) {
+    console.log(`[handleResponse] Shop data with images:`, {
+      id: data.id,
+      name: data.name,
+      logo: data.logo,
+      banner: data.banner,
+      hasLogo: !!data.logo,
+      hasBanner: !!data.banner,
+    });
+  }
+
   return data;
 }
 
@@ -258,7 +271,8 @@ export async function apiRequest<T = any>(
 // API request with file upload support
 export async function apiRequestWithFiles<T = any>(
   endpoint: string,
-  formData: FormData
+  formData: FormData,
+  method: 'POST' | 'PUT' = 'POST'
 ): Promise<T> {
   // Use same URL construction logic as apiRequest
   const basePath = API_BASE_URL.endsWith('/') ? API_BASE_URL.slice(0, -1) : API_BASE_URL;
@@ -274,10 +288,16 @@ export async function apiRequestWithFiles<T = any>(
     headers['Authorization'] = `Bearer ${token}`;
   }
 
+  // For PUT requests, add _method field for Laravel method spoofing
+  // This is needed because HTML forms don't natively support PUT
+  if (method === 'PUT') {
+    formData.append('_method', 'PUT');
+  }
+
   // Debug logging
   console.log('[apiRequestWithFiles] Request details:', {
     url,
-    method: 'POST',
+    method,
     hasAuth: !!token,
     hasContentType: 'Content-Type' in headers,
     formDataEntries: Array.from(formData.entries()).map(([key, value]) => ({
@@ -287,8 +307,9 @@ export async function apiRequestWithFiles<T = any>(
   });
 
   // Don't set Content-Type for FormData - browser will set it with boundary
+  // For PUT requests, we use POST with _method field (Laravel method spoofing)
   const config: RequestInit = {
-    method: 'POST',
+    method: method === 'PUT' ? 'POST' : 'POST',
     headers,
     body: formData,
   };
@@ -1078,6 +1099,11 @@ export interface Shop {
   description?: string;
   logo?: string;
   banner?: string;
+  image_1?: string;
+  image_2?: string;
+  image_3?: string;
+  image_4?: string;
+  image_5?: string;
   address?: string;
   city?: string;
   state?: string;
@@ -1103,6 +1129,13 @@ export interface CreateShopData {
   phone?: string;
   email?: string;
   website?: string;
+  logo?: string | File;
+  banner?: string | File;
+  image_1?: string | File;
+  image_2?: string | File;
+  image_3?: string | File;
+  image_4?: string | File;
+  image_5?: string | File;
 }
 
 // Shops API
@@ -1132,14 +1165,22 @@ export const shops = {
     return apiRequest<PaginatedResponse<Shop>>(`/my-shops${query}`);
   },
 
-  create: async (data: CreateShopData): Promise<{ message: string; shop: Shop }> => {
+  create: async (data: CreateShopData | FormData): Promise<{ message: string; shop: Shop }> => {
+    // Support both FormData (with file uploads) and regular objects
+    if (data instanceof FormData) {
+      return apiRequestWithFiles('/shops', data, 'POST');
+    }
     return apiRequest('/shops', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   },
 
-  update: async (id: number, data: Partial<CreateShopData>): Promise<{ message: string; shop: Shop }> => {
+  update: async (id: number, data: Partial<CreateShopData> | FormData): Promise<{ message: string; shop: Shop }> => {
+    // Support both FormData (with file uploads) and regular objects
+    if (data instanceof FormData) {
+      return apiRequestWithFiles(`/shops/${id}`, data, 'PUT');
+    }
     return apiRequest(`/shops/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
@@ -1220,7 +1261,11 @@ export const shopPosts = {
     return apiRequest<ShopPost>(`/shops/${shopId}/posts/${id}`);
   },
 
-  create: async (shopId: number, data: CreateShopPostData): Promise<{ message: string; post: ShopPost }> => {
+  create: async (shopId: number, data: CreateShopPostData | FormData): Promise<{ message: string; post: ShopPost }> => {
+    // Support both FormData (with file uploads) and regular objects
+    if (data instanceof FormData) {
+      return apiRequestWithFiles(`/shops/${shopId}/posts`, data);
+    }
     return apiRequest(`/shops/${shopId}/posts`, {
       method: 'POST',
       body: JSON.stringify(data),
@@ -1311,6 +1356,7 @@ export interface Conversation {
   };
   unread_count: number;
   updated_at: string;
+  shop_owner_id?: number; // Optional: for shop message rooms, the ID of the shop owner
 }
 
 // Wall Post interfaces
@@ -1434,6 +1480,237 @@ export const chat = {
       method: 'POST',
       body: JSON.stringify({ message }),
     });
+  },
+
+  // Get messages for a shop message room by room name
+  // Used when accessing /messages?with={customerId}&shopId={shopId}
+  // Note: This uses the customer-messages endpoint which we know works reliably
+  getShopMessagesByRoomName: async (roomName: string, shopId?: number, customerId?: number): Promise<{ room_name: string; messages: ChatMessage[] }> => {
+    // Extract shop ID and customer ID from room name if not provided
+    // Room name format: "{customerId}-shop{shopId}" e.g., "656-shop1"
+    let extractedShopId = shopId;
+    let extractedCustomerId = customerId;
+
+    if (!extractedShopId || !extractedCustomerId) {
+      const match = roomName.match(/^(\d+)-shop(\d+)$/);
+      if (match) {
+        extractedCustomerId = parseInt(match[1], 10);
+        extractedShopId = parseInt(match[2], 10);
+      }
+    }
+
+    console.log('[api.getShopMessagesByRoomName] Extracted IDs from room name:', {
+      roomName,
+      customerId: extractedCustomerId,
+      shopId: extractedShopId,
+    });
+
+    if (!extractedShopId || !extractedCustomerId) {
+      console.warn('[api.getShopMessagesByRoomName] Could not extract shop/customer IDs from room name:', roomName);
+      return {
+        room_name: roomName,
+        messages: [],
+      };
+    }
+
+    // Use the customer-specific endpoint which works for both customers AND shop owners
+    // Endpoint: /shops/{shopId}/messages/customer/{customerId}
+    // This endpoint doesn't require forOwner() check, so it works regardless of user role
+    let response: any;
+    try {
+      const endpoint = `/shops/${extractedShopId}/messages/customer/${extractedCustomerId}?per_page=100`;
+      console.log('[api.getShopMessagesByRoomName] Calling API endpoint:', {
+        endpoint,
+        shopId: extractedShopId,
+        customerId: extractedCustomerId,
+      });
+      response = await apiRequest<{ data: any[] }>(endpoint);
+      console.log('[api.getShopMessagesByRoomName] Full API response:', response);
+    } catch (error) {
+      console.error('[api.getShopMessagesByRoomName] API call failed:', error);
+      console.error('[api.getShopMessagesByRoomName] Error details:', {
+        message: error instanceof Error ? error.message : String(error),
+        endpoint: `/shops/${extractedShopId}/messages/customer/${extractedCustomerId}?per_page=100`,
+        shopId: extractedShopId,
+        customerId: extractedCustomerId,
+      });
+      throw error;
+    }
+
+    console.log('[api.getShopMessagesByRoomName] API Response:', {
+      room_name: roomName,
+      message_count: response?.data?.length || 0,
+      raw_data: response?.data,
+      response_structure: Object.keys(response || {}),
+    });
+
+    // Get ALL messages from the response (both directions: customer -> shop and shop -> customer)
+    const allMessages = response.data || [];
+
+    console.log('[api.getShopMessagesByRoomName] All shop messages retrieved:', {
+      total_messages: allMessages.length,
+      shop_id: extractedShopId,
+      customer_id: extractedCustomerId,
+      allMessages: allMessages,
+    });
+
+    const formattedMessages: ChatMessage[] = allMessages.map((msg: any) => ({
+      id: msg.id,
+      conversation_id: msg.room_id || 0,
+      sender_id: msg.sender_id,
+      message: msg.message,
+      created_at: msg.created_at,
+      is_mine: false, // Will be determined in ChatWindow based on sender_id vs current user
+      sender: msg.sender || {
+        id: msg.sender_id,
+        name: msg.sender?.name || `User ${msg.sender_id}`,
+        display_name: msg.sender?.display_name,
+      },
+    }));
+
+    console.log('[api.getShopMessagesByRoomName] Formatted Messages:', {
+      count: formattedMessages.length,
+      messages: formattedMessages,
+    });
+
+    const result = {
+      room_name: roomName,
+      messages: formattedMessages,
+    };
+
+    console.log('[api.getShopMessagesByRoomName] FINAL RETURN VALUE:', {
+      room_name: result.room_name,
+      message_count: result.messages.length,
+      messages: result.messages,
+    });
+
+    return result;
+  },
+
+  // Get messages between a customer and shop (alternative method)
+  getShopCustomerMessages: async (shopId: number, customerId: number): Promise<{ messages: ChatMessage[] }> => {
+    // Get all messages for the shop, then filter by customer/sender_id
+    const response = await apiRequest<{ data: any[] }>(`/shops/${shopId}/messages?per_page=100`);
+
+    // Filter messages for this specific customer
+    const allMessages = response.data || [];
+    const customerMessages = allMessages.filter((msg: any) => msg.sender_id === customerId);
+
+    // Transform the response to match ChatMessage format
+    const formattedMessages: ChatMessage[] = customerMessages.map((msg: any) => ({
+      id: msg.id,
+      conversation_id: msg.room_id || 0,
+      sender_id: msg.sender_id,
+      message: msg.message,
+      created_at: msg.created_at,
+      is_mine: false, // Will be determined in ChatWindow based on sender_id vs current user
+      sender: msg.sender || {
+        id: msg.sender_id,
+        name: msg.sender?.name || `User ${msg.sender_id}`,
+        display_name: msg.sender?.display_name,
+      },
+    }));
+
+    return {
+      messages: formattedMessages,
+    };
+  },
+
+  // Send a shop message
+  sendShopMessage: async (shopId: number, customerId: number, senderId: number, message: string, shopOwnerId?: number): Promise<{ id: number; message: string; sender_id: number; created_at: string }> => {
+    const roomName = `${customerId}-shop${shopId}`;
+
+    console.log('[api.sendShopMessage] Sending message:', {
+      shopId,
+      customerId,
+      senderId,
+      roomName,
+      message: message.substring(0, 50),
+      shopOwnerId_provided: shopOwnerId,
+    });
+
+    // Use provided shop owner ID, or fetch if not provided
+    let resolvedShopOwnerId = shopOwnerId;
+
+    if (!resolvedShopOwnerId) {
+      console.log('[api.sendShopMessage] No shop owner ID provided, attempting to fetch from shop data');
+      try {
+        const shopResponse = await shops.getById(shopId);
+
+        // Handle wrapped response: { data: { ...shop } }
+        const shopData = shopResponse && shopResponse.data ? shopResponse.data : shopResponse;
+
+        console.log('[api.sendShopMessage] Shop data fetched:', {
+          id: shopData.id,
+          user_id: shopData.user_id,
+          name: shopData.name,
+          keys: Object.keys(shopData),
+        });
+
+        resolvedShopOwnerId = shopData.user_id;
+        if (!resolvedShopOwnerId) {
+          console.error('[api.sendShopMessage] Shop owner ID is undefined or null:', shopData);
+          throw new Error(`Shop ${shopId} has no user_id`);
+        }
+        console.log('[api.sendShopMessage] Found shop owner ID:', resolvedShopOwnerId, 'for shop:', shopId);
+      } catch (error) {
+        console.error('[api.sendShopMessage] Failed to fetch shop:', error);
+        throw error;
+      }
+    } else {
+      console.log('[api.sendShopMessage] Using provided shop owner ID:', resolvedShopOwnerId);
+    }
+
+    const shopOwnerId_final = resolvedShopOwnerId;
+
+    // Validate shop_owner_id is a number
+    if (typeof shopOwnerId_final !== 'number' || !shopOwnerId_final) {
+      console.error('[api.sendShopMessage] Invalid shop_owner_id:', {
+        shopOwnerId_final,
+        type: typeof shopOwnerId_final,
+        isNumber: typeof shopOwnerId_final === 'number',
+        isTruthy: !!shopOwnerId_final,
+      });
+      throw new Error(`Invalid shop owner ID: ${shopOwnerId_final}`);
+    }
+
+    // Validate all required fields are numbers
+    if (typeof shopId !== 'number' || !shopId) {
+      throw new Error(`Invalid shop_id: ${shopId}`);
+    }
+    if (typeof senderId !== 'number' || !senderId) {
+      throw new Error(`Invalid sender_id: ${senderId}`);
+    }
+
+    const payloadData = {
+      shop_id: shopId,
+      sender_id: senderId,
+      shop_owner_id: shopOwnerId_final,
+      message: message,
+    };
+
+    console.log('[api.sendShopMessage] Final request payload:', {
+      shop_id: payloadData.shop_id,
+      shop_id_type: typeof payloadData.shop_id,
+      sender_id: payloadData.sender_id,
+      sender_id_type: typeof payloadData.sender_id,
+      shop_owner_id: payloadData.shop_owner_id,
+      shop_owner_id_type: typeof payloadData.shop_owner_id,
+      message_length: payloadData.message.length,
+      payload_string: JSON.stringify(payloadData),
+    });
+
+    const response = await apiRequest<{ id: number; message: string; sender_id: number; created_at: string }>(
+      `/shops/${shopId}/messages`,
+      {
+        method: 'POST',
+        body: JSON.stringify(payloadData),
+      }
+    );
+
+    console.log('[api.sendShopMessage] Message sent successfully:', response);
+
+    return response;
   },
 };
 

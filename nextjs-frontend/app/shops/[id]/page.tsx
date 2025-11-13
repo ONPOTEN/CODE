@@ -5,6 +5,9 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { shops, shopPosts, type Shop, type ShopPost, ApiException } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
+import ShopMessageModal from '@/components/ShopMessageModal';
+import ShopMessagesSection from '@/components/ShopMessagesSection';
+import ShopMessageInbox from '@/components/ShopMessageInbox';
 
 export default function ShopDetailPage() {
   const params = useParams();
@@ -17,6 +20,7 @@ export default function ShopDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filterType, setFilterType] = useState<'all' | 'post' | 'page'>('all');
+  const [isMessageModalOpen, setIsMessageModalOpen] = useState(false);
 
   const isOwner = user && shop && shop.user_id === user.id;
 
@@ -29,7 +33,23 @@ export default function ShopDetailPage() {
       setLoading(true);
       setError(null);
 
-      const shopData = await shops.getById(shopId);
+      const response = await shops.getById(shopId);
+      console.log('[Shop Detail] Raw response:', response);
+
+      // Handle both direct ShopResource and wrapped response
+      const shopData = response && typeof response === 'object' && 'name' in response
+        ? response
+        : response?.data || response;
+
+      console.log('[Shop Detail] Processed shop data:', {
+        id: shopData?.id,
+        name: shopData?.name,
+        logo: shopData?.logo,
+        banner: shopData?.banner,
+        hasLogo: !!shopData?.logo,
+        hasBanner: !!shopData?.banner,
+        allKeys: shopData ? Object.keys(shopData) : [],
+      });
       setShop(shopData);
 
       // Fetch all published posts (or all posts if owner)
@@ -90,13 +110,38 @@ export default function ShopDetailPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Banner Section */}
+      {shop.banner ? (
+        <div className="relative h-64 bg-gray-300 overflow-hidden">
+          <img src={shop.banner} alt="Shop banner" className="w-full h-full object-cover" />
+        </div>
+      ) : (
+        <div className="h-64 bg-gradient-to-r from-blue-600 to-blue-800"></div>
+      )}
+
       {/* Hero Section */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white">
-        <div className="max-w-6xl mx-auto px-4 py-12">
-          <div className="flex items-start justify-between">
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-6xl mx-auto px-4 py-8">
+          {/* Top Row: Logo and Shop Info */}
+          <div className="flex items-start justify-between gap-6 mb-8">
+            {/* Left Column: Logo */}
+            <div className="flex-shrink-0">
+              {/* Logo */}
+              {shop.logo && (
+                <div>
+                  <img
+                    src={shop.logo}
+                    alt={shop.name}
+                    className="w-32 h-32 rounded-lg object-cover border-4 border-white shadow-lg"
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Right Column: Shop Info */}
             <div className="flex-1">
-              <div className="flex items-center gap-3 mb-4">
-                <h1 className="text-4xl font-bold">{shop.name}</h1>
+              <div className="flex items-center gap-3 mb-3">
+                <h1 className="text-4xl font-bold text-gray-900">{shop.name}</h1>
                 {shop.status && (
                   <span
                     className={`inline-block px-3 py-1 text-sm font-medium rounded-full ${
@@ -112,24 +157,112 @@ export default function ShopDetailPage() {
                 )}
               </div>
               {shop.description && (
-                <p className="text-blue-100 text-lg max-w-3xl">{shop.description}</p>
+                <p className="text-gray-600 text-lg max-w-3xl mb-4">{shop.description}</p>
               )}
             </div>
 
-            {isOwner && (
-              <div className="flex gap-2 ml-4">
+            {/* Action Buttons */}
+            <div className="flex gap-2 flex-wrap">
+              {/* Edit Button - Only for Owner */}
+              {isOwner && (
                 <Link
                   href={`/shops/${shop.id}/edit`}
-                  className="inline-flex items-center px-4 py-2 bg-white text-blue-600 rounded-lg font-medium hover:bg-blue-50 transition-colors"
+                  className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors h-fit whitespace-nowrap"
                 >
                   <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                   </svg>
                   Edit Shop
                 </Link>
-              </div>
-            )}
+              )}
+
+              {/* Message Button - Only for Logged-in Users (Not Owner) */}
+              {user && !isOwner && (
+                <button
+                  onClick={() => setIsMessageModalOpen(true)}
+                  className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors h-fit whitespace-nowrap"
+                >
+                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                  Message Shop
+                </button>
+              )}
+            </div>
           </div>
+
+          {/* Thông Tin Cửa Hàng Images - Full Width Horizontal Section */}
+          {(shop.image_1 || shop.image_2 || shop.image_3 || shop.image_4 || shop.image_5) && (
+            <div className="pt-6 border-t border-gray-200">
+              <p className="text-sm font-bold text-gray-900 mb-4">Thông Tin Cửa Hàng</p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 auto-rows-max">
+                {/* Image 1: Giấy DKKD */}
+                {shop.image_1 && (
+                  <div title="Giấy DKKD" className="group">
+                    <img
+                      src={shop.image_1}
+                      alt="Giấy DKKD"
+                      className="w-full aspect-square rounded-lg object-cover border border-gray-300 cursor-pointer hover:shadow-lg transition-shadow"
+                      onClick={() => window.open(shop.image_1, '_blank')}
+                    />
+                    <p className="text-xs text-gray-600 text-center mt-1">Giấy DKKD</p>
+                  </div>
+                )}
+
+                {/* Image 2: Giấy phép kinh doanh */}
+                {shop.image_2 && (
+                  <div title="Giấy phép kinh doanh" className="group">
+                    <img
+                      src={shop.image_2}
+                      alt="Giấy phép kinh doanh"
+                      className="w-full aspect-square rounded-lg object-cover border border-gray-300 cursor-pointer hover:shadow-lg transition-shadow"
+                      onClick={() => window.open(shop.image_2, '_blank')}
+                    />
+                    <p className="text-xs text-gray-600 text-center mt-1">Giấy phép kinh doanh</p>
+                  </div>
+                )}
+
+                {/* Image 3: Chứng chỉ liên quan */}
+                {shop.image_3 && (
+                  <div title="Chứng chỉ liên quan" className="group">
+                    <img
+                      src={shop.image_3}
+                      alt="Chứng chỉ liên quan"
+                      className="w-full aspect-square rounded-lg object-cover border border-gray-300 cursor-pointer hover:shadow-lg transition-shadow"
+                      onClick={() => window.open(shop.image_3, '_blank')}
+                    />
+                    <p className="text-xs text-gray-600 text-center mt-1">Chứng chỉ liên quan</p>
+                  </div>
+                )}
+
+                {/* Image 4: Hình ảnh cửa hàng */}
+                {shop.image_4 && (
+                  <div title="Hình ảnh cửa hàng" className="group">
+                    <img
+                      src={shop.image_4}
+                      alt="Hình ảnh cửa hàng"
+                      className="w-full aspect-square rounded-lg object-cover border border-gray-300 cursor-pointer hover:shadow-lg transition-shadow"
+                      onClick={() => window.open(shop.image_4, '_blank')}
+                    />
+                    <p className="text-xs text-gray-600 text-center mt-1">Hình ảnh cửa hàng</p>
+                  </div>
+                )}
+
+                {/* Image 5: Ảnh bổ sung */}
+                {shop.image_5 && (
+                  <div title="Ảnh bổ sung" className="group">
+                    <img
+                      src={shop.image_5}
+                      alt="Ảnh bổ sung"
+                      className="w-full aspect-square rounded-lg object-cover border border-gray-300 cursor-pointer hover:shadow-lg transition-shadow"
+                      onClick={() => window.open(shop.image_5, '_blank')}
+                    />
+                    <p className="text-xs text-gray-600 text-center mt-1">Ảnh bổ sung</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -180,6 +313,21 @@ export default function ShopDetailPage() {
                   </Link>
                 </div>
               </div>
+            )}
+
+            {/* Shop Messages Section - Only for Owner */}
+            {isOwner && shop && (
+              <ShopMessagesSection shopId={shop.id} isOwner={isOwner} />
+            )}
+
+            {/* Customer Message Inbox - Only for Non-Owner Logged-in Users */}
+            {!isOwner && user && shop && (
+              <ShopMessageInbox
+                shopId={shop.id}
+                shopName={shop.name}
+                shopOwnerId={shop.user_id}
+                isOwner={false}
+              />
             )}
 
             {/* Posts & Pages Section */}
@@ -300,7 +448,7 @@ export default function ShopDetailPage() {
                           {post.featured_images.length === 1 ? (
                             // Single image - full width
                             <img
-                              src={`${process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '')}/storage/shop_posts/${post.featured_images[0]}`}
+                              src={post.featured_images[0]}
                               alt={post.title}
                               className="w-full h-auto max-h-96 object-cover rounded-lg shadow-md"
                             />
@@ -310,15 +458,12 @@ export default function ShopDetailPage() {
                               {post.featured_images.map((imagePath, imgIndex) => (
                                 <img
                                   key={imgIndex}
-                                  src={`${process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '')}/storage/shop_posts/${imagePath}`}
+                                  src={imagePath}
                                   alt={`${post.title} - Image ${imgIndex + 1}`}
                                   className="w-full h-48 object-cover rounded-lg shadow-md hover:shadow-lg transition-shadow cursor-pointer"
                                   onClick={() => {
                                     // Open in new tab for full view
-                                    window.open(
-                                      `${process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '')}/storage/shop_posts/${imagePath}`,
-                                      '_blank'
-                                    );
+                                    window.open(imagePath, '_blank');
                                   }}
                                 />
                               ))}
@@ -447,6 +592,17 @@ export default function ShopDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Shop Message Modal - For Initial Message */}
+      {shop && (
+        <ShopMessageModal
+          shopId={shop.id}
+          shopName={shop.name}
+          shopOwnerId={shop.user_id}
+          isOpen={isMessageModalOpen}
+          onClose={() => setIsMessageModalOpen(false)}
+        />
+      )}
     </div>
   );
 }

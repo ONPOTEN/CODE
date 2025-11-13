@@ -2,9 +2,11 @@ const { Server } = require('socket.io');
 const express = require('express');
 const cors = require('cors');
 const https = require('https');
+const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const dotenv = require('dotenv');
+const axios = require('axios');
 dotenv.config();
 
 const app = express();
@@ -147,6 +149,134 @@ app.post("/api/emit-message", (req, res) => {
 
     res.status(200).json({ success: true, message: 'Message emitted' });
 });
+
+// Helper function to save shop message to database
+async function saveShopMessageToDatabase(messageData) {
+    try {
+        const laravelApiUrl = process.env.LARAVEL_API_URL || 'https://centimet2:8000/api/v1';
+        const apiToken = process.env.LARAVEL_API_TOKEN || '';
+
+        const payload = {
+            shop_id: messageData.shopId,
+            sender_id: messageData.userId || messageData.senderId,
+            shop_owner_id: messageData.shopOwnerId,
+            message: messageData.message,
+        };
+
+        // Remove trailing slash from base URL if present
+        const baseUrl = laravelApiUrl.endsWith('/') ? laravelApiUrl.slice(0, -1) : laravelApiUrl;
+        const endpoint = `${baseUrl}/shops/${messageData.shopId}/messages`;
+
+        console.log(`\n💾 [DATABASE] Saving shop message to database`);
+        console.log(`   Endpoint: ${endpoint}`);
+        console.log(`   Payload:`, payload);
+        console.log(`   Token present: ${apiToken ? 'YES' : 'NO'}`);
+
+        const response = await axios.post(
+            endpoint,
+            payload,
+            {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    ...(apiToken && { 'Authorization': `Bearer ${apiToken}` })
+                },
+                timeout: 10000,  // Increase timeout to 10 seconds
+                // Disable SSL certificate validation for development
+                httpsAgent: new (require('https').Agent)({
+                    rejectUnauthorized: false
+                })
+            }
+        );
+
+        console.log(`✅ [DATABASE] Message saved successfully`);
+        console.log(`   Response ID:`, response.data?.data?.id);
+        console.log(`   Full Response:`, response.data);
+        return response.data;
+    } catch (error) {
+        console.error(`❌ [DATABASE] Error saving message:`, error.message);
+        console.error(`   Error Code:`, error.code);
+        console.error(`   Error Type:`, error.constructor.name);
+
+        if (error.response) {
+            console.error(`   HTTP Status:`, error.response.status);
+            console.error(`   Response Data:`, error.response.data);
+        } else if (error.request) {
+            console.error(`   No response received - request was sent but no reply`);
+            console.error(`   Request details:`, error.request.path);
+        } else {
+            console.error(`   Request setup error:`, error.message);
+        }
+
+        // Don't throw - message delivery should not fail if DB save fails
+        // Frontend will handle fallback save
+        return null;
+    }
+}
+
+// Helper function to create shop message room in Laravel database
+async function createShopMessageRoomInLaravel(roomData) {
+    try {
+        const laravelApiUrl = process.env.LARAVEL_API_URL || 'https://centimet2:8000/api/v1';
+        const apiToken = process.env.LARAVEL_API_TOKEN || '';
+
+        const payload = {
+            customer_id: roomData.customerId || roomData.userId,
+            shop_id: roomData.shopId,
+            shop_owner_id: roomData.shopOwnerId,
+            subject: roomData.subject || null,
+        };
+
+        // Remove trailing slash from base URL if present
+        const baseUrl = laravelApiUrl.endsWith('/') ? laravelApiUrl.slice(0, -1) : laravelApiUrl;
+        const endpoint = `${baseUrl}/rooms/shop-message`;
+
+        console.log(`\n🏪 [ROOM] Creating shop message room in Laravel`);
+        console.log(`   Endpoint: ${endpoint}`);
+        console.log(`   Customer ID: ${payload.customer_id}`);
+        console.log(`   Shop ID: ${payload.shop_id}`);
+        console.log(`   Shop Owner ID: ${payload.shop_owner_id}`);
+
+        const response = await axios.post(
+            endpoint,
+            payload,
+            {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    ...(apiToken && { 'Authorization': `Bearer ${apiToken}` })
+                },
+                timeout: 10000,
+                // Disable SSL certificate validation for development
+                httpsAgent: new (require('https').Agent)({
+                    rejectUnauthorized: false
+                })
+            }
+        );
+
+        const roomName = response.data?.room_name || `${payload.customer_id}-shop${payload.shop_id}`;
+        console.log(`✅ [ROOM] Room created successfully in Laravel`);
+        console.log(`   Room ID: ${response.data?.data?.id}`);
+        console.log(`   Room Name: ${roomName}`);
+        return response.data;
+    } catch (error) {
+        console.error(`❌ [ROOM] Error creating room in Laravel:`, error.message);
+        console.error(`   Error Code:`, error.code);
+
+        if (error.response) {
+            console.error(`   HTTP Status:`, error.response.status);
+            console.error(`   Response Data:`, error.response.data);
+        } else if (error.request) {
+            console.error(`   No response received - request was sent but no reply`);
+        } else {
+            console.error(`   Request setup error:`, error.message);
+        }
+
+        // Return null but continue - room joining can work without Laravel persistence
+        // This ensures Socket.IO room functionality isn't blocked by backend issues
+        return null;
+    }
+}
 
 const emailToSocket = new Map();
 const socketToEmail = new Map();
@@ -324,6 +454,198 @@ io.on("connection", (socket) => {
         io.to(to).emit("chat:typing", {
             from: socket.id,
             isTyping
+        });
+    });
+
+    // Shop message room management
+    socket.on("join:shop:room", ({ userId, shopId, roomName }) => {
+        console.log(`\n🏪 [SHOP] User ${userId} joining shop room: ${roomName}`);
+        socket.join(roomName);
+        console.log(`✅ User ${socket.id} (ID: ${userId}) joined room ${roomName}`);
+
+        // Register the socket to this room for message delivery
+        userIdToSocket.set(userId.toString(), socket.id);
+        socketToUserId.set(socket.id, userId.toString());
+        console.log(`📍 Mapped user ${userId} to socket ${socket.id} for room ${roomName}`);
+    });
+
+    socket.on("leave:shop:room", ({ userId, shopId, roomName }) => {
+        console.log(`\n🏪 [SHOP] User ${userId} leaving shop room: ${roomName}`);
+        socket.leave(roomName);
+        console.log(`✅ User ${socket.id} (ID: ${userId}) left room ${roomName}`);
+    });
+
+    // Shop message handling
+    socket.on("shop:message", async (data) => {
+        let { shopId, shopName, userId, userName, message, roomName, timestamp, shopOwnerId } = data;
+
+        console.log(`\n💬 [SHOP MESSAGE] Received from customer`);
+        console.log(`   Shop ID: ${shopId}`);
+        console.log(`   Shop Name: ${shopName}`);
+        console.log(`   Customer ID: ${userId}`);
+        console.log(`   Customer Name: ${userName}`);
+        console.log(`   Message: ${message}`);
+        console.log(`   Room Name (from client): ${roomName}`);
+        console.log(`   Timestamp: ${timestamp}`);
+
+        // Normalize room name to {customerId}-shop{shopId} format
+        // If roomName is broadcast pattern (*-shop{shopId}), convert to customer-specific room
+        if (roomName && roomName.startsWith('*-shop')) {
+            roomName = `${userId}-shop${shopId}`;
+            console.log(`   Room Name (normalized): ${roomName}`);
+        } else if (!roomName || roomName === '') {
+            // If no room name provided, use customer-specific room
+            roomName = `${userId}-shop${shopId}`;
+            console.log(`   Room Name (created): ${roomName}`);
+        }
+
+        // Create the message object with normalized room name
+        const shopMessage = {
+            shopId,
+            shopName,
+            userId,
+            userName,
+            message,
+            roomName,  // Now uses {customerId}-shop{shopId}
+            timestamp
+        };
+
+        // Create room in Laravel database asynchronously (don't wait for response)
+        createShopMessageRoomInLaravel({
+            customerId: userId,
+            shopId,
+            shopOwnerId,
+            subject: `Chat with ${userName}`
+        }).then(roomResult => {
+            if (roomResult) {
+                console.log(`✅ [SHOP MESSAGE] Room created in Laravel`);
+            }
+        }).catch(err => {
+            console.error(`❌ [SHOP MESSAGE] Room creation failed:`, err.message);
+        });
+
+        // Save message to database asynchronously (don't wait for response)
+        saveShopMessageToDatabase({
+            shopId,
+            userId,
+            shopOwnerId,
+            message,
+            timestamp
+        }).then(dbResult => {
+            if (dbResult) {
+                console.log(`✅ [SHOP MESSAGE] Database save completed`);
+            }
+        }).catch(err => {
+            console.error(`❌ [SHOP MESSAGE] Database save failed:`, err.message);
+        });
+
+        // Emit to the specific shop room (e.g., "5-shop123" where 5 is owner ID)
+        // The room format should be {owner_id}-shop{shopId}
+        // We need to find the shop owner and emit to their room
+        // For now, we'll emit with a wildcard pattern and let clients filter
+
+        // Log all active rooms
+        const allRooms = io.sockets.adapter.rooms;
+        console.log(`📋 All active rooms:`);
+        for (const [roomName, members] of allRooms) {
+            if (!roomName.startsWith('/')) { // Skip socket.io internal rooms
+                console.log(`   - ${roomName}: ${members.size} members`);
+            }
+        }
+
+        // Emit to the broadcast room pattern for this shop
+        io.to(`*-shop${shopId}`).emit('shop:message', shopMessage);
+        console.log(`📢 Message emitted to broadcast room: *-shop${shopId}`);
+
+        // Also try to emit to rooms that match the pattern {*}-shop{shopId}
+        for (const [roomName, members] of allRooms) {
+            if (roomName.endsWith(`-shop${shopId}`)) {
+                console.log(`📍 Found matching room: ${roomName} with ${members.size} members`);
+                io.to(roomName).emit('shop:message', shopMessage);
+                console.log(`✅ Message emitted to room: ${roomName}`);
+            }
+        }
+
+        // FALLBACK: Emit to ALL connected sockets (frontend can filter by shopId)
+        io.emit('shop:message', shopMessage);
+        console.log(`📢 BROADCAST: Message emitted to ALL connected sockets`);
+    });
+
+    // Shop chat room management
+    socket.on("join:shop:chat", ({ userId, shopId, shopOwnerId, roomName, userName }) => {
+        console.log(`\n💬 [SHOP CHAT] User ${userId} (${userName}) joining chat room: ${roomName}`);
+        socket.join(roomName);
+        console.log(`✅ User ${socket.id} (ID: ${userId}) joined chat room ${roomName}`);
+        console.log(`📍 Chat room members:`, io.sockets.adapter.rooms.get(roomName)?.size || 0);
+    });
+
+    socket.on("leave:shop:chat", ({ userId, shopId, shopOwnerId, roomName }) => {
+        console.log(`\n💬 [SHOP CHAT] User ${userId} leaving chat room: ${roomName}`);
+        socket.leave(roomName);
+        console.log(`✅ User ${socket.id} (ID: ${userId}) left chat room ${roomName}`);
+    });
+
+    // Shop chat message handling
+    socket.on("shop:chat:message", async (data) => {
+        const { shopId, shopName, shopOwnerId, senderId, senderName, message, roomName, timestamp } = data;
+
+        console.log(`\n💬 [SHOP CHAT MESSAGE] Received`);
+        console.log(`   Shop ID: ${shopId}`);
+        console.log(`   Shop Name: ${shopName}`);
+        console.log(`   Sender ID: ${senderId}`);
+        console.log(`   Sender Name: ${senderName}`);
+        console.log(`   Message: ${message}`);
+        console.log(`   Room Name: ${roomName}`);
+        console.log(`   Timestamp: ${timestamp}`);
+
+        // Create the chat message object
+        const chatMessage = {
+            shopId,
+            shopName,
+            shopOwnerId,
+            senderId,
+            senderName,
+            message,
+            roomName,
+            timestamp
+        };
+
+        // Save to database asynchronously (don't wait for response)
+        saveShopMessageToDatabase({
+            shopId,
+            userId: senderId,
+            shopOwnerId,
+            message,
+            timestamp
+        }).then(dbResult => {
+            if (dbResult) {
+                console.log(`✅ [SHOP CHAT MESSAGE] Database save completed`);
+            }
+        }).catch(err => {
+            console.error(`❌ [SHOP CHAT MESSAGE] Database save failed:`, err.message);
+        });
+
+        // Emit to the specific chat room
+        io.to(roomName).emit('shop:chat:message', chatMessage);
+        console.log(`✅ Chat message emitted to room: ${roomName}`);
+
+        // Log room members
+        const roomMembers = io.sockets.adapter.rooms.get(roomName);
+        console.log(`📍 Room ${roomName} has ${roomMembers?.size || 0} members`);
+    });
+
+    // Handle shop message replies - join reply chat room
+    socket.on("join:chat:room", ({ userId, roomName }) => {
+        console.log(`\n💬 [SHOP MESSAGE REPLY] User ${userId} joining reply chat room: ${roomName}`);
+        socket.join(roomName);
+        console.log(`✅ User ${socket.id} (ID: ${userId}) joined reply chat room: ${roomName}`);
+
+        // Notify others in the room that user has joined
+        io.to(roomName).emit('user:joined:room', {
+            userId,
+            roomName,
+            socketId: socket.id,
+            timestamp: new Date().toISOString()
         });
     });
 

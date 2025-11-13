@@ -31,12 +31,20 @@ export default function MyPostsPage() {
       const groupResponse = await groups.getById(groupId);
       setGroup(groupResponse.data);
 
-      // Fetch all posts and filter only user's own posts
-      const allPostsResponse = await groupPosts.index({ group_id: groupId, per_page: 100 });
+      // Fetch all posts from the group without status filtering
+      // This ensures we get all post statuses: draft, pending, publish, trash
+      const allPostsResponse = await groupPosts.index({
+        group_id: groupId,
+        per_page: 100,
+        // Note: Not specifying status parameter to get all posts
+      });
       console.log('[MyPosts] All posts response:', allPostsResponse);
 
-      // Filter posts to show only those created by current user
-      const userPosts = allPostsResponse.data?.filter((p: GroupPost) => p.author?.id === currentUser?.id) || [];
+      // Filter posts to show only those created by current user (by auth ID)
+      // Include all post statuses: draft, pending, publish, trash
+      const userPosts = allPostsResponse.data?.filter((p: GroupPost) => {
+        return p.post_author === currentUser?.id;
+      }) || [];
       setMyPosts(userPosts);
     } catch (err) {
       if (err instanceof ApiException) {

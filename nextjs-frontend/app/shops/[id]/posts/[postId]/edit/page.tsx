@@ -224,7 +224,7 @@ export default function EditShopPostPage() {
                     {existingImages.map((imagePath, index) => (
                       <div key={index} className="relative">
                         <img
-                          src={`${process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '')}/storage/shop_posts/${imagePath}`}
+                          src={imagePath}
                           alt={`Existing ${index + 1}`}
                           className="w-full h-48 object-cover rounded-lg border border-gray-300"
                         />

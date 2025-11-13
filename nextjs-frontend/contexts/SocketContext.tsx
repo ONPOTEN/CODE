@@ -14,11 +14,24 @@ export interface VideoCallEvent {
   id?: string;
 }
 
+export interface ShopMessage {
+  shopId: number;
+  shopName: string;
+  shopOwnerId: number;
+  userId: number;
+  userName: string;
+  message: string;
+  roomName: string;
+  timestamp: string;
+}
+
 interface SocketContextType {
   socket: Socket | null;
   isConnected: boolean;
   onNewMessage: (callback: (message: ChatMessage) => void) => void;
   offNewMessage: (callback: (message: ChatMessage) => void) => void;
+  onShopMessage: (callback: (message: ShopMessage) => void) => void;
+  offShopMessage: (callback: (message: ShopMessage) => void) => void;
   // Video call event handlers
   onUserJoined: (callback: (data: VideoCallEvent) => void) => void;
   offUserJoined: (callback: (data: VideoCallEvent) => void) => void;
@@ -126,6 +139,23 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     }
   }, [socket]);
 
+  // Shop message event handlers
+  const onShopMessage = useCallback((callback: (message: ShopMessage) => void) => {
+    if (socket) {
+      console.log('🎯 Attaching shop:message listener in onShopMessage');
+      socket.on('shop:message', callback);
+    } else {
+      console.warn('⚠️ Cannot attach listener - socket is null');
+    }
+  }, [socket]);
+
+  const offShopMessage = useCallback((callback: (message: ShopMessage) => void) => {
+    if (socket) {
+      console.log('🔴 Removing shop:message listener in offShopMessage');
+      socket.off('shop:message', callback);
+    }
+  }, [socket]);
+
   // Video call event handlers
   const onUserJoined = (callback: (data: VideoCallEvent) => void) => {
     if (socket) {
@@ -218,6 +248,8 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         isConnected,
         onNewMessage,
         offNewMessage,
+        onShopMessage,
+        offShopMessage,
         onUserJoined,
         offUserJoined,
         onIncomingCall,

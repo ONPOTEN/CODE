@@ -4,11 +4,13 @@ import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { shops, ApiException } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function EditShopPage() {
   const router = useRouter();
   const params = useParams();
   const shopId = parseInt(params.id as string);
+  const { user } = useAuth();
 
   const [formData, setFormData] = useState({
     name: '',
@@ -23,9 +25,19 @@ export default function EditShopPage() {
     website: '',
     status: 'active' as 'active' | 'inactive' | 'pending',
   });
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string>('');
+  const [bannerFile, setBannerFile] = useState<File | null>(null);
+  const [bannerPreview, setBannerPreview] = useState<string>('');
+
+  // 5 image fields (Vietnamese labels)
+  const [imageFiles, setImageFiles] = useState<(File | null)[]>([null, null, null, null, null]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>(['', '', '', '', '']);
+
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [shopUserId, setShopUserId] = useState<number | null>(null);
 
   useEffect(() => {
     fetchShop();
@@ -34,9 +46,29 @@ export default function EditShopPage() {
   const fetchShop = async () => {
     try {
       setLoading(true);
-      const shop = await shops.getById(shopId);
+      const response = await shops.getById(shopId);
+
+      // Handle both direct ShopResource and wrapped response
+      const shop = response && typeof response === 'object' && 'name' in response
+        ? response
+        : response?.data || response;
+
+      console.log('[EditShop] Fetched shop:', shop);
+      console.log('[EditShop] Current user ID:', user?.id);
+      console.log('[EditShop] Shop user_id:', shop.user_id);
+
+      // Store shop user_id for authorization check
+      setShopUserId(shop.user_id);
+
+      // Check if user owns this shop
+      if (user && shop.user_id !== user.id) {
+        setError('You do not have permission to edit this shop.');
+        setLoading(false);
+        return;
+      }
+
       setFormData({
-        name: shop.name,
+        name: shop.name || '',
         description: shop.description || '',
         address: shop.address || '',
         city: shop.city || '',
@@ -46,8 +78,31 @@ export default function EditShopPage() {
         phone: shop.phone || '',
         email: shop.email || '',
         website: shop.website || '',
-        status: shop.status,
+        status: shop.status || 'active',
       });
+
+      // Set existing logo preview
+      if (shop.logo) {
+        console.log('[EditShop] Setting logo preview:', shop.logo);
+        setLogoPreview(shop.logo);
+      }
+
+      // Set existing banner preview
+      if (shop.banner) {
+        console.log('[EditShop] Setting banner preview:', shop.banner);
+        setBannerPreview(shop.banner);
+      }
+
+      // Set existing 5 images
+      const newPreviews = [...imagePreviews];
+      for (let i = 1; i <= 5; i++) {
+        const imageKey = `image_${i}` as keyof typeof shop;
+        if (shop[imageKey]) {
+          console.log(`[EditShop] Setting image_${i} preview:`, shop[imageKey]);
+          newPreviews[i - 1] = shop[imageKey] as string;
+        }
+      }
+      setImagePreviews(newPreviews);
     } catch (err) {
       if (err instanceof ApiException) {
         setError(err.message);
@@ -67,13 +122,99 @@ export default function EditShopPage() {
     });
   };
 
+  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setLogoFile(file);
+      const preview = URL.createObjectURL(file);
+      setLogoPreview(preview);
+    }
+  };
+
+  const handleBannerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setBannerFile(file);
+      const preview = URL.createObjectURL(file);
+      setBannerPreview(preview);
+    }
+  };
+
+  const removeLogo = () => {
+    setLogoFile(null);
+    if (logoPreview.startsWith('blob:')) {
+      URL.revokeObjectURL(logoPreview);
+    }
+    setLogoPreview('');
+  };
+
+  const removeBanner = () => {
+    setBannerFile(null);
+    if (bannerPreview.startsWith('blob:')) {
+      URL.revokeObjectURL(bannerPreview);
+    }
+    setBannerPreview('');
+  };
+
+  const handleImageChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      const newFiles = [...imageFiles];
+      newFiles[index] = file;
+      setImageFiles(newFiles);
+
+      const preview = URL.createObjectURL(file);
+      const newPreviews = [...imagePreviews];
+      newPreviews[index] = preview;
+      setImagePreviews(newPreviews);
+    }
+  };
+
+  const removeImage = (index: number) => {
+    const newFiles = [...imageFiles];
+    newFiles[index] = null;
+    setImageFiles(newFiles);
+
+    if (imagePreviews[index].startsWith('blob:')) {
+      URL.revokeObjectURL(imagePreviews[index]);
+    }
+    const newPreviews = [...imagePreviews];
+    newPreviews[index] = '';
+    setImagePreviews(newPreviews);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setSubmitting(true);
 
     try {
-      await shops.update(shopId, formData);
+      // Check if we have file uploads
+      const hasImages = logoFile || bannerFile || imageFiles.some(f => f !== null);
+      if (hasImages) {
+        // Use FormData for file uploads
+        const data = new FormData();
+        Object.entries(formData).forEach(([key, value]) => {
+          data.append(key, value);
+        });
+        if (logoFile) {
+          data.append('logo', logoFile);
+        }
+        if (bannerFile) {
+          data.append('banner', bannerFile);
+        }
+        // Add 6 images to FormData
+        imageFiles.forEach((file, index) => {
+          if (file) {
+            data.append(`image_${index + 1}`, file);
+          }
+        });
+        await shops.update(shopId, data);
+      } else {
+        // Use regular JSON for text-only updates
+        await shops.update(shopId, formData);
+      }
+
       alert('Shop updated successfully!');
       router.push('/shops');
     } catch (err) {
@@ -180,6 +321,289 @@ export default function EditShopPage() {
                     <option value="inactive">Inactive</option>
                     <option value="pending">Pending</option>
                   </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Images Section */}
+            <div>
+              <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0l5.172 5.172m-9-9l1.414-1.414a2 2 0 012.828 0L19 12m-5-5l1.414-1.414a2 2 0 012.828 0L21 8" />
+                </svg>
+                Shop Images
+              </h2>
+
+              <div className="grid md:grid-cols-2 gap-4">
+                {/* Logo Upload */}
+                <div>
+                  <label htmlFor="logo" className="block text-sm font-medium text-gray-700 mb-2">
+                    Shop Logo (Avatar)
+                  </label>
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
+                    <input
+                      type="file"
+                      id="logo"
+                      accept="image/*"
+                      onChange={handleLogoChange}
+                      className="hidden"
+                    />
+                    <label htmlFor="logo" className="cursor-pointer">
+                      <svg className="w-12 h-12 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0l5.172 5.172m-9-9l1.414-1.414a2 2 0 012.828 0L19 12m-5-5l1.414-1.414a2 2 0 012.828 0L21 8" />
+                      </svg>
+                      <p className="text-sm text-gray-600">Click to upload logo</p>
+                      <p className="text-xs text-gray-500 mt-1">PNG, JPG up to 2MB</p>
+                    </label>
+                  </div>
+                  {logoPreview && (
+                    <div className="mt-4">
+                      <div className="relative inline-block">
+                        <img src={logoPreview} alt="Logo preview" className="h-32 w-32 object-cover rounded-lg border border-gray-300" />
+                        <button
+                          type="button"
+                          onClick={removeLogo}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Banner Upload */}
+                <div>
+                  <label htmlFor="banner" className="block text-sm font-medium text-gray-700 mb-2">
+                    Shop Banner (Cover Image)
+                  </label>
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
+                    <input
+                      type="file"
+                      id="banner"
+                      accept="image/*"
+                      onChange={handleBannerChange}
+                      className="hidden"
+                    />
+                    <label htmlFor="banner" className="cursor-pointer">
+                      <svg className="w-12 h-12 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0l5.172 5.172m-9-9l1.414-1.414a2 2 0 012.828 0L19 12m-5-5l1.414-1.414a2 2 0 012.828 0L21 8" />
+                      </svg>
+                      <p className="text-sm text-gray-600">Click to upload banner</p>
+                      <p className="text-xs text-gray-500 mt-1">PNG, JPG up to 5MB</p>
+                    </label>
+                  </div>
+                  {bannerPreview && (
+                    <div className="mt-4">
+                      <div className="relative inline-block w-full">
+                        <img src={bannerPreview} alt="Banner preview" className="w-full h-40 object-cover rounded-lg border border-gray-300" />
+                        <button
+                          type="button"
+                          onClick={removeBanner}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Additional Images Section */}
+            <div>
+              <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0l5.172 5.172m-9-9l1.414-1.414a2 2 0 012.828 0L19 12m-5-5l1.414-1.414a2 2 0 012.828 0L21 8" />
+                </svg>
+                Thông Tin Cửa Hàng
+              </h2>
+
+              <div className="grid md:grid-cols-2 gap-4">
+                {/* Image 1: Giay DKKD */}
+                <div>
+                  <label htmlFor="image-0" className="block text-sm font-medium text-gray-700 mb-2">
+                    Giấy DKKD
+                  </label>
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
+                    <input
+                      type="file"
+                      id="image-0"
+                      accept="image/*"
+                      onChange={(e) => handleImageChange(0, e)}
+                      className="hidden"
+                    />
+                    <label htmlFor="image-0" className="cursor-pointer">
+                      <svg className="w-12 h-12 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0l5.172 5.172m-9-9l1.414-1.414a2 2 0 012.828 0L19 12m-5-5l1.414-1.414a2 2 0 012.828 0L21 8" />
+                      </svg>
+                      <p className="text-sm text-gray-600">Nhấp để tải lên</p>
+                      <p className="text-xs text-gray-500 mt-1">PNG, JPG tối đa 5MB</p>
+                    </label>
+                  </div>
+                  {imagePreviews[0] && (
+                    <div className="mt-4">
+                      <div className="relative inline-block w-full">
+                        <img src={imagePreviews[0]} alt="Preview 1" className="w-full h-40 object-cover rounded-lg border border-gray-300" />
+                        <button
+                          type="button"
+                          onClick={() => removeImage(0)}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Image 2: Anh Bang Hieu */}
+                <div>
+                  <label htmlFor="image-1" className="block text-sm font-medium text-gray-700 mb-2">
+                    Ảnh Bảng Hiệu
+                  </label>
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
+                    <input
+                      type="file"
+                      id="image-1"
+                      accept="image/*"
+                      onChange={(e) => handleImageChange(1, e)}
+                      className="hidden"
+                    />
+                    <label htmlFor="image-1" className="cursor-pointer">
+                      <svg className="w-12 h-12 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0l5.172 5.172m-9-9l1.414-1.414a2 2 0 012.828 0L19 12m-5-5l1.414-1.414a2 2 0 012.828 0L21 8" />
+                      </svg>
+                      <p className="text-sm text-gray-600">Nhấp để tải lên</p>
+                      <p className="text-xs text-gray-500 mt-1">PNG, JPG tối đa 5MB</p>
+                    </label>
+                  </div>
+                  {imagePreviews[1] && (
+                    <div className="mt-4">
+                      <div className="relative inline-block w-full">
+                        <img src={imagePreviews[1]} alt="Preview 2" className="w-full h-40 object-cover rounded-lg border border-gray-300" />
+                        <button
+                          type="button"
+                          onClick={() => removeImage(1)}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Image 3: Anh Gian Hang */}
+                <div>
+                  <label htmlFor="image-2" className="block text-sm font-medium text-gray-700 mb-2">
+                    Ảnh Gian Hàng
+                  </label>
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
+                    <input
+                      type="file"
+                      id="image-2"
+                      accept="image/*"
+                      onChange={(e) => handleImageChange(2, e)}
+                      className="hidden"
+                    />
+                    <label htmlFor="image-2" className="cursor-pointer">
+                      <svg className="w-12 h-12 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0l5.172 5.172m-9-9l1.414-1.414a2 2 0 012.828 0L19 12m-5-5l1.414-1.414a2 2 0 012.828 0L21 8" />
+                      </svg>
+                      <p className="text-sm text-gray-600">Nhấp để tải lên</p>
+                      <p className="text-xs text-gray-500 mt-1">PNG, JPG tối đa 5MB</p>
+                    </label>
+                  </div>
+                  {imagePreviews[2] && (
+                    <div className="mt-4">
+                      <div className="relative inline-block w-full">
+                        <img src={imagePreviews[2]} alt="Preview 3" className="w-full h-40 object-cover rounded-lg border border-gray-300" />
+                        <button
+                          type="button"
+                          onClick={() => removeImage(2)}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Image 4: Anh Cua Hang */}
+                <div>
+                  <label htmlFor="image-3" className="block text-sm font-medium text-gray-700 mb-2">
+                    Ảnh Cửa Hàng
+                  </label>
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
+                    <input
+                      type="file"
+                      id="image-3"
+                      accept="image/*"
+                      onChange={(e) => handleImageChange(3, e)}
+                      className="hidden"
+                    />
+                    <label htmlFor="image-3" className="cursor-pointer">
+                      <svg className="w-12 h-12 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0l5.172 5.172m-9-9l1.414-1.414a2 2 0 012.828 0L19 12m-5-5l1.414-1.414a2 2 0 012.828 0L21 8" />
+                      </svg>
+                      <p className="text-sm text-gray-600">Nhấp để tải lên</p>
+                      <p className="text-xs text-gray-500 mt-1">PNG, JPG tối đa 5MB</p>
+                    </label>
+                  </div>
+                  {imagePreviews[3] && (
+                    <div className="mt-4">
+                      <div className="relative inline-block w-full">
+                        <img src={imagePreviews[3]} alt="Preview 4" className="w-full h-40 object-cover rounded-lg border border-gray-300" />
+                        <button
+                          type="button"
+                          onClick={() => removeImage(3)}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Image 5: Giay Chung Nhan */}
+                <div>
+                  <label htmlFor="image-4" className="block text-sm font-medium text-gray-700 mb-2">
+                    Giấy Chứng Nhận (Nếu Có)
+                  </label>
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
+                    <input
+                      type="file"
+                      id="image-4"
+                      accept="image/*"
+                      onChange={(e) => handleImageChange(4, e)}
+                      className="hidden"
+                    />
+                    <label htmlFor="image-4" className="cursor-pointer">
+                      <svg className="w-12 h-12 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0l5.172 5.172m-9-9l1.414-1.414a2 2 0 012.828 0L19 12m-5-5l1.414-1.414a2 2 0 012.828 0L21 8" />
+                      </svg>
+                      <p className="text-sm text-gray-600">Nhấp để tải lên</p>
+                      <p className="text-xs text-gray-500 mt-1">PNG, JPG tối đa 5MB</p>
+                    </label>
+                  </div>
+                  {imagePreviews[4] && (
+                    <div className="mt-4">
+                      <div className="relative inline-block w-full">
+                        <img src={imagePreviews[4]} alt="Preview 5" className="w-full h-40 object-cover rounded-lg border border-gray-300" />
+                        <button
+                          type="button"
+                          onClick={() => removeImage(4)}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

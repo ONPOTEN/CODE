@@ -253,15 +253,28 @@ class GroupController extends Controller
     public function myGroups(Request $request): JsonResponse
     {
         $perPage = $request->input('per_page', 15);
-        $status = $request->input('status');
+        $groupStatus = $request->input('status');
 
-        $query = Group::where('group_owner_id', auth()->id());
+        $userId = auth()->id();
 
-        if ($status) {
-            $query->where('status', $status);
+        // Get all groups the user has joined (approved membership) via GroupUser table
+        // This includes groups the user owns as well as groups they're members of
+        $query = Group::whereHas('members', function ($q) use ($userId) {
+            $q->where('group_user_id', $userId)
+              ->where('status', GroupUser::STATUS_APPROVED);
+        });
+
+        // Also include groups the user owns (they are automatically members)
+        $query->orWhere('group_owner_id', $userId);
+
+        if ($groupStatus) {
+            $query->where('status', $groupStatus);
         }
 
-        $groups = $query->orderBy('created_at', 'desc')->paginate($perPage);
+        // Order by most recent membership or creation date
+        $groups = $query->distinct()
+                       ->orderBy('created_at', 'desc')
+                       ->paginate($perPage);
 
         return response()->json([
             'data' => GroupResource::collection($groups->items()),

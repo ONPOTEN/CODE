@@ -34,7 +34,16 @@ export default function ConversationList({
         >
           <div className="flex items-start justify-between mb-1">
             <h3 className="font-semibold text-gray-900">
-              {conversation.other_user.name}
+              {conversation.room_name && conversation.room_name.includes('-shop') ? (
+                <div>
+                  <span>🏪 Shop Message</span>
+                  <div className="text-sm font-normal text-gray-600 mt-1">
+                    {conversation.other_user.name}
+                  </div>
+                </div>
+              ) : (
+                conversation.other_user.name
+              )}
             </h3>
             {conversation.last_message && (
               <span className="text-xs text-gray-500">
@@ -43,10 +52,18 @@ export default function ConversationList({
             )}
           </div>
 
-          {conversation.last_message && (
+          {conversation.last_message ? (
             <p className="text-sm text-gray-600 truncate">
               {conversation.last_message.is_mine && 'You: '}
               {conversation.last_message.message}
+            </p>
+          ) : (
+            <p className="text-sm text-gray-400 italic">
+              {conversation.room_name && conversation.room_name.includes('-shop') ? (
+                'No messages yet'
+              ) : (
+                'No recent messages'
+              )}
             </p>
           )}
 

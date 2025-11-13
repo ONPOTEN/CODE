@@ -10,8 +10,10 @@ use App\Http\Controllers\Api\GroupPostController;
 use App\Http\Controllers\Api\GroupPostEngagementController;
 use App\Http\Controllers\Api\GroupCommentController;
 use App\Http\Controllers\Api\PostController;
+use App\Http\Controllers\Api\RoomController;
 use App\Http\Controllers\Api\ShopController;
 use App\Http\Controllers\Api\ShopPostController;
+use App\Http\Controllers\Api\ShopMessageController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\WallPostModerationController;
 use Illuminate\Http\Request;
@@ -146,6 +148,31 @@ Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
     Route::post('/shops/{shopId}/posts', [ShopPostController::class, 'store'])->where('shopId', '[0-9]+');
     Route::put('/shops/{shopId}/posts/{id}', [ShopPostController::class, 'update'])->where(['shopId' => '[0-9]+', 'id' => '[0-9]+']);
     Route::delete('/shops/{shopId}/posts/{id}', [ShopPostController::class, 'destroy'])->where(['shopId' => '[0-9]+', 'id' => '[0-9]+']);
+
+    // Rooms (authenticated) - For shop message chat rooms
+    Route::prefix('rooms')->group(function () {
+        Route::get('/', [RoomController::class, 'index']);  // Get all my rooms
+        Route::post('/shop-message', [RoomController::class, 'createShopMessageRoom']);  // Create shop message room
+        Route::get('/by-name/{roomName}', [RoomController::class, 'getByRoomName']);  // Get room by name
+        Route::get('/{id}', [RoomController::class, 'show']);  // Get room by ID or name
+        Route::put('/{id}', [RoomController::class, 'update']);  // Update room
+        Route::get('/{id}/stats', [RoomController::class, 'getStats']);  // Get room stats
+        Route::delete('/{id}', [RoomController::class, 'destroy']);  // Close room
+    });
+
+    // Shop Rooms - Get all rooms for a specific shop
+    Route::get('/shops/{shopId}/rooms', [RoomController::class, 'getShopRooms'])->where('shopId', '[0-9]+');
+
+    // Shop Messages (authenticated)
+    Route::prefix('shops/{shopId}/messages')->group(function () {
+        Route::get('/', [ShopMessageController::class, 'getShopMessages'])->where('shopId', '[0-9]+');
+        Route::get('/unread-count', [ShopMessageController::class, 'getUnreadCount'])->where('shopId', '[0-9]+');
+        Route::get('/customer/{senderId}', [ShopMessageController::class, 'getCustomerMessages'])->where(['shopId' => '[0-9]+', 'senderId' => '[0-9]+']);
+        Route::post('/', [ShopMessageController::class, 'store'])->where('shopId', '[0-9]+');
+        Route::put('/{messageId}/read', [ShopMessageController::class, 'markAsRead'])->where('messageId', '[0-9]+');
+        Route::put('/{messageId}/delivered', [ShopMessageController::class, 'markAsDelivered'])->where('messageId', '[0-9]+');
+        Route::delete('/{messageId}', [ShopMessageController::class, 'destroy'])->where('messageId', '[0-9]+');
+    });
 
     // Groups (authenticated)
     Route::post('/groups', [GroupController::class, 'store']);

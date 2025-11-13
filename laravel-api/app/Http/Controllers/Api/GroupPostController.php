@@ -334,7 +334,7 @@ class GroupPostController extends Controller
     {
         $perPage = $request->input('per_page', 15);
         $groupId = $request->input('group_id');
-        $status = $request->input('status', 'publish');
+        $status = $request->input('status');
 
         $query = GroupPost::where('post_author', $userId);
 
@@ -342,6 +342,7 @@ class GroupPostController extends Controller
             $query->where('group_id', $groupId);
         }
 
+        // Only filter by status if explicitly provided
         if ($status) {
             $query->where('post_status', $status);
         }

@@ -4,16 +4,27 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
-import { shops, shopPosts as shopPostsApi, Shop, ShopPost, ApiException } from '@/lib/api';
+import { useSocket } from '@/contexts/SocketContext';
+import { shops, shopPosts as shopPostsApi, Shop, ShopPost, ApiException, apiRequest } from '@/lib/api';
+
+interface ShopMessageStats {
+  unreadCount: number;
+  totalMessages: number;
+  lastMessage?: string;
+  lastMessageSender?: string;
+  lastMessageTime?: string;
+}
 
 export default function MyShopsPage() {
   const { user, isAuthenticated, isLoading } = useAuth();
+  const { socket, onShopMessage, offShopMessage } = useSocket();
   const router = useRouter();
   const [myShops, setMyShops] = useState<Shop[]>([]);
   const [shopsLoading, setShopsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expandedShopId, setExpandedShopId] = useState<number | null>(null);
   const [postsData, setPostsData] = useState<{ [key: number]: ShopPost[] }>({});
+  const [messageStats, setMessageStats] = useState<{ [key: number]: ShopMessageStats }>({});
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -29,6 +40,60 @@ export default function MyShopsPage() {
         setShopsLoading(true);
         const response = await shops.myShops({ per_page: 50 });
         setMyShops(response.data);
+
+        // Fetch message statistics for each shop
+        const shopsData = response.data || [];
+        const stats: { [key: number]: ShopMessageStats } = {};
+
+        for (const shop of shopsData) {
+          try {
+            // Fetch unread count
+            const unreadData = await apiRequest<{ unread_count: number }>(
+              `/shops/${shop.id}/messages/unread-count`
+            );
+            const unreadCount = unreadData.unread_count || 0;
+
+            // Fetch messages to get last message and total count
+            const messagesData = await apiRequest<{
+              data: any[];
+              meta: { total: number };
+            }>(`/shops/${shop.id}/messages?per_page=1&sort=-created_at`);
+
+            let lastMessage = '';
+            let lastMessageSender = '';
+            let lastMessageTime = '';
+            let totalMessages = 0;
+
+            const messages = messagesData.data || [];
+            const meta = messagesData.meta || { total: 0 };
+
+            totalMessages = meta.total || 0;
+
+            if (messages.length > 0) {
+              const msg = messages[0];
+              lastMessage = msg.message?.substring(0, 50) || '';
+              if (lastMessage.length === 50) lastMessage += '...';
+              lastMessageTime = msg.created_at || '';
+              lastMessageSender = msg.sender?.display_name || msg.sender?.name || 'Customer';
+            }
+
+            stats[shop.id] = {
+              unreadCount,
+              totalMessages,
+              lastMessage,
+              lastMessageSender,
+              lastMessageTime,
+            };
+          } catch (err) {
+            console.error(`Error fetching messages for shop ${shop.id}:`, err);
+            stats[shop.id] = {
+              unreadCount: 0,
+              totalMessages: 0,
+            };
+          }
+        }
+
+        setMessageStats(stats);
       } catch (err) {
         if (err instanceof ApiException) {
           setError(err.message);
@@ -43,6 +108,48 @@ export default function MyShopsPage() {
 
     fetchMyShops();
   }, [isAuthenticated, user]);
+
+  // Listen for real-time shop messages
+  useEffect(() => {
+    if (!socket || !isAuthenticated || !user) return;
+
+    const handleShopMessage = async (message: any) => {
+      console.log('[MyShops] Received shop message:', message);
+
+      // Check if this message is for one of the user's shops
+      if (message.shopOwnerId === user.id) {
+        console.log('[MyShops] Message is for one of my shops:', message.shopId);
+
+        // Update message stats immediately
+        setMessageStats((prevStats) => {
+          const shopStats = prevStats[message.shopId] || {
+            unreadCount: 0,
+            totalMessages: 0,
+          };
+
+          return {
+            ...prevStats,
+            [message.shopId]: {
+              ...shopStats,
+              unreadCount: shopStats.unreadCount + 1,
+              totalMessages: shopStats.totalMessages + 1,
+              lastMessage: message.message.substring(0, 50),
+              lastMessageSender: message.userName || 'Customer',
+              lastMessageTime: message.timestamp,
+            },
+          };
+        });
+
+        console.log('[MyShops] Updated message stats for shop:', message.shopId);
+      }
+    };
+
+    onShopMessage(handleShopMessage);
+
+    return () => {
+      offShopMessage(handleShopMessage);
+    };
+  }, [socket, isAuthenticated, user, onShopMessage, offShopMessage]);
 
   const handleDelete = async (shopId: number, shopName: string) => {
     if (!confirm(`Are you sure you want to delete "${shopName}"?`)) return;
@@ -269,6 +376,53 @@ export default function MyShopsPage() {
                     )}
                   </div>
 
+                  {/* Messages Section */}
+                  {messageStats[shop.id] && (messageStats[shop.id].unreadCount > 0 || messageStats[shop.id].totalMessages > 0) && (
+                    <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="font-semibold text-blue-900 flex items-center gap-2">
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                          </svg>
+                          Customer Messages
+                        </h4>
+                        {messageStats[shop.id].unreadCount > 0 && (
+                          <span className="inline-flex items-center justify-center px-2 py-1 text-xs font-bold text-white bg-red-500 rounded-full">
+                            {messageStats[shop.id].unreadCount}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="space-y-2 text-sm">
+                        <p className="text-blue-800">
+                          <span className="font-semibold">{messageStats[shop.id].totalMessages}</span> total message{messageStats[shop.id].totalMessages !== 1 ? 's' : ''}
+                        </p>
+
+                        {messageStats[shop.id].lastMessage && (
+                          <div className="bg-white rounded p-3 border border-blue-200">
+                            <p className="text-xs text-gray-500 mb-1">Latest from {messageStats[shop.id].lastMessageSender}</p>
+                            <p className="text-gray-700 text-sm italic">"{messageStats[shop.id].lastMessage}"</p>
+                            {messageStats[shop.id].lastMessageTime && (
+                              <p className="text-xs text-gray-500 mt-1">
+                                {new Date(messageStats[shop.id].lastMessageTime!).toLocaleDateString()}
+                              </p>
+                            )}
+                          </div>
+                        )}
+
+                        <Link
+                          href={`/shop-messages/${shop.id}`}
+                          className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700 font-medium text-sm mt-2"
+                        >
+                          View all messages
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        </Link>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Action Buttons */}
                   <div className="space-y-2 pt-4 border-t border-gray-200">
                     {/* Primary Action - View Shop */}
@@ -304,6 +458,17 @@ export default function MyShopsPage() {
                         New Page
                       </Link>
                     </div>
+
+                    {/* Messages Button */}
+                    <Link
+                      href={`/shop-messages/${shop.id}`}
+                      className="w-full flex items-center justify-center gap-1 px-3 py-2 bg-pink-600 hover:bg-pink-700 text-white rounded-lg font-medium transition-colors text-sm"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                      </svg>
+                      {messageStats[shop.id]?.unreadCount > 0 ? `Messages (${messageStats[shop.id].unreadCount})` : 'Messages'}
+                    </Link>
 
                     {/* Management Actions */}
                     <div className="flex gap-2">

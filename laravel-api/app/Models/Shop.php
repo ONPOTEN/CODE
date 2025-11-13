@@ -15,6 +15,11 @@ class Shop extends Model
         'description',
         'logo',
         'banner',
+        'image_1',
+        'image_2',
+        'image_3',
+        'image_4',
+        'image_5',
         'address',
         'city',
         'state',
@@ -44,5 +49,10 @@ class Shop extends Model
     public function pages(): HasMany
     {
         return $this->hasMany(ShopPost::class)->where('type', 'page');
+    }
+
+    public function messages(): HasMany
+    {
+        return $this->hasMany(ShopMessage::class);
     }
 }

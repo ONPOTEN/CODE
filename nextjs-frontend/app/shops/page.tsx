@@ -155,32 +155,68 @@ export default function ShopsPage() {
                 key={shop.id}
                 className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow border border-gray-200 overflow-hidden"
               >
+                {/* Shop Banner/Cover Image */}
+                {shop.banner ? (
+                  <div className="relative h-40 bg-gray-200 overflow-hidden">
+                    <img src={shop.banner} alt="Shop banner" className="w-full h-full object-cover" />
+                  </div>
+                ) : (
+                  <div className="h-40 bg-gradient-to-r from-blue-400 to-blue-600"></div>
+                )}
+
                 {/* Shop Header */}
                 <div className="p-6">
                   <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1">
-                      <h3 className="text-xl font-semibold text-gray-900 mb-1">
-                        <Link href={`/shops/${shop.id}`} className="hover:text-blue-600 transition-colors">
-                          {shop.name}
-                        </Link>
-                      </h3>
-                      <span
-                        className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${
-                          shop.status === 'active'
-                            ? 'bg-green-100 text-green-800'
-                            : shop.status === 'inactive'
-                            ? 'bg-gray-100 text-gray-800'
-                            : 'bg-yellow-100 text-yellow-800'
-                        }`}
-                      >
-                        {shop.status}
-                      </span>
+                    <div className="flex-1 flex gap-3">
+                      {/* Shop Logo/Avatar */}
+                      {shop.logo && (
+                        <div className="flex-shrink-0">
+                          <img
+                            src={shop.logo}
+                            alt={shop.name}
+                            className="w-16 h-16 rounded-lg object-cover border border-gray-200"
+                          />
+                        </div>
+                      )}
+                      <div className="flex-1">
+                        <h3 className="text-xl font-semibold text-gray-900 mb-1">
+                          <Link href={`/shops/${shop.id}`} className="hover:text-blue-600 transition-colors">
+                            {shop.name}
+                          </Link>
+                        </h3>
+                        <span
+                          className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${
+                            shop.status === 'active'
+                              ? 'bg-green-100 text-green-800'
+                              : shop.status === 'inactive'
+                              ? 'bg-gray-100 text-gray-800'
+                              : 'bg-yellow-100 text-yellow-800'
+                          }`}
+                        >
+                          {shop.status}
+                        </span>
+                      </div>
                     </div>
                   </div>
 
                   {/* Description */}
                   {shop.description && (
                     <p className="text-gray-600 text-sm mb-4 line-clamp-2">{shop.description}</p>
+                  )}
+
+                  {/* Address */}
+                  {shop.address && (
+                    <div className="flex items-start text-sm text-gray-500 mb-3">
+                      <svg className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                        />
+                      </svg>
+                      <span>{shop.address}</span>
+                    </div>
                   )}
 
                   {/* Location */}
@@ -211,7 +247,12 @@ export default function ShopsPage() {
                             d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
                           />
                         </svg>
-                        {shop.phone}
+                        <a
+                          href={`tel:${shop.phone}`}
+                          className="hover:text-blue-600 hover:underline transition-colors"
+                        >
+                          {shop.phone}
+                        </a>
                       </div>
                     )}
                     {shop.email && (
@@ -224,7 +265,12 @@ export default function ShopsPage() {
                             d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
                           />
                         </svg>
-                        {shop.email}
+                        <a
+                          href={`mailto:${shop.email}`}
+                          className="hover:text-blue-600 hover:underline transition-colors"
+                        >
+                          {shop.email}
+                        </a>
                       </div>
                     )}
                   </div>

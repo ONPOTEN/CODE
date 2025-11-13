@@ -77,11 +77,26 @@ class ShopPostController extends Controller
                 // Generate unique filename
                 $filename = time() . '_' . Str::random(10) . '.' . $file->getClientOriginalExtension();
 
-                // Store file to S3 using Storage facade
-                $path = $file->storeAs($directory, $filename, 's3');
+                try {
+                    // Store file to S3 using Storage facade
+                    // Using explicit S3 disk to ensure it's stored on S3, not local
+                    $path = \Storage::disk('s3')->putFileAs(
+                        $directory,
+                        $file,
+                        $filename,
+                        'public'
+                    );
 
-                // Store relative path: shopid/year/month/day/filename
-                $imagePaths[] = "{$shopId}/{$now->year}/{$now->format('m')}/{$now->format('d')}/{$filename}";
+                    if (!$path) {
+                        throw new \Exception("Failed to store file {$filename} to S3");
+                    }
+
+                    // Store relative path: shopid/year/month/day/filename
+                    $imagePaths[] = "{$shopId}/{$now->year}/{$now->format('m')}/{$now->format('d')}/{$filename}";
+                } catch (\Exception $e) {
+                    \Log::error("S3 upload failed for shop post {$shopId}: " . $e->getMessage());
+                    throw new \Exception("Failed to upload image {$filename}: " . $e->getMessage());
+                }
 
                 // Small delay to ensure unique timestamps
                 usleep(10000); // 10ms
@@ -185,11 +200,26 @@ class ShopPostController extends Controller
                 // Generate unique filename
                 $filename = time() . '_' . Str::random(10) . '.' . $file->getClientOriginalExtension();
 
-                // Store file to S3 using Storage facade
-                $path = $file->storeAs($directory, $filename, 's3');
+                try {
+                    // Store file to S3 using Storage facade
+                    // Using explicit S3 disk to ensure it's stored on S3, not local
+                    $path = \Storage::disk('s3')->putFileAs(
+                        $directory,
+                        $file,
+                        $filename,
+                        'public'
+                    );
 
-                // Add to current images array
-                $currentImages[] = "{$shopId}/{$now->year}/{$now->format('m')}/{$now->format('d')}/{$filename}";
+                    if (!$path) {
+                        throw new \Exception("Failed to store file {$filename} to S3");
+                    }
+
+                    // Add to current images array
+                    $currentImages[] = "{$shopId}/{$now->year}/{$now->format('m')}/{$now->format('d')}/{$filename}";
+                } catch (\Exception $e) {
+                    \Log::error("S3 upload failed for shop post {$shopId}: " . $e->getMessage());
+                    throw new \Exception("Failed to upload image {$filename}: " . $e->getMessage());
+                }
 
                 // Small delay to ensure unique timestamps
                 usleep(10000); // 10ms
