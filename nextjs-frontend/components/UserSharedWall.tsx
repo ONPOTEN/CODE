@@ -128,7 +128,6 @@ export default function UserSharedWall({ userId, maxPosts = 10 }: UserSharedWall
               <PostCardExample
                 key={post.id}
                 post={post}
-                isOwnPost={false}
               />
             ))}
           </div>

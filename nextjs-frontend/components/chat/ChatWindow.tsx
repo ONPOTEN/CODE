@@ -177,10 +177,10 @@ export default function ChatWindow({ conversation, onNewMessage }: ChatWindowPro
             messageCount: data.messages.length,
           });
 
-          // Format messages with is_mine flag based on sender_id vs current user
+          // Format messages with is_mine flag based on sender vs current user
           const formattedMessages = data.messages.map((msg) => ({
             ...msg,
-            is_mine: msg.sender_id === user?.id,
+            is_mine: msg.sender?.id === user?.id,
           }));
 
           console.log('[ChatWindow] ✅ Formatted messages for display:', {

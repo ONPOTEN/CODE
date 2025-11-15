@@ -4,6 +4,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import { auth, LoginResponse, ApiException, RegisterData, tokenStorage } from '@/lib/api';
 import { firebaseAuthService } from '@/lib/firebaseAuthService';
 import { firebaseAuth } from '@/lib/firebase';
+import type { User as FirebaseUser } from 'firebase/auth';
 
 interface AuthUser {
   id: number;
@@ -68,7 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Listen to Firebase auth state changes
     try {
-      const unsubscribe = firebaseAuth.onAuthStateChanged((firebaseUser) => {
+      const unsubscribe = firebaseAuth.onAuthStateChanged((firebaseUser: FirebaseUser | null) => {
         if (!firebaseUser && !token) {
           setUser(null);
         }
@@ -365,9 +366,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.log('[AuthContext] Phone verification successful!');
         console.log('[AuthContext] User data:', {
           id: response.user?.id,
-          username: response.user?.user_login,
-          email: response.user?.user_email,
-          phone: response.user?.phone,
+          username: response.user?.username,
+          email: response.user?.email,
         });
 
         // Set user state with returned user data

@@ -49,7 +49,9 @@ export default function EditPostPage() {
           status: postData.status as any,
         });
         if (postData.images) {
-          setExistingImages(postData.images);
+          // Convert PostImage objects to URLs
+          const imageUrls = postData.images.map(img => typeof img === 'string' ? img : (img.url || ''));
+          setExistingImages(imageUrls);
         }
       } catch (err) {
         setError('Failed to load post');

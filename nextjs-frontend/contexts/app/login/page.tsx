@@ -131,7 +131,7 @@ export default function LoginPage() {
     }
 
     try {
-      await firebasePhoneConfirm(confirmationResult, smsCode, phoneNumber, phoneNumber);
+      await firebasePhoneConfirm(confirmationResult, smsCode, phoneNumber);
       router.push('/');
     } catch (err) {
       console.error('Code verification failed:', err);

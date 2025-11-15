@@ -202,8 +202,10 @@ export default function FirebasePhoneResetPasswordPage() {
             if (loginResponse.ok) {
               const loginData = await loginResponse.json();
               sanctumToken = loginData.token;
-              tokenStorage.set(sanctumToken);
-              console.log('[Reset Password] Successfully obtained Sanctum token via login');
+              if (sanctumToken) {
+                tokenStorage.set(sanctumToken);
+                console.log('[Reset Password] Successfully obtained Sanctum token via login');
+              }
             } else {
               console.warn('[Reset Password] Could not obtain Sanctum token via login');
             }

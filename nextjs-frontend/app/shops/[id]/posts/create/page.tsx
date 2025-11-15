@@ -4,6 +4,10 @@ import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { shopPosts, ApiException } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
+import { SimpleProductComponent } from './SimpleProductComponent';
+import { VariantProductComponent } from './VariantProductComponent';
+import { DownloadProductComponent } from './DownloadProductComponent';
+import { VariantProductsReference } from './VariantProductsReference';
 
 export default function CreateShopPostPage() {
   const params = useParams();
@@ -13,10 +17,22 @@ export default function CreateShopPostPage() {
 
   const [formData, setFormData] = useState({
     title: '',
-    content: '',
-    price_range: '',
     type: 'post' as 'post' | 'page',
     status: 'draft' as 'draft' | 'published',
+    product_type: 'Đơn giản' as 'Đơn giản' | 'Biến thể' | 'Tải xuống',
+    // Simple product fields
+    price: '',
+    sale_price: '',
+    main_image: '' as string | File,
+    other_images: [] as (string | File)[],
+    short_description: '',
+    detail_description: '',
+    categories: '',
+    // Variant product fields
+    attributes: [],
+    // Download product fields
+    download_files: undefined,
+    link_files: [],
   });
 
   const [featuredImages, setFeaturedImages] = useState<File[]>([]);
@@ -26,6 +42,10 @@ export default function CreateShopPostPage() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleFormDataChange = (field: string, value: any) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -67,17 +87,53 @@ export default function CreateShopPostPage() {
     try {
       setLoading(true);
 
-      // Check if we have file uploads
-      if (featuredImages.length > 0) {
+      // Check if we have any file uploads (featured images, main_image, other_images, or download file)
+      const hasDownloadFile = formData.download_files && (formData.download_files as any).file;
+      const hasMainImage = formData.main_image && formData.main_image instanceof File;
+      const hasOtherImages = formData.other_images && formData.other_images.some((img) => img instanceof File);
+
+      if (featuredImages.length > 0 || hasDownloadFile || hasMainImage || hasOtherImages) {
         // Use FormData for file uploads with S3
         const submitData = new FormData();
         submitData.append('title', formData.title);
-        submitData.append('content', formData.content);
-        if (formData.price_range) {
-          submitData.append('price_range', formData.price_range);
-        }
         submitData.append('type', formData.type);
         submitData.append('status', formData.status);
+        submitData.append('product_type', formData.product_type);
+
+        // Add product type specific fields
+        if (formData.price) submitData.append('price', String(formData.price));
+        if (formData.sale_price) submitData.append('sale_price', String(formData.sale_price));
+        if (formData.short_description) submitData.append('short_description', formData.short_description);
+        if (formData.detail_description) submitData.append('detail_description', formData.detail_description);
+        if (formData.categories) submitData.append('categories', formData.categories);
+        if (formData.attributes && formData.attributes.length > 0) {
+          submitData.append('attributes', JSON.stringify(formData.attributes));
+        }
+
+        // Handle main_image
+        if (hasMainImage) {
+          submitData.append('main_image', formData.main_image as File);
+        }
+
+        // Handle other_images
+        if (hasOtherImages) {
+          formData.other_images.forEach((img, index) => {
+            if (img instanceof File) {
+              submitData.append(`other_images[${index}]`, img);
+            }
+          });
+        }
+
+        // Handle download file
+        if (hasDownloadFile) {
+          const downloadFileObj = formData.download_files as any;
+          submitData.append('download_files[name]', downloadFileObj.name);
+          submitData.append('download_files[file]', downloadFileObj.file);
+        }
+
+        if (formData.link_files && formData.link_files.length > 0) {
+          submitData.append('link_files', JSON.stringify(formData.link_files));
+        }
 
         // Append multiple images
         featuredImages.forEach((image) => {
@@ -87,7 +143,13 @@ export default function CreateShopPostPage() {
         await shopPosts.create(shopId, submitData);
       } else {
         // Use regular JSON for text-only posts
-        await shopPosts.create(shopId, formData);
+        const submitFormData = {
+          ...formData,
+          price: formData.price ? String(formData.price) : undefined,
+          sale_price: formData.sale_price ? String(formData.sale_price) : undefined,
+          download_files: null,
+        };
+        await shopPosts.create(shopId, submitFormData);
       }
 
       alert('Post created successfully!');
@@ -128,91 +190,78 @@ export default function CreateShopPostPage() {
               />
             </div>
 
-            {/* Featured Images */}
+            {/* Product Type */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Featured Images (Multiple)
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                Product Type *
               </label>
-
-              {/* Image Previews Grid */}
-              {imagePreviews.length > 0 && (
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
-                  {imagePreviews.map((preview, index) => (
-                    <div key={index} className="relative">
-                      <img
-                        src={preview}
-                        alt={`Preview ${index + 1}`}
-                        className="w-full h-48 object-cover rounded-lg border border-gray-300"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => removeImage(index)}
-                        className="absolute top-2 right-2 p-2 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors shadow-lg"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    </div>
-                  ))}
+              <div className="space-y-3">
+                {/* Simple Product */}
+                <div className="flex items-center">
+                  <input
+                    type="radio"
+                    id="product_type_simple"
+                    name="product_type"
+                    value="Đơn giản"
+                    checked={formData.product_type === 'Đơn giản'}
+                    onChange={handleChange}
+                    className="w-4 h-4 text-blue-600 cursor-pointer"
+                  />
+                  <label htmlFor="product_type_simple" className="ml-3 cursor-pointer flex-1">
+                    <div className="font-medium text-gray-900">🛍️ Simple Product (Đơn giản)</div>
+                    <p className="text-xs text-gray-500">Standard product with pricing, images, descriptions, and categories</p>
+                  </label>
                 </div>
-              )}
 
-              {/* Upload Button */}
-              <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors">
-                <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                  <svg className="w-10 h-10 mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                  </svg>
-                  <p className="mb-1 text-sm text-gray-500">
-                    <span className="font-semibold">Click to upload</span> or drag and drop
-                  </p>
-                  <p className="text-xs text-gray-500">PNG, JPG, GIF, WEBP up to 5MB each</p>
-                  {imagePreviews.length > 0 && (
-                    <p className="text-xs text-blue-600 mt-1">{imagePreviews.length} image(s) selected</p>
-                  )}
+                {/* Variant Product */}
+                <div className="flex items-center">
+                  <input
+                    type="radio"
+                    id="product_type_variant"
+                    name="product_type"
+                    value="Biến thể"
+                    checked={formData.product_type === 'Biến thể'}
+                    onChange={handleChange}
+                    className="w-4 h-4 text-blue-600 cursor-pointer"
+                  />
+                  <label htmlFor="product_type_variant" className="ml-3 cursor-pointer flex-1">
+                    <div className="font-medium text-gray-900">🎨 Variant Product (Biến thể)</div>
+                    <p className="text-xs text-gray-500">Product with attributes (Size, Color, Material, etc) and multiple options</p>
+                  </label>
                 </div>
-                <input
-                  type="file"
-                  className="hidden"
-                  accept="image/*"
-                  multiple
-                  onChange={handleImageChange}
-                />
-              </label>
+
+                {/* Download Product */}
+                <div className="flex items-center">
+                  <input
+                    type="radio"
+                    id="product_type_download"
+                    name="product_type"
+                    value="Tải xuống"
+                    checked={formData.product_type === 'Tải xuống'}
+                    onChange={handleChange}
+                    className="w-4 h-4 text-blue-600 cursor-pointer"
+                  />
+                  <label htmlFor="product_type_download" className="ml-3 cursor-pointer flex-1">
+                    <div className="font-medium text-gray-900">📥 Download Product (Tải xuống)</div>
+                    <p className="text-xs text-gray-500">Digital product with downloadable files and external links</p>
+                  </label>
+                </div>
+              </div>
             </div>
 
-            {/* Content */}
-            <div>
-              <label htmlFor="content" className="block text-sm font-medium text-gray-700 mb-2">
-                Content
-              </label>
-              <textarea
-                id="content"
-                name="content"
-                value={formData.content}
-                onChange={handleChange}
-                rows={10}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Enter content"
-              />
-            </div>
+            {/* Product Type Specific Components */}
+            {formData.product_type === 'Đơn giản' && (
+              <SimpleProductComponent formData={formData} onFormDataChange={handleFormDataChange} />
+            )}
 
-            {/* Price Range */}
-            <div>
-              <label htmlFor="price_range" className="block text-sm font-medium text-gray-700 mb-2">
-                Price Range
-              </label>
-              <input
-                type="text"
-                id="price_range"
-                name="price_range"
-                value={formData.price_range}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                placeholder="e.g., $10 - $50"
-              />
-            </div>
+            {formData.product_type === 'Biến thể' && (
+              <VariantProductComponent formData={formData} onFormDataChange={handleFormDataChange} />
+            )}
+
+            {formData.product_type === 'Tải xuống' && (
+              <DownloadProductComponent formData={formData} onFormDataChange={handleFormDataChange} />
+            )}
+
 
             {/* Type */}
             <div>
@@ -266,6 +315,9 @@ export default function CreateShopPostPage() {
               </button>
             </div>
           </form>
+
+          {/* Variant Products Reference - Shows existing variant products as examples */}
+          <VariantProductsReference shopId={shopId} />
         </div>
       </div>
     </div>

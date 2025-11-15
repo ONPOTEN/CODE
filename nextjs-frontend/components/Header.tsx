@@ -62,6 +62,13 @@ export default function Header() {
                       My Posts
                     </Link>
                     <Link
+                      href="/my-orders"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      onClick={() => setProfileMenuOpen(false)}
+                    >
+                      My Orders
+                    </Link>
+                    <Link
                       href="/posts/create"
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                       onClick={() => setProfileMenuOpen(false)}
@@ -168,6 +175,11 @@ export default function Header() {
                   <li>
                     <Link href="/my-posts" className="block py-2">
                       My Posts
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/my-orders" className="block py-2">
+                      My Orders
                     </Link>
                   </li>
                   <li>

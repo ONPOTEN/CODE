@@ -42,7 +42,10 @@ export default function ViewPostPage() {
           console.log('Fetching by slug:', postId);
           postData = await posts.getBySlug(postId);
         }
-        postData = postData!.data;
+        // postData should already be a Post object or wrapped in {data} response
+        if (postData && typeof postData === 'object' && 'data' in postData) {
+          postData = (postData as any).data;
+        }
         console.log('Fetched post data:', postData);
         console.log('Post ID:', postData.id);
         console.log('Post slug:', postData.slug);
@@ -311,7 +314,7 @@ export default function ViewPostPage() {
                       onClick={() => setSelectedImageIndex(index)}
                     >
                       <img
-                        src={image}
+                        src={typeof image === 'string' ? image : image.url || ''}
                         alt={`${post.title} - Image ${index + 1}`}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                         onError={(e) => {

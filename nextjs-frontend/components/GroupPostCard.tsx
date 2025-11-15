@@ -256,7 +256,7 @@ export default function GroupPostCard({
             {post.author.avatar_url ? (
               <img
                 src={post.author.avatar_url}
-                alt={post.author.display_name}
+                alt={post.author.name}
                 className="w-10 h-10 rounded-full object-cover"
                 onError={(e) => {
                   e.currentTarget.style.display = 'none';
@@ -274,7 +274,7 @@ export default function GroupPostCard({
                 href={`/users/${post.author.id}`}
                 className="font-semibold text-gray-900 hover:text-blue-600 transition-colors"
               >
-                {post.author.display_name}
+                {post.author.name}
               </Link>
               <p className="text-xs text-gray-500">{formatDate(post.post_date)}</p>
             </div>

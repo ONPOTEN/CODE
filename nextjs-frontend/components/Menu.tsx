@@ -62,6 +62,17 @@ export default function Menu() {
                     </p>
                   </Link>
 
+                  <Link
+                    href="/my-orders"
+                    className="block px-6 py-4 hover:bg-amber-50 transition-colors"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    <h3 className="font-semibold text-lg mb-1">My Orders</h3>
+                    <p className="text-gray-600 text-sm">
+                      View your orders and order history
+                    </p>
+                  </Link>
+
                   {user && (
                     <Link
                       href={`/users/${user.id}/wall`}

@@ -17,16 +17,19 @@ interface GroupEngagementContextType {
   // Loading states
   likeLoading: Map<number, boolean>;
   dislikeLoading: Map<number, boolean>;
+  shareLoading: Map<number, boolean>;
 
   // Actions
   toggleLike: (postId: number) => Promise<void>;
   toggleDislike: (postId: number) => Promise<void>;
+  sharePost: (postId: number, platform: string) => Promise<void>;
   addComment: (postId: number, content: string, parentId?: number) => Promise<void>;
-  updateComment: (commentId: number, content: string) => Promise<void>;
+  updateComment: (postId: number, commentId: number, content: string) => Promise<void>;
   deleteComment: (postId: number, commentId: number) => Promise<void>;
   fetchEngagementStats: (postId: number) => Promise<void>;
   fetchComments: (postId: number, page?: number) => Promise<void>;
   fetchLikes: (postId: number, page?: number) => Promise<any>;
+  fetchShares: (postId: number, page?: number) => Promise<any>;
 
   // Real-time
   socketConnected: boolean;
@@ -40,6 +43,7 @@ export function GroupEngagementProvider({ children, token }: { children: React.R
   const [comments, setComments] = useState<Map<number, GroupComment[]>>(new Map());
   const [likeLoading, setLikeLoading] = useState<Map<number, boolean>>(new Map());
   const [dislikeLoading, setDislikeLoading] = useState<Map<number, boolean>>(new Map());
+  const [shareLoading, setShareLoading] = useState<Map<number, boolean>>(new Map());
   const [commentLoading, setCommentLoading] = useState<Map<number, boolean>>(new Map());
   const [socketConnected, setSocketConnected] = useState(false);
   const [socketError, setSocketError] = useState<string | null>(null);
@@ -189,6 +193,13 @@ export function GroupEngagementProvider({ children, token }: { children: React.R
     [fetchComments, fetchEngagementStats]
   );
 
+  // Share post - no-op for group posts (not supported)
+  const sharePost = useCallback(async (postId: number, platform: string = 'direct') => {
+    // Group posts don't support share tracking in the backend
+    // This is a no-op to maintain compatibility with the interface
+    console.log(`Share tracking not supported for group posts (postId: ${postId}, platform: ${platform})`);
+  }, []);
+
   // Fetch likes
   const fetchLikes = useCallback(async (postId: number, page: number = 1) => {
     try {
@@ -203,20 +214,31 @@ export function GroupEngagementProvider({ children, token }: { children: React.R
     }
   }, []);
 
+  // Fetch shares - no-op for group posts (not supported)
+  const fetchShares = useCallback(async (postId: number, page: number = 1) => {
+    // Group posts don't support share tracking in the backend
+    // Return empty result to maintain compatibility
+    console.log(`Share fetching not supported for group posts (postId: ${postId})`);
+    return { data: [], pagination: { total: 0, page: 1, limit: 10 } };
+  }, []);
+
   const value: GroupEngagementContextType = {
     engagements,
     comments,
     commentLoading,
     likeLoading,
     dislikeLoading,
+    shareLoading,
     toggleLike,
     toggleDislike,
+    sharePost,
     addComment,
     updateComment,
     deleteComment,
     fetchEngagementStats,
     fetchComments,
     fetchLikes,
+    fetchShares,
     socketConnected,
     socketError,
   };

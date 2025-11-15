@@ -142,11 +142,17 @@ export default function UserWallPage() {
         const numericId = parseInt(userId);
 
         if (!isNaN(numericId) && numericId.toString() === userId) {
-          const userData = await users.getById(numericId);
-          setUser(userData.data);
+          let userData = await users.getById(numericId);
+          if (userData && typeof userData === 'object' && 'data' in userData) {
+            userData = (userData as any).data;
+          }
+          setUser(userData as any);
         } else {
-          const userData = await users.getByUsername(userId);
-          setUser(userData.data);
+          let userData = await users.getByUsername(userId);
+          if (userData && typeof userData === 'object' && 'data' in userData) {
+            userData = (userData as any).data;
+          }
+          setUser(userData as any);
         }
       } catch (err) {
         if (err instanceof ApiException) {

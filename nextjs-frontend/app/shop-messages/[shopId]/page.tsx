@@ -74,11 +74,11 @@ export default function ShopMessagesDetailPage() {
       // Extract shop info from first message or use default
       if (data.data && data.data.length > 0 && !shopInfo) {
         const firstMsg = data.data[0];
-        if (firstMsg.shop) {
+        if ((firstMsg as any).shop) {
           setShopInfo({
-            id: firstMsg.shop.id,
-            name: firstMsg.shop.name,
-            logo: firstMsg.shop.logo,
+            id: (firstMsg as any).shop.id,
+            name: (firstMsg as any).shop.name,
+            logo: (firstMsg as any).shop.logo,
           });
         }
       }

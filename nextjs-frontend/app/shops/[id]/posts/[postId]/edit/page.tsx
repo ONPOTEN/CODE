@@ -4,6 +4,9 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { shopPosts, type ShopPost } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
+import { SimpleProductComponent } from '@/app/shops/[id]/posts/create/SimpleProductComponent';
+import { VariantProductComponent } from '@/app/shops/[id]/posts/create/VariantProductComponent';
+import { DownloadProductComponent } from '@/app/shops/[id]/posts/create/DownloadProductComponent';
 
 export default function EditShopPostPage() {
   const params = useParams();
@@ -15,10 +18,19 @@ export default function EditShopPostPage() {
   const [post, setPost] = useState<ShopPost | null>(null);
   const [formData, setFormData] = useState({
     title: '',
-    content: '',
-    price_range: '',
     type: 'post' as 'post' | 'page',
     status: 'draft' as 'draft' | 'published',
+    product_type: '' as string,
+    price: '',
+    sale_price: '',
+    short_description: '',
+    detail_description: '',
+    categories: '',
+    attributes: [] as any[],
+    download_files: null as any,
+    link_files: [] as any[],
+    main_image: '' as string | File,
+    other_images: [] as (string | File)[],
   });
 
   const [newImages, setNewImages] = useState<File[]>([]);
@@ -36,14 +48,26 @@ export default function EditShopPostPage() {
     try {
       setLoading(true);
       let postData = await shopPosts.getById(shopId, postId);
-      postData = postData.data;
+      // Handle both direct ShopPost and wrapped response
+      if (postData && typeof postData === 'object' && 'data' in postData) {
+        postData = (postData as any).data;
+      }
       setPost(postData);
       setFormData({
         title: postData.title,
-        content: postData.content || '',
-        price_range: postData.price_range || '',
         type: postData.type,
         status: postData.status,
+        product_type: postData.product_type || '',
+        price: (postData.price ? String(postData.price) : ''),
+        sale_price: (postData.sale_price ? String(postData.sale_price) : ''),
+        short_description: postData.short_description || '',
+        detail_description: postData.detail_description || '',
+        categories: Array.isArray(postData.categories) ? postData.categories.join(', ') : postData.categories || '',
+        attributes: postData.attributes || [],
+        download_files: postData.download_files || null,
+        link_files: postData.link_files || [],
+        main_image: postData.main_image || '',
+        other_images: (postData as any).other_images || [],
       });
       // Set existing images from the post
       setExistingImages(postData.featured_images || []);
@@ -59,6 +83,10 @@ export default function EditShopPostPage() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleFormDataChange = (field: string, value: any) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -107,12 +135,57 @@ export default function EditShopPostPage() {
       const submitData = new FormData();
       submitData.append('_method', 'PUT'); // Laravel method spoofing
       submitData.append('title', formData.title);
-      submitData.append('content', formData.content);
-      if (formData.price_range) {
-        submitData.append('price_range', formData.price_range);
-      }
       submitData.append('type', formData.type);
       submitData.append('status', formData.status);
+
+      // Add product-specific fields
+      if (formData.product_type) {
+        submitData.append('product_type', formData.product_type);
+      }
+      if (formData.price) {
+        submitData.append('price', formData.price.toString());
+      }
+      if (formData.sale_price) {
+        submitData.append('sale_price', formData.sale_price.toString());
+      }
+      if (formData.short_description) {
+        submitData.append('short_description', formData.short_description);
+      }
+      if (formData.detail_description) {
+        submitData.append('detail_description', formData.detail_description);
+      }
+      if (formData.categories) {
+        submitData.append('categories', JSON.stringify(
+          typeof formData.categories === 'string'
+            ? formData.categories.split(',').map(cat => cat.trim()).filter(Boolean)
+            : formData.categories
+        ));
+      }
+      if (formData.attributes && formData.attributes.length > 0) {
+        submitData.append('attributes', JSON.stringify(formData.attributes));
+      }
+      if (formData.download_files && (formData.download_files as any).file) {
+        const downloadFileObj = formData.download_files as any;
+        submitData.append('download_files[name]', downloadFileObj.name);
+        submitData.append('download_files[file]', downloadFileObj.file);
+      }
+      if (formData.link_files && formData.link_files.length > 0) {
+        submitData.append('link_files', JSON.stringify(formData.link_files));
+      }
+
+      // Handle main_image
+      if (formData.main_image && formData.main_image instanceof File) {
+        submitData.append('main_image', formData.main_image);
+      }
+
+      // Handle other_images
+      if (formData.other_images && formData.other_images.length > 0) {
+        formData.other_images.forEach((img, index) => {
+          if (img instanceof File) {
+            submitData.append(`other_images[${index}]`, img);
+          }
+        });
+      }
 
       // Append new images
       newImages.forEach((image) => {
@@ -210,123 +283,6 @@ export default function EditShopPostPage() {
               />
             </div>
 
-            {/* Featured Images */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Featured Images (Multiple)
-              </label>
-
-              {/* Existing Images */}
-              {existingImages.length > 0 && (
-                <div className="mb-4">
-                  <h4 className="text-sm font-medium text-gray-600 mb-2">Current Images</h4>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {existingImages.map((imagePath, index) => (
-                      <div key={index} className="relative">
-                        <img
-                          src={imagePath}
-                          alt={`Existing ${index + 1}`}
-                          className="w-full h-48 object-cover rounded-lg border border-gray-300"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removeExistingImage(imagePath)}
-                          className="absolute top-2 right-2 p-2 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors shadow-lg"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* New Image Previews */}
-              {newImagePreviews.length > 0 && (
-                <div className="mb-4">
-                  <h4 className="text-sm font-medium text-gray-600 mb-2">New Images</h4>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {newImagePreviews.map((preview, index) => (
-                      <div key={index} className="relative">
-                        <img
-                          src={preview}
-                          alt={`New ${index + 1}`}
-                          className="w-full h-48 object-cover rounded-lg border border-gray-300"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removeNewImage(index)}
-                          className="absolute top-2 right-2 p-2 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors shadow-lg"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Upload Button */}
-              <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors">
-                <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                  <svg className="w-10 h-10 mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                  </svg>
-                  <p className="mb-1 text-sm text-gray-500">
-                    <span className="font-semibold">Click to add more images</span> or drag and drop
-                  </p>
-                  <p className="text-xs text-gray-500">PNG, JPG, GIF, WEBP up to 5MB each</p>
-                  {(existingImages.length + newImagePreviews.length) > 0 && (
-                    <p className="text-xs text-blue-600 mt-1">
-                      {existingImages.length + newImagePreviews.length} total image(s)
-                    </p>
-                  )}
-                </div>
-                <input
-                  type="file"
-                  className="hidden"
-                  accept="image/*"
-                  multiple
-                  onChange={handleImageChange}
-                />
-              </label>
-            </div>
-
-            {/* Content */}
-            <div>
-              <label htmlFor="content" className="block text-sm font-medium text-gray-700 mb-2">
-                Content
-              </label>
-              <textarea
-                id="content"
-                name="content"
-                value={formData.content}
-                onChange={handleChange}
-                rows={10}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Enter content"
-              />
-            </div>
-
-            {/* Price Range */}
-            <div>
-              <label htmlFor="price_range" className="block text-sm font-medium text-gray-700 mb-2">
-                Price Range
-              </label>
-              <input
-                type="text"
-                id="price_range"
-                name="price_range"
-                value={formData.price_range}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                placeholder="e.g., $10 - $50"
-              />
-            </div>
 
             {/* Type */}
             <div>
@@ -361,6 +317,28 @@ export default function EditShopPostPage() {
                 <option value="published">Published</option>
               </select>
             </div>
+
+            {/* Product Type Components */}
+            {post.product_type === 'Đơn giản' && (
+              <SimpleProductComponent
+                formData={formData}
+                onFormDataChange={handleFormDataChange}
+              />
+            )}
+
+            {post.product_type === 'Biến thể' && (
+              <VariantProductComponent
+                formData={formData}
+                onFormDataChange={handleFormDataChange}
+              />
+            )}
+
+            {post.product_type === 'Tải xuống' && (
+              <DownloadProductComponent
+                formData={formData}
+                onFormDataChange={handleFormDataChange}
+              />
+            )}
 
             {/* Post Info */}
             <div className="bg-gray-50 p-4 rounded-md">

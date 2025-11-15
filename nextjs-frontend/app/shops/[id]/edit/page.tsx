@@ -51,7 +51,7 @@ export default function EditShopPage() {
       // Handle both direct ShopResource and wrapped response
       const shop = response && typeof response === 'object' && 'name' in response
         ? response
-        : response?.data || response;
+        : (response as any)?.data || response;
 
       console.log('[EditShop] Fetched shop:', shop);
       console.log('[EditShop] Current user ID:', user?.id);

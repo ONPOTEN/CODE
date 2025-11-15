@@ -164,6 +164,13 @@ export function EngagementButtons({
       return;
     }
 
+    if (!postId) {
+      console.error('[EngagementButtons] Cannot share: postId is undefined');
+      setToastMessage('Failed to share: post ID is missing');
+      setShowToast(true);
+      return;
+    }
+
     setIsShareToWallLoading(true);
     try {
       console.log('[EngagementButtons] Sharing post to my wall', {
@@ -186,9 +193,9 @@ export function EngagementButtons({
     }
   };
 
-  const isLikeLoading = likeLoading.has(postId);
-  const isDislikeLoading = dislikeLoading.has(postId);
-  const isShareLoading = shareLoading.has(postId);
+  const isLikeLoading = id ? likeLoading.has(id) : false;
+  const isDislikeLoading = id ? dislikeLoading.has(id) : false;
+  const isShareLoading = id ? shareLoading.has(id) : false;
 
   const baseButtonClasses = `transition-all duration-200 flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium ${
     compact ? 'px-2 py-1 text-xs' : ''

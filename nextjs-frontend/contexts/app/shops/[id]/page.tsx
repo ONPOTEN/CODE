@@ -274,7 +274,7 @@ export default function ShopDetailPage() {
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                 </svg>
-                                {post.author.display_name || post.author.name}
+                                {post.author.name}
                               </span>
                             )}
                           </div>
@@ -435,10 +435,10 @@ export default function ShopDetailPage() {
                 <h2 className="text-xl font-bold text-gray-900 mb-4">Shop Owner</h2>
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg">
-                    {shop.owner.display_name?.charAt(0).toUpperCase() || 'U'}
+                    {shop.owner.name?.charAt(0).toUpperCase() || 'U'}
                   </div>
                   <div>
-                    <p className="font-medium text-gray-900">{shop.owner.display_name || shop.owner.name}</p>
+                    <p className="font-medium text-gray-900">{shop.owner.name}</p>
                     <p className="text-sm text-gray-600">@{shop.owner.username}</p>
                   </div>
                 </div>

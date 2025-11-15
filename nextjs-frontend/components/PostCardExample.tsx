@@ -11,19 +11,7 @@ import { EngagementButtons } from './EngagementButtons';
 import { CommentsSection } from './CommentsSection';
 import { AuthorCard } from './AuthorCard';
 import { useEngagement } from '@/contexts/EngagementContext';
-
-interface Post {
-  id: number;
-  title: string;
-  content: string;
-  featured_image?: string;
-  author: {
-    id: number;
-    name: string;
-    email: string;
-  };
-  created_at: string;
-}
+import { Post } from '@/lib/api';
 
 interface PostCardExampleProps {
   post: Post;

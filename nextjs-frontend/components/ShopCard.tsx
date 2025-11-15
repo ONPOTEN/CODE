@@ -130,11 +130,11 @@ export function ShopCard({ shop }: ShopCardProps) {
             <div className="pt-3 border-t border-gray-200">
               <div className="flex items-center gap-2">
                 <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-xs font-bold">
-                  {(shop.owner.display_name || shop.owner.name)?.charAt(0).toUpperCase()}
+                  {shop.owner.name?.charAt(0).toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-medium text-gray-900 truncate">
-                    {shop.owner.display_name || shop.owner.name}
+                    {shop.owner.name}
                   </p>
                   <p className="text-xs text-gray-500 truncate">@{shop.owner.username}</p>
                 </div>

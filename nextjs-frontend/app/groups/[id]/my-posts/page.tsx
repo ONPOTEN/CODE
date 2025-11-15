@@ -163,11 +163,11 @@ export default function MyPostsPage() {
                       {/* Status Badge */}
                       <div className="mt-3 flex items-center gap-3">
                         <span className={`text-xs px-3 py-1 rounded-full font-medium ${
-                          post.post_status === 'pending'
+                          post.post_status === 'publish'
+                            ? 'bg-green-100 text-green-800'
+                            : post.post_status === 'draft'
                             ? 'bg-amber-100 text-amber-800'
-                            : post.post_status === 'approved'
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-red-100 text-red-800'
+                            : 'bg-red-100 text-red-800'
                         }`}>
                           {post.post_status?.charAt(0).toUpperCase() + post.post_status?.slice(1) || 'Draft'}
                         </span>
@@ -185,7 +185,7 @@ export default function MyPostsPage() {
 
                     {/* Actions */}
                     <div className="flex gap-2 flex-shrink-0">
-                      {post.post_status === 'approved' && (
+                      {post.post_status === 'publish' && (
                         <button
                           onClick={() => router.push(`/groups/${groupId}/posts/${post.id}/edit`)}
                           className="px-4 py-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 font-medium transition-colors whitespace-nowrap"

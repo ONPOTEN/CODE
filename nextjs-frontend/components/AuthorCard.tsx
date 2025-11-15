@@ -14,13 +14,17 @@ interface Author {
 }
 
 interface AuthorCardProps {
-  author: Author;
+  author?: Author;
   createdAt: string;
   compact?: boolean;
   showAvatar?: boolean;
 }
 
 export function AuthorCard({ author, createdAt, compact = false, showAvatar = false }: AuthorCardProps) {
+  if (!author) {
+    return null;
+  }
+
   const authorName = author.display_name || author.username || author.user_nicename || 'Anonymous';
 
   const formatDate = (dateString: string) => {

@@ -41,7 +41,6 @@ export default function ViewPostPage() {
           console.log('Fetching by slug:', postId);
           postData = await posts.getBySlug(postId);
         }
-        postData = postData!.data;
         console.log('Fetched post data:', postData);
         console.log('Post ID:', postData.id);
         console.log('Post slug:', postData.slug);
@@ -298,7 +297,7 @@ export default function ViewPostPage() {
                       onClick={() => setSelectedImageIndex(index)}
                     >
                       <img
-                        src={image}
+                        src={image.url}
                         alt={`${post.title} - Image ${index + 1}`}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                         onError={(e) => {

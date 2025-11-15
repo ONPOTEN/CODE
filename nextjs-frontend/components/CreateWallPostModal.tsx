@@ -23,7 +23,7 @@ export function CreateWallPostModal({
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [excerpt, setExcerpt] = useState('');
-  const [type, setType] = useState('post');
+  const [type, setType] = useState<'post' | 'page' | 'product'>('post');
   const [images, setImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
@@ -105,8 +105,9 @@ export function CreateWallPostModal({
       });
 
       // Share the post to the wall
-      if (response.data && response.data.id) {
-        await posts.shareToWall(response.data.id, wallUserId);
+      const postId = (response as any).data?.id || (response as any).id;
+      if (postId) {
+        await posts.shareToWall(postId, wallUserId);
       }
 
       alert(`Post created and shared to ${wallUserName}'s wall successfully!`);
@@ -249,7 +250,7 @@ export function CreateWallPostModal({
             </label>
             <select
               value={type}
-              onChange={(e) => setType(e.target.value)}
+              onChange={(e) => setType(e.target.value as 'post' | 'page' | 'product')}
               disabled={loading}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
             >

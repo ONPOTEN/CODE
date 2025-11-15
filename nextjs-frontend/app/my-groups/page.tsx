@@ -37,14 +37,16 @@ export default function MyGroupsPage() {
       });
 
       setGroupsList(response.data);
-      setTotalPages(response.pagination.last_page);
-      setTotalGroups(response.pagination.total);
+      if (response.meta) {
+        setTotalPages(response.meta.last_page);
+        setTotalGroups(response.meta.total);
+      }
 
       console.log('[MyGroups] Fetched groups:', {
         count: response.data.length,
-        total: response.pagination.total,
+        total: response.meta?.total,
         page: currentPage,
-        totalPages: response.pagination.last_page,
+        totalPages: response.meta?.last_page,
       });
     } catch (err) {
       console.error('Error fetching groups:', err);
@@ -76,7 +78,7 @@ export default function MyGroupsPage() {
     }
 
     try {
-      await groupsApi.bulkDelete({ group_ids: selectedGroups });
+      await groupsApi.bulkDelete(selectedGroups);
       setSelectedGroups([]);
       fetchMyGroups();
     } catch (err) {

@@ -10,8 +10,11 @@ use App\Http\Controllers\Api\GroupPostController;
 use App\Http\Controllers\Api\GroupPostEngagementController;
 use App\Http\Controllers\Api\GroupCommentController;
 use App\Http\Controllers\Api\PostController;
+use App\Http\Controllers\Api\PurchaseOrderController;
+use App\Http\Controllers\Api\QRCodeController;
 use App\Http\Controllers\Api\RoomController;
 use App\Http\Controllers\Api\ShopController;
+use App\Http\Controllers\Api\ShopPaymentSettingController;
 use App\Http\Controllers\Api\ShopPostController;
 use App\Http\Controllers\Api\ShopMessageController;
 use App\Http\Controllers\Api\UserController;
@@ -40,6 +43,10 @@ Route::prefix('v1')->group(function () {
     Route::get('/debug/tokens', [AuthController::class, 'debugTokens']);
     Route::post('/debug/test-token', [AuthController::class, 'debugTestToken']);
     Route::get('/debug/password-reset', [AuthController::class, 'debugPasswordReset']);
+
+    // QR Code (public - no auth required)
+    Route::post('/qr-code/generate-vietqr', [QRCodeController::class, 'generateVietQR']);
+    Route::get('/qr-code/supported-banks', [QRCodeController::class, 'getSupportedBanks']);
 
     // Posts
     Route::get('/posts', [PostController::class, 'index']);
@@ -129,6 +136,18 @@ Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
     Route::put('/profile/password', [UserController::class, 'updatePassword']);
     Route::put('/profile/password-reset', [UserController::class, 'resetPasswordViaSMS']);
 
+    // Purchase Orders (authenticated)
+    Route::prefix('orders')->group(function () {
+        Route::get('/', [PurchaseOrderController::class, 'index']);  // Get all my orders
+        Route::post('/', [PurchaseOrderController::class, 'store']);  // Place a new order
+        Route::get('/status/{status}', [PurchaseOrderController::class, 'byStatus']);  // Get orders by status
+        Route::get('/simple-products', [PurchaseOrderController::class, 'simpleProducts']);  // Get simple product orders
+        Route::get('/variant-products', [PurchaseOrderController::class, 'variantProducts']);  // Get variant product orders
+        Route::get('/download-products', [PurchaseOrderController::class, 'downloadProducts']);  // Get download product orders
+        Route::get('/{orderId}', [PurchaseOrderController::class, 'show']);  // Get specific order
+        Route::post('/{orderId}/status', [PurchaseOrderController::class, 'updateStatus']);  // Update order status
+    });
+
     // Friends (authenticated)
     Route::get('/friends', [FriendController::class, 'index']);
     Route::get('/friends/pending', [FriendController::class, 'pending']);
@@ -148,6 +167,11 @@ Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
     Route::post('/shops/{shopId}/posts', [ShopPostController::class, 'store'])->where('shopId', '[0-9]+');
     Route::put('/shops/{shopId}/posts/{id}', [ShopPostController::class, 'update'])->where(['shopId' => '[0-9]+', 'id' => '[0-9]+']);
     Route::delete('/shops/{shopId}/posts/{id}', [ShopPostController::class, 'destroy'])->where(['shopId' => '[0-9]+', 'id' => '[0-9]+']);
+
+    // Shop Payment Settings (authenticated)
+    Route::get('/shops/{shopId}/payment-settings', [ShopPaymentSettingController::class, 'show'])->where('shopId', '[0-9]+');
+    Route::post('/shops/{shopId}/payment-settings', [ShopPaymentSettingController::class, 'store'])->where('shopId', '[0-9]+');
+    Route::delete('/shops/{shopId}/payment-settings', [ShopPaymentSettingController::class, 'destroy'])->where('shopId', '[0-9]+');
 
     // Rooms (authenticated) - For shop message chat rooms
     Route::prefix('rooms')->group(function () {

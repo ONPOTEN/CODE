@@ -60,7 +60,7 @@ export default function ShopChatRoom({
       shopId: shopId,
       shopOwnerId: shopOwnerId,
       roomName: roomName,
-      userName: user.display_name || user.name,
+      userName: user.display_name || user.username,
     });
 
     const handleChatMessage = (data: any) => {
@@ -112,7 +112,7 @@ export default function ShopChatRoom({
         shopName,
         shopOwnerId,
         userId: user.id,
-        userName: user.display_name || user.name,
+        userName: user.display_name || user.username,
         message: inputMessage.trim(),
         roomName,
         timestamp: new Date().toISOString(),
@@ -124,7 +124,7 @@ export default function ShopChatRoom({
       const sentMessage: ChatMessage = {
         id: `${Date.now()}-own`,
         senderId: user.id,
-        senderName: user.display_name || user.name,
+        senderName: user.display_name || user.username,
         message: inputMessage.trim(),
         timestamp: new Date().toISOString(),
         isOwn: true,

@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { auth } from '@/lib/firebase';
 import { apiRequest } from '@/lib/api';
-import { linkWithCredential, EmailAuthProvider } from 'firebase/auth';
+import { linkWithCredential, EmailAuthProvider, updateProfile, updatePassword, type User as FirebaseUser } from 'firebase/auth';
 
 export default function FirebasePhonePasswordSetupPage() {
   const [password, setPassword] = useState('');
@@ -62,7 +62,7 @@ export default function FirebasePhonePasswordSetupPage() {
 
     try {
       // Get the currently signed-in user (from phone SMS verification)
-      const currentUser = auth.currentUser;
+      const currentUser: FirebaseUser | null = auth.currentUser;
 
       if (!currentUser) {
         throw new Error('No user authenticated. Please verify phone first.');
@@ -78,7 +78,7 @@ export default function FirebasePhonePasswordSetupPage() {
       const tempEmail = `phone_${currentUser.uid}@phone-auth.local`;
 
       // Step 1: Update Firebase user profile
-      await currentUser.updateProfile({
+      await updateProfile(currentUser, {
         displayName: displayName,
       });
       console.log(`[Phone Password Setup] Firebase profile updated`);
@@ -102,7 +102,7 @@ export default function FirebasePhonePasswordSetupPage() {
           console.log(`[Phone Password Setup] Email+password provider already linked, updating password...`);
           // Try updating password instead
           try {
-            await currentUser.updatePassword(password);
+            await updatePassword(currentUser, password);
             console.log(`[Phone Password Setup] Password updated successfully`);
           } catch (updateError: any) {
             throw new Error(`Failed to set password: ${updateError.message}`);

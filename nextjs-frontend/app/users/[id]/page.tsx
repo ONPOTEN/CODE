@@ -48,8 +48,10 @@ export default function UserProfilePage() {
         }
 
         console.log('Fetched user data:', userData);
-        userData = userData.data;
-        setUser(userData);
+        if (userData && typeof userData === 'object' && 'data' in userData) {
+          userData = (userData as any).data;
+        }
+        setUser(userData as any);
       } catch (err) {
         if (err instanceof ApiException) {
           setError(`Failed to load user: ${err.message}`);
@@ -471,7 +473,7 @@ export default function UserProfilePage() {
           onClose={() => setShowCreateModal(false)}
           wallUserId={user.id}
           wallUserName={user.name}
-          currentUser={currentUser}
+          currentUser={currentUser as any}
           onSuccess={() => {
             // Refresh the wall posts
             fetchUserWallPosts();

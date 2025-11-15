@@ -286,7 +286,7 @@ export default function GroupWallPage() {
           successCount++;
         } catch (err) {
           failedCount++;
-          failedFriends.push(friend.display_name);
+          failedFriends.push(friend.name || friend.username || 'Unknown user');
         }
       }
 
@@ -810,7 +810,7 @@ export default function GroupWallPage() {
                             {friend.avatar && (
                               <img
                                 src={friend.avatar}
-                                alt={friend.display_name}
+                                alt={friend.name || friend.username || 'Friend'}
                                 className="w-8 h-8 rounded-full object-cover flex-shrink-0"
                                 onError={(e) => {
                                   e.currentTarget.style.display = 'none';
@@ -818,7 +818,7 @@ export default function GroupWallPage() {
                               />
                             )}
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-gray-900 truncate">{friend.display_name}</p>
+                              <p className="text-sm font-medium text-gray-900 truncate">{friend.name || friend.username}</p>
                               <p className="text-xs text-gray-500 truncate">@{friend.username}</p>
                             </div>
                           </label>

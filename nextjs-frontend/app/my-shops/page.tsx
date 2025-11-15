@@ -15,6 +15,15 @@ interface ShopMessageStats {
   lastMessageTime?: string;
 }
 
+interface PaymentSettings {
+  bank_name: string;
+  account_number: string;
+  account_holder: string;
+  upi_id?: string;
+  phone?: string;
+  qr_code?: string;
+}
+
 export default function MyShopsPage() {
   const { user, isAuthenticated, isLoading } = useAuth();
   const { socket, onShopMessage, offShopMessage } = useSocket();
@@ -25,6 +34,17 @@ export default function MyShopsPage() {
   const [expandedShopId, setExpandedShopId] = useState<number | null>(null);
   const [postsData, setPostsData] = useState<{ [key: number]: ShopPost[] }>({});
   const [messageStats, setMessageStats] = useState<{ [key: number]: ShopMessageStats }>({});
+  const [paymentSettingsModal, setPaymentSettingsModal] = useState<{ shopId: number; shopName: string } | null>(null);
+  const [paymentSettings, setPaymentSettings] = useState<{ [key: number]: PaymentSettings }>({});
+  const [paymentFormData, setPaymentFormData] = useState<PaymentSettings>({
+    bank_name: '',
+    account_number: '',
+    account_holder: '',
+    upi_id: '',
+    phone: '',
+  });
+  const [generatedQR, setGeneratedQR] = useState<string | null>(null);
+  const [loadingQR, setLoadingQR] = useState(false);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -206,6 +226,154 @@ export default function MyShopsPage() {
         alert('Failed to delete post');
       }
       console.error('Delete post error:', err);
+    }
+  };
+
+  const generateQRCode = async () => {
+    if (!paymentFormData.bank_name || !paymentFormData.account_number) {
+      alert('Please fill in bank name and account number');
+      return;
+    }
+
+    setLoadingQR(true);
+    try {
+      // Map Vietnamese bank names to their BIN codes
+      const bankCodes: { [key: string]: string } = {
+        'vietcombank': '970436',
+        'techcombank': '970407',
+        'agribank': '970405',
+        'tpbank': '970423',
+        'mbbank': '970422',
+        'acb': '970416',
+        'bidv': '970418',
+        'vib': '970441',
+        'scb': '970429',
+        'sacombank': '970403',
+        'seabank': '970440',
+        'eximbank': '970431',
+        'vpbank': '970432',
+        'vietinbank': '970415',
+      };
+
+      // Match bank name to code
+      const bankName = paymentFormData.bank_name.toLowerCase().trim();
+      let bankCode = null;
+
+      for (const [key, code] of Object.entries(bankCodes)) {
+        if (bankName.includes(key)) {
+          bankCode = code;
+          break;
+        }
+      }
+
+      // If no match found, try to use bank_name as-is (in case user provides BIN directly)
+      if (!bankCode) {
+        bankCode = paymentFormData.bank_name;
+      }
+
+      // Build VietQR image URL directly
+      // Format: https://img.vietqr.io/image/{BIN}-{ACCOUNT}-qr_only.png?accountName={NAME}
+      const qrImageUrl = `https://img.vietqr.io/image/${encodeURIComponent(bankCode)}-${encodeURIComponent(paymentFormData.account_number)}-qr_only.png?accountName=${encodeURIComponent(paymentFormData.account_holder)}`;
+
+      setGeneratedQR(qrImageUrl);
+      setPaymentFormData((prev) => ({
+        ...prev,
+        qr_code: qrImageUrl,
+      }));
+    } catch (err) {
+      console.error('Error generating QR code:', err);
+      const errorMsg = err instanceof Error ? err.message : 'Failed to generate QR code';
+      alert(`${errorMsg}. Please check bank details and try again.`);
+    } finally {
+      setLoadingQR(false);
+    }
+  };
+
+  const openPaymentSettings = async (shopId: number, shopName: string) => {
+    setPaymentSettingsModal({ shopId, shopName });
+
+    try {
+      // Try to load payment settings from backend
+      const response = await apiRequest(`/shops/${shopId}/payment-settings`);
+
+      if (response && response.data) {
+        const settings = response.data;
+        setPaymentFormData({
+          bank_name: settings.bank_name || '',
+          account_number: settings.account_number || '',
+          account_holder: settings.account_holder || '',
+          upi_id: settings.upi_id || '',
+          phone: settings.phone || '',
+        });
+        if (settings.qr_code) {
+          setGeneratedQR(settings.qr_code);
+        }
+      } else {
+        // No settings found, initialize with defaults
+        setPaymentFormData({
+          bank_name: '',
+          account_number: '',
+          account_holder: user?.display_name || user?.username || '',
+          upi_id: '',
+          phone: '',
+        });
+        setGeneratedQR(null);
+      }
+    } catch (err) {
+      // Settings don't exist yet, initialize with defaults
+      console.log('No payment settings found, initializing with defaults');
+      setPaymentFormData({
+        bank_name: '',
+        account_number: '',
+        account_holder: user?.display_name || user?.username || '',
+        upi_id: '',
+        phone: '',
+      });
+      setGeneratedQR(null);
+    }
+  };
+
+  const closePaymentSettings = () => {
+    setPaymentSettingsModal(null);
+    setGeneratedQR(null);
+  };
+
+  const savePaymentSettings = async () => {
+    if (!paymentSettingsModal) return;
+
+    if (!paymentFormData.bank_name || !paymentFormData.account_number || !paymentFormData.account_holder) {
+      alert('Please fill in all required fields');
+      return;
+    }
+
+    try {
+      // Save payment settings to backend
+      const response = await apiRequest(`/shops/${paymentSettingsModal.shopId}/payment-settings`, {
+        method: 'POST',
+        body: JSON.stringify({
+          bank_name: paymentFormData.bank_name,
+          account_number: paymentFormData.account_number,
+          account_holder: paymentFormData.account_holder,
+          upi_id: paymentFormData.upi_id || null,
+          phone: paymentFormData.phone || null,
+          qr_code: paymentFormData.qr_code || null,
+        }),
+      });
+
+      if (response) {
+        // Update local state as well for consistency
+        setPaymentSettings((prev) => ({
+          ...prev,
+          [paymentSettingsModal.shopId]: paymentFormData,
+        }));
+
+        alert('Payment settings saved successfully!');
+        closePaymentSettings();
+      }
+    } catch (err) {
+      console.error('Error saving payment settings:', err);
+      const errorMsg = err instanceof Error ? err.message : 'Failed to save payment settings';
+      alert(`${errorMsg}`);
     }
   };
 
@@ -470,6 +638,17 @@ export default function MyShopsPage() {
                       {messageStats[shop.id]?.unreadCount > 0 ? `Messages (${messageStats[shop.id].unreadCount})` : 'Messages'}
                     </Link>
 
+                    {/* Orders Button */}
+                    <Link
+                      href={`/shops/${shop.id}/orders`}
+                      className="w-full flex items-center justify-center gap-1 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors text-sm"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                      </svg>
+                      Manage Orders
+                    </Link>
+
                     {/* Management Actions */}
                     <div className="flex gap-2">
                       <button
@@ -480,6 +659,15 @@ export default function MyShopsPage() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                         </svg>
                         {expandedShopId === shop.id ? 'Hide Posts' : 'Manage Posts'}
+                      </button>
+                      <button
+                        onClick={() => openPaymentSettings(shop.id, shop.name)}
+                        className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-medium transition-colors text-sm"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Payment Settings
                       </button>
                       <Link
                         href={`/shops/${shop.id}/edit`}
@@ -578,6 +766,172 @@ export default function MyShopsPage() {
                   )}
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Payment Settings Modal */}
+        {paymentSettingsModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              {/* Modal Header */}
+              <div className="sticky top-0 bg-gradient-to-r from-amber-600 to-amber-700 px-6 py-4 flex items-center justify-between">
+                <h2 className="text-xl font-bold text-white">Payment Settings</h2>
+                <p className="text-amber-100 text-sm">Shop: {paymentSettingsModal.shopName}</p>
+                <button
+                  onClick={closePaymentSettings}
+                  className="text-white hover:bg-amber-700 p-2 rounded transition-colors"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Modal Content */}
+              <div className="p-6 space-y-6">
+                {/* Bank Details Form */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-gray-900">Bank Account Details</h3>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Bank Name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g., Vietcombank, Techcombank"
+                      value={paymentFormData.bank_name}
+                      onChange={(e) => setPaymentFormData({ ...paymentFormData, bank_name: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Account Number <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Enter your bank account number"
+                      value={paymentFormData.account_number}
+                      onChange={(e) => setPaymentFormData({ ...paymentFormData, account_number: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Account Holder Name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Name on the bank account"
+                      value={paymentFormData.account_holder}
+                      onChange={(e) => setPaymentFormData({ ...paymentFormData, account_holder: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      UPI ID (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="UPI ID for mobile payments"
+                      value={paymentFormData.upi_id || ''}
+                      onChange={(e) => setPaymentFormData({ ...paymentFormData, upi_id: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Phone Number (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Contact phone number"
+                      value={paymentFormData.phone || ''}
+                      onChange={(e) => setPaymentFormData({ ...paymentFormData, phone: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+
+                {/* QR Code Generation */}
+                <div className="space-y-4 border-t border-gray-200 pt-6">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold text-gray-900">VietQR Code</h3>
+                    <button
+                      onClick={generateQRCode}
+                      disabled={loadingQR || !paymentFormData.bank_name || !paymentFormData.account_number}
+                      className="px-4 py-2 bg-amber-600 hover:bg-amber-700 disabled:bg-gray-400 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+                    >
+                      {loadingQR ? (
+                        <>
+                          <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="1" fill="currentColor"></circle>
+                          </svg>
+                          Generating...
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                          </svg>
+                          Generate QR Code
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  {generatedQR && (
+                    <div className="flex flex-col items-center space-y-4">
+                      <div className="border-4 border-amber-200 rounded-lg p-4 bg-white">
+                        <img
+                          src={generatedQR}
+                          alt="VietQR Code"
+                          className="w-64 h-64 object-contain"
+                        />
+                      </div>
+                      <p className="text-sm text-gray-600 text-center">
+                        QR code generated successfully. Display this code to receive payments via VietQR.
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Info Box */}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-2">
+                  <p className="text-sm text-blue-900">
+                    <strong>Note:</strong> VietQR allows customers to scan and transfer money directly to your bank account.
+                  </p>
+                  <p className="text-xs text-blue-800">
+                    Supported banks: vietcombank, techcombank, agribank, tpbank, mbbank, acb, bidv, vib, scb, sacombank, seabank, eximbank, vpbank, vietinbank and more.
+                  </p>
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-6 py-4 flex justify-end gap-3">
+                <button
+                  onClick={closePaymentSettings}
+                  className="px-6 py-2 border border-gray-300 hover:bg-gray-100 text-gray-700 rounded-lg font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={savePaymentSettings}
+                  className="px-6 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Save Settings
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>

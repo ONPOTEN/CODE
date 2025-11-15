@@ -62,44 +62,107 @@ class ShopPostController extends Controller
             'type' => 'required|in:post,page',
             'status' => 'required|in:draft,published',
             'featured_images.*' => 'nullable|image|mimes:jpeg,jpg,png,gif,webp|max:5120', // 5MB max per image
+            'main_image' => 'nullable|image|mimes:jpeg,jpg,png,gif,webp|max:5120', // 5MB max
+            'other_images.*' => 'nullable|image|mimes:jpeg,jpg,png,gif,webp|max:5120', // 5MB max per image
+            'download_files[file]' => 'nullable|file|max:102400', // 100MB max for download file
+            'download_files[name]' => 'nullable|string|max:255',
         ]);
+
+        // Helper function to upload image files to S3
+        $uploadImage = function($file, $shopId) {
+            // Create directory structure: shopid/year/month/day
+            $now = now();
+            $directory = "shop_posts/{$shopId}/{$now->year}/{$now->format('m')}/{$now->format('d')}";
+
+            // Generate unique filename
+            $filename = time() . '_' . Str::random(10) . '.' . $file->getClientOriginalExtension();
+
+            try {
+                // Store file to S3 using Storage facade
+                $path = \Storage::disk('s3')->putFileAs(
+                    $directory,
+                    $file,
+                    $filename,
+                    'public'
+                );
+
+                if (!$path) {
+                    throw new \Exception("Failed to store file {$filename} to S3");
+                }
+
+                // Return relative path: shopid/year/month/day/filename
+                return "{$shopId}/{$now->year}/{$now->format('m')}/{$now->format('d')}/{$filename}";
+            } catch (\Exception $e) {
+                \Log::error("S3 upload failed for shop post {$shopId}: " . $e->getMessage());
+                throw new \Exception("Failed to upload image {$filename}: " . $e->getMessage());
+            }
+        };
 
         // Handle multiple featured images upload
         $imagePaths = [];
         if ($request->hasFile('featured_images')) {
             $files = $request->file('featured_images');
 
-            // Create directory structure: shopid/year/month/day
-            $now = now();
-            $directory = "shop_posts/{$shopId}/{$now->year}/{$now->format('m')}/{$now->format('d')}";
+            foreach ($files as $file) {
+                $imagePaths[] = $uploadImage($file, $shopId);
+                usleep(10000); // 10ms delay to ensure unique timestamps
+            }
+        }
+
+        // Handle main_image upload
+        $mainImagePath = null;
+        if ($request->hasFile('main_image')) {
+            $mainImagePath = $uploadImage($request->file('main_image'), $shopId);
+        }
+
+        // Handle other_images upload
+        $otherImagePaths = [];
+        if ($request->hasFile('other_images')) {
+            $files = $request->file('other_images');
 
             foreach ($files as $file) {
+                $otherImagePaths[] = $uploadImage($file, $shopId);
+                usleep(10000); // 10ms delay to ensure unique timestamps
+            }
+        }
+
+        // Handle download file upload
+        $downloadFileData = null;
+        if ($request->hasFile('download_files.file')) {
+            $file = $request->file('download_files.file');
+            $fileName = $request->input('download_files.name', $file->getClientOriginalName());
+
+            // Create directory structure: shop_downloads/shopid/year/month/day
+            $now = now();
+            $directory = "shop_downloads/{$shopId}/{$now->year}/{$now->format('m')}/{$now->format('d')}";
+
+            try {
                 // Generate unique filename
                 $filename = time() . '_' . Str::random(10) . '.' . $file->getClientOriginalExtension();
 
-                try {
-                    // Store file to S3 using Storage facade
-                    // Using explicit S3 disk to ensure it's stored on S3, not local
-                    $path = \Storage::disk('s3')->putFileAs(
-                        $directory,
-                        $file,
-                        $filename,
-                        'public'
-                    );
+                // Store file to S3
+                $path = \Storage::disk('s3')->putFileAs(
+                    $directory,
+                    $file,
+                    $filename,
+                    'public'
+                );
 
-                    if (!$path) {
-                        throw new \Exception("Failed to store file {$filename} to S3");
-                    }
-
-                    // Store relative path: shopid/year/month/day/filename
-                    $imagePaths[] = "{$shopId}/{$now->year}/{$now->format('m')}/{$now->format('d')}/{$filename}";
-                } catch (\Exception $e) {
-                    \Log::error("S3 upload failed for shop post {$shopId}: " . $e->getMessage());
-                    throw new \Exception("Failed to upload image {$filename}: " . $e->getMessage());
+                if (!$path) {
+                    throw new \Exception("Failed to store download file {$filename} to S3");
                 }
 
-                // Small delay to ensure unique timestamps
-                usleep(10000); // 10ms
+                // Generate S3 URL
+                $s3Url = \Storage::disk('s3')->url("shop_downloads/{$shopId}/{$now->year}/{$now->format('m')}/{$now->format('d')}/{$filename}");
+
+                $downloadFileData = [
+                    'name' => $fileName,
+                    'url' => $s3Url,
+                    'size' => $this->formatFileSize($file->getSize()),
+                ];
+            } catch (\Exception $e) {
+                \Log::error("Download file upload failed for shop {$shopId}: " . $e->getMessage());
+                throw new \Exception("Failed to upload download file: " . $e->getMessage());
             }
         }
 
@@ -113,7 +176,8 @@ class ShopPostController extends Controller
             $counter++;
         }
 
-        $shopPost = ShopPost::create([
+        // Prepare create data
+        $createData = [
             'shop_id' => $shopId,
             'user_id' => $request->user()->ID,
             'slug' => $slug,
@@ -123,7 +187,51 @@ class ShopPostController extends Controller
             'type' => $validated['type'],
             'status' => $validated['status'],
             'featured_images' => $imagePaths,
-        ]);
+        ];
+
+        // Add product-specific images
+        if ($mainImagePath) {
+            $createData['main_image'] = $mainImagePath;
+        }
+        if (!empty($otherImagePaths)) {
+            $createData['other_images'] = $otherImagePaths;
+        }
+
+        // Add download file data if present
+        if ($downloadFileData) {
+            $createData['download_files'] = $downloadFileData;
+        }
+
+        // Extract product type and other fields from request
+        if ($request->has('product_type')) {
+            $createData['product_type'] = $request->input('product_type');
+        }
+        if ($request->has('price')) {
+            $createData['price'] = $request->input('price');
+        }
+        if ($request->has('sale_price')) {
+            $createData['sale_price'] = $request->input('sale_price');
+        }
+        if ($request->has('short_description')) {
+            $createData['short_description'] = $request->input('short_description');
+        }
+        if ($request->has('detail_description')) {
+            $createData['detail_description'] = $request->input('detail_description');
+        }
+        if ($request->has('categories')) {
+            $categoriesInput = $request->input('categories');
+            $createData['categories'] = is_string($categoriesInput) ? json_decode($categoriesInput, true) : $categoriesInput;
+        }
+        if ($request->has('attributes')) {
+            $attributesInput = $request->input('attributes');
+            $createData['attributes'] = is_string($attributesInput) ? json_decode($attributesInput, true) : $attributesInput;
+        }
+        if ($request->has('link_files')) {
+            $linkFilesInput = $request->input('link_files');
+            $createData['link_files'] = is_string($linkFilesInput) ? json_decode($linkFilesInput, true) : $linkFilesInput;
+        }
+
+        $shopPost = ShopPost::create($createData);
 
         return response()->json([
             'message' => ucfirst($validated['type']) . ' created successfully',
@@ -167,6 +275,8 @@ class ShopPostController extends Controller
             'type' => 'sometimes|in:post,page',
             'status' => 'sometimes|in:draft,published',
             'featured_images.*' => 'nullable|image|mimes:jpeg,jpg,png,gif,webp|max:5120', // 5MB max per image
+            'main_image' => 'nullable|image|mimes:jpeg,jpg,png,gif,webp|max:5120', // 5MB max
+            'other_images.*' => 'nullable|image|mimes:jpeg,jpg,png,gif,webp|max:5120', // 5MB max per image
             'remove_images' => 'sometimes|array', // Array of image paths to remove
             'remove_images.*' => 'string',
         ]);
@@ -229,6 +339,70 @@ class ShopPostController extends Controller
         // Update featured_images
         $shopPost->featured_images = $currentImages;
 
+        // Helper function to upload image files to S3 (reuse from store)
+        $uploadImage = function($file, $shopId) {
+            // Create directory structure: shopid/year/month/day
+            $now = now();
+            $directory = "shop_posts/{$shopId}/{$now->year}/{$now->format('m')}/{$now->format('d')}";
+
+            // Generate unique filename
+            $filename = time() . '_' . Str::random(10) . '.' . $file->getClientOriginalExtension();
+
+            try {
+                // Store file to S3 using Storage facade
+                $path = \Storage::disk('s3')->putFileAs(
+                    $directory,
+                    $file,
+                    $filename,
+                    'public'
+                );
+
+                if (!$path) {
+                    throw new \Exception("Failed to store file {$filename} to S3");
+                }
+
+                // Return relative path: shopid/year/month/day/filename
+                return "{$shopId}/{$now->year}/{$now->format('m')}/{$now->format('d')}/{$filename}";
+            } catch (\Exception $e) {
+                \Log::error("S3 upload failed for shop post {$shopId}: " . $e->getMessage());
+                throw new \Exception("Failed to upload image {$filename}: " . $e->getMessage());
+            }
+        };
+
+        // Handle main_image update
+        if ($request->hasFile('main_image')) {
+            // Remove old main_image if exists
+            if ($shopPost->main_image) {
+                $fullS3Path = "shop_posts/{$shopPost->main_image}";
+                if (\Storage::disk('s3')->exists($fullS3Path)) {
+                    \Storage::disk('s3')->delete($fullS3Path);
+                }
+            }
+            // Upload new main_image
+            $shopPost->main_image = $uploadImage($request->file('main_image'), $shopId);
+        }
+
+        // Handle other_images update
+        if ($request->hasFile('other_images')) {
+            // Remove old other_images if exist
+            if ($shopPost->other_images) {
+                foreach ($shopPost->other_images as $imagePath) {
+                    $fullS3Path = "shop_posts/{$imagePath}";
+                    if (\Storage::disk('s3')->exists($fullS3Path)) {
+                        \Storage::disk('s3')->delete($fullS3Path);
+                    }
+                }
+            }
+            // Upload new other_images
+            $otherImagePaths = [];
+            $files = $request->file('other_images');
+            foreach ($files as $file) {
+                $otherImagePaths[] = $uploadImage($file, $shopId);
+                usleep(10000); // 10ms delay to ensure unique timestamps
+            }
+            $shopPost->other_images = $otherImagePaths;
+        }
+
         // Generate new slug if title changed
         if (isset($validated['title']) && $validated['title'] !== $shopPost->title) {
             $slug = Str::slug($validated['title']);
@@ -248,6 +422,43 @@ class ShopPostController extends Controller
         if (isset($validated['price_range'])) $shopPost->price_range = $validated['price_range'];
         if (isset($validated['type'])) $shopPost->type = $validated['type'];
         if (isset($validated['status'])) $shopPost->status = $validated['status'];
+
+        // Update product-specific fields
+        if ($request->has('product_type')) {
+            $shopPost->product_type = $request->input('product_type');
+        }
+        if ($request->has('price')) {
+            $shopPost->price = $request->input('price');
+        }
+        if ($request->has('sale_price')) {
+            $shopPost->sale_price = $request->input('sale_price');
+        }
+        if ($request->has('short_description')) {
+            $shopPost->short_description = $request->input('short_description');
+        }
+        if ($request->has('detail_description')) {
+            $shopPost->detail_description = $request->input('detail_description');
+        }
+        if ($request->has('categories')) {
+            $categoriesInput = $request->input('categories');
+            $shopPost->categories = is_string($categoriesInput) ? json_decode($categoriesInput, true) : $categoriesInput;
+        }
+        if ($request->has('attributes')) {
+            $attributesInput = $request->input('attributes');
+            $shopPost->attributes = is_string($attributesInput) ? json_decode($attributesInput, true) : $attributesInput;
+        }
+        if ($request->has('download_files')) {
+            $downloadFilesInput = $request->input('download_files');
+            if (is_string($downloadFilesInput)) {
+                $shopPost->download_files = json_decode($downloadFilesInput, true);
+            } else {
+                $shopPost->download_files = $downloadFilesInput;
+            }
+        }
+        if ($request->has('link_files')) {
+            $linkFilesInput = $request->input('link_files');
+            $shopPost->link_files = is_string($linkFilesInput) ? json_decode($linkFilesInput, true) : $linkFilesInput;
+        }
 
         $shopPost->save();
 
@@ -276,5 +487,19 @@ class ShopPostController extends Controller
         return response()->json([
             'message' => ucfirst($shopPost->type) . ' deleted successfully',
         ]);
+    }
+
+    /**
+     * Format file size in human-readable format
+     */
+    private function formatFileSize($bytes): string
+    {
+        $units = ['B', 'KB', 'MB', 'GB'];
+        $bytes = max($bytes, 0);
+        $pow = floor(($bytes ? log($bytes) : 0) / log(1024));
+        $pow = min($pow, count($units) - 1);
+        $bytes /= (1 << (10 * $pow));
+
+        return round($bytes, 2) . ' ' . $units[$pow];
     }
 }

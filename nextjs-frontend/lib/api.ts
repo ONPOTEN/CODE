@@ -685,7 +685,7 @@ export const users = {
     message: string;
     avatar: string;
     avatar_url: string;
-    user?: AuthUser;
+    user?: User;
   }> => {
     const formData = new FormData();
     formData.append('avatar', file);
@@ -1071,18 +1071,6 @@ export const groupPosts = {
     return apiRequest(`/groups/${groupId}/posts/pending`);
   },
 
-  approvePost: async (groupId: number, postId: number): Promise<{ message: string }> => {
-    return apiRequest(`/groups/${groupId}/posts/${postId}/approve`, {
-      method: 'POST',
-    });
-  },
-
-  rejectPost: async (groupId: number, postId: number): Promise<{ message: string }> => {
-    return apiRequest(`/groups/${groupId}/posts/${postId}/reject`, {
-      method: 'POST',
-    });
-  },
-
   deletePost: async (postId: number): Promise<{ message: string }> => {
     return apiRequest(`/group-posts/${postId}`, {
       method: 'DELETE',
@@ -1227,6 +1215,16 @@ export interface ShopPost {
   price_range?: string;
   type: 'post' | 'page';
   status: 'draft' | 'published';
+  product_type?: 'Đơn giản' | 'Biến thể' | 'Tải xuống'; // Product type for product posts
+  price?: string | number; // Simple product price
+  sale_price?: string | number; // Simple product sale price
+  short_description?: string; // Simple product description
+  detail_description?: string; // Simple product detailed description
+  categories?: string; // Simple product categories
+  attributes?: any[]; // Variant product attributes
+  download_files?: any[]; // Download product files
+  link_files?: any[]; // Download product links
+  main_image?: string; // Product main image
   featured_image?: string; // Legacy field for backward compatibility
   featured_images?: string[]; // New field for multiple images
   view_count: number;
@@ -1604,6 +1602,7 @@ export const chat = {
       message: msg.message,
       created_at: msg.created_at,
       is_mine: false, // Will be determined in ChatWindow based on sender_id vs current user
+      is_read: msg.is_read || false,
       sender: msg.sender || {
         id: msg.sender_id,
         name: msg.sender?.name || `User ${msg.sender_id}`,
@@ -1635,10 +1634,7 @@ export const chat = {
     if (!resolvedShopOwnerId) {
       console.log('[api.sendShopMessage] No shop owner ID provided, attempting to fetch from shop data');
       try {
-        const shopResponse = await shops.getById(shopId);
-
-        // Handle wrapped response: { data: { ...shop } }
-        const shopData = shopResponse && shopResponse.data ? shopResponse.data : shopResponse;
+        const shopData = await shops.getById(shopId);
 
         console.log('[api.sendShopMessage] Shop data fetched:', {
           id: shopData.id,
@@ -1745,6 +1741,121 @@ export const admin = {
   },
 };
 
+// Orders API
+export const orders = {
+  // Get all orders for current user
+  myOrders: async (params?: { status?: string; shop_id?: number; per_page?: number }): Promise<any> => {
+    const queryString = new URLSearchParams();
+    if (params?.status) queryString.append('status', params.status);
+    if (params?.shop_id) queryString.append('shop_id', params.shop_id.toString());
+    if (params?.per_page) queryString.append('per_page', params.per_page.toString());
+
+    return apiRequest(`/orders?${queryString.toString()}`, {
+      method: 'GET',
+    });
+  },
+
+  // Get a specific order
+  get: async (orderId: number): Promise<any> => {
+    return apiRequest(`/orders/${orderId}`, {
+      method: 'GET',
+    });
+  },
+
+  // Place a new order
+  create: async (orderData: {
+    items: Array<{
+      shop_post_id: number;
+      quantity: number;
+      variant_options?: Record<string, string>;
+    }>;
+    subtotal: number;
+    tax?: number;
+    shipping_fee?: number;
+    discount?: number;
+    total_amount: number;
+    notes?: string;
+    shipping_address: {
+      full_name: string;
+      email: string;
+      phone: string;
+      address: string;
+      city: string;
+      state: string;
+      postal_code: string;
+    };
+    billing_address?: {
+      full_name?: string;
+      email?: string;
+      phone?: string;
+      address?: string;
+      city?: string;
+      state?: string;
+      postal_code?: string;
+    };
+    payment_method: 'cod' | 'qr' | 'bank_transfer';
+    bank_transfer_details?: {
+      bank_name?: string;
+      account_number?: string;
+      account_holder?: string;
+      transfer_reference?: string;
+    };
+  }): Promise<any> => {
+    return apiRequest('/orders', {
+      method: 'POST',
+      body: JSON.stringify(orderData),
+    });
+  },
+
+  // Get orders by status
+  byStatus: async (status: 'pending' | 'processing' | 'completed' | 'cancelled', params?: { per_page?: number }): Promise<any> => {
+    const queryString = new URLSearchParams();
+    if (params?.per_page) queryString.append('per_page', params.per_page.toString());
+
+    return apiRequest(`/orders/status/${status}?${queryString.toString()}`, {
+      method: 'GET',
+    });
+  },
+
+  // Get simple product orders
+  simpleProducts: async (params?: { per_page?: number }): Promise<any> => {
+    const queryString = new URLSearchParams();
+    if (params?.per_page) queryString.append('per_page', params.per_page.toString());
+
+    return apiRequest(`/orders/simple-products?${queryString.toString()}`, {
+      method: 'GET',
+    });
+  },
+
+  // Get variant product orders
+  variantProducts: async (params?: { per_page?: number }): Promise<any> => {
+    const queryString = new URLSearchParams();
+    if (params?.per_page) queryString.append('per_page', params.per_page.toString());
+
+    return apiRequest(`/orders/variant-products?${queryString.toString()}`, {
+      method: 'GET',
+    });
+  },
+
+  // Get download product orders
+  downloadProducts: async (params?: { per_page?: number }): Promise<any> => {
+    const queryString = new URLSearchParams();
+    if (params?.per_page) queryString.append('per_page', params.per_page.toString());
+
+    return apiRequest(`/orders/download-products?${queryString.toString()}`, {
+      method: 'GET',
+    });
+  },
+
+  // Update order status
+  updateStatus: async (orderId: number, status: 'pending' | 'processing' | 'completed' | 'cancelled'): Promise<any> => {
+    return apiRequest(`/orders/${orderId}/status`, {
+      method: 'POST',
+      body: JSON.stringify({ status }),
+    });
+  },
+};
+
 export default {
   auth,
   posts,
@@ -1755,5 +1866,6 @@ export default {
   chat,
   shops,
   shopPosts,
+  orders,
   admin,
 };

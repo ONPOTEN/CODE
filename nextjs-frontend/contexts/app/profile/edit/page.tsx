@@ -82,7 +82,7 @@ export default function EditProfilePage() {
         location: location,
         // role: role, // REMOVED: Users cannot change their own role
         profile_visibility: profileVisibility,
-        phone: phone,
+        // phone: phone, // REMOVED: Phone cannot be changed via updateProfile
         email_public: emailPublic,
         hobby_public: hobbyPublic,
         company_public: companyPublic,

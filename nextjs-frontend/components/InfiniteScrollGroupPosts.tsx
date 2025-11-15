@@ -100,8 +100,8 @@ export default function InfiniteScrollGroupPosts({
           });
 
           // Check if there are more pages
-          if (response.pagination) {
-            setHasMore(pageNum < response.pagination.last_page);
+          if (response.meta) {
+            setHasMore(pageNum < response.meta.last_page);
           }
         }
       } catch (err) {

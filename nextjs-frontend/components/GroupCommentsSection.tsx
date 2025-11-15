@@ -228,7 +228,7 @@ export function GroupCommentsSection({ postId, currentUserId, className = '' }: 
           <div className="flex gap-4">
             <div className="flex-shrink-0">
               <div className="w-10 h-10 bg-blue-400 rounded-full flex items-center justify-center text-white font-bold">
-                {authUser.name?.charAt(0).toUpperCase() || 'U'}
+                {authUser.display_name?.charAt(0).toUpperCase() || authUser.username?.charAt(0).toUpperCase() || 'U'}
               </div>
             </div>
 

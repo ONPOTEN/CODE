@@ -171,7 +171,7 @@ export default function ShopPostsPage() {
                     <div className="flex gap-4 text-sm text-gray-500">
                       <span>Views: {post.view_count}</span>
                       <span>Created: {new Date(post.created_at).toLocaleDateString()}</span>
-                      {post.author && <span>By: {post.author.display_name}</span>}
+                      {post.author && <span>By: {post.author.name}</span>}
                     </div>
                   </div>
 

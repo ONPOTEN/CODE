@@ -3,7 +3,7 @@
 import { useState, FormEvent, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { posts, UpdatePostData, ApiException, Post } from '@/lib/api';
+import { posts, UpdatePostData, ApiException, Post, PostImage } from '@/lib/api';
 
 export default function EditPostPage() {
   const params = useParams();
@@ -19,7 +19,7 @@ export default function EditPostPage() {
   });
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
-  const [existingImages, setExistingImages] = useState<string[]>([]);
+  const [existingImages, setExistingImages] = useState<PostImage[]>([]);
   const [imagesToRemove, setImagesToRemove] = useState<number[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
@@ -231,10 +231,10 @@ export default function EditPostPage() {
                 Current Images
               </label>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                {existingImages.map((imageUrl, index) => (
-                  <div key={index} className="relative">
+                {existingImages.map((image, index) => (
+                  <div key={image.id || index} className="relative">
                     <img
-                      src={imageUrl}
+                      src={image.url}
                       alt={`Existing ${index + 1}`}
                       className="w-full h-32 object-cover rounded-md border border-gray-300"
                     />

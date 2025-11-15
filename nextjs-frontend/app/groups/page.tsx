@@ -43,7 +43,9 @@ export default function GroupsPage() {
 
       const response = await groupsApi.index(params);
       setGroupsList(response.data);
-      setTotalPages(response.pagination.last_page);
+      if (response.meta) {
+        setTotalPages(response.meta.last_page);
+      }
     } catch (err) {
       console.error('Error fetching groups:', err);
       setError('Failed to load groups');

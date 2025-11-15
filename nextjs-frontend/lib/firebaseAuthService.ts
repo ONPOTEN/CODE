@@ -1,6 +1,7 @@
 import {
   User as FirebaseUser,
   AuthError,
+  updateProfile,
 } from 'firebase/auth';
 import { firebaseAuth, auth } from './firebase';
 import { apiRequest, tokenStorage, encodePhoneNumber, normalizePhoneNumber, getUserByPhone } from './api';
@@ -42,11 +43,9 @@ export const firebaseAuthService = {
       const firebaseUser = userCredential.user;
 
       // Update display name in Firebase
-      if ('updateProfile' in firebaseUser) {
-        await firebaseUser.updateProfile({
-          displayName: displayName,
-        });
-      }
+      await updateProfile(firebaseUser, {
+        displayName: displayName,
+      });
 
       // Get Firebase ID token
       const idToken = await firebaseAuth.getIdToken();
@@ -500,9 +499,8 @@ export const firebaseAuthService = {
         console.log('[FirebaseAuthService] Phone verification and sync complete');
         console.log('[FirebaseAuthService] User data returned:', {
           id: response.user?.id,
-          username: response.user?.user_login,
-          email: response.user?.user_email,
-          phone: response.user?.phone,
+          username: response.user?.username,
+          email: response.user?.email,
         });
 
         return response;

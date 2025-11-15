@@ -58,7 +58,7 @@ export default function MessagesPage() {
         id: message.id,
         conversation_id: message.conversation_id,
         message: message.message,
-        sender_id: message.sender_id || message.sender?.id,
+        sender_id: message.sender?.id,
         current_user_id: user?.id,
         is_mine: message.is_mine,
         created_at: message.created_at
@@ -88,7 +88,7 @@ export default function MessagesPage() {
         const conversationToUpdate = { ...updatedConversations[conversationIndex] };
 
         // Determine if message is mine based on sender ID
-        const senderId = message.sender_id || message.sender?.id;
+        const senderId = message.sender?.id;
         const isMine = senderId === user?.id;
 
         console.log(`🔍 Determining is_mine: sender_id=${senderId}, user_id=${user?.id}, is_mine=${isMine}`);
@@ -150,14 +150,14 @@ export default function MessagesPage() {
           const lastMsg = shopMessagesData.messages[shopMessagesData.messages.length - 1];
           console.log('[MessagesPage] 📬 Got last message:', {
             message: lastMsg.message,
-            sender_id: lastMsg.sender_id,
+            sender_id: lastMsg.sender?.id,
             created_at: lastMsg.created_at
           });
 
           lastMessage = {
             message: lastMsg.message,
             created_at: lastMsg.created_at,
-            is_mine: lastMsg.sender_id === user?.id,
+            is_mine: lastMsg.sender?.id === user?.id,
           };
         }
       } catch (error) {

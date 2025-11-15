@@ -61,6 +61,13 @@ class ShopPostResource extends JsonResource
         $featuredImages = $this->featured_images ?? [];
         $fullImageUrls = array_map(fn($imagePath) => $this->getImageUrl($imagePath), $featuredImages);
 
+        // Convert main_image to full S3 URL if present
+        $mainImageUrl = $this->main_image ? $this->getImageUrl($this->main_image) : null;
+
+        // Convert other_images array to full S3 URLs if present
+        $otherImages = $this->other_images ?? [];
+        $fullOtherImageUrls = array_map(fn($imagePath) => $this->getImageUrl($imagePath), $otherImages);
+
         return [
             'id' => $this->id,
             'shop_id' => $this->shop_id,
@@ -73,6 +80,18 @@ class ShopPostResource extends JsonResource
             'status' => $this->status,
             'featured_images' => $fullImageUrls,
             'view_count' => $this->view_count,
+            // Product-specific fields for variant/simple/download products
+            'product_type' => $this->product_type,
+            'price' => $this->price,
+            'sale_price' => $this->sale_price,
+            'short_description' => $this->short_description,
+            'detail_description' => $this->detail_description,
+            'categories' => $this->categories,
+            'attributes' => $this->attributes,
+            'download_files' => $this->download_files,
+            'link_files' => $this->link_files,
+            'main_image' => $mainImageUrl,
+            'other_images' => $fullOtherImageUrls,
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
             'shop' => new ShopResource($this->whenLoaded('shop')),

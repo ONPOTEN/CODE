@@ -77,7 +77,7 @@ export default function ShopMessageModal({
         shopName,
         shopOwnerId,
         userId: user.id, // Customer's ID
-        userName: user.display_name || user.name,
+        userName: user.display_name || user.username,
         message: message.trim(),
         roomName,
         timestamp: new Date().toISOString(),

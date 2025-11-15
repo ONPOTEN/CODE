@@ -17,7 +17,7 @@ export default function EditGroupPage() {
   const [formData, setFormData] = useState({
     group_name: '',
     description: '',
-    visibility: 'public' as const,
+    visibility: 'public' as 'public' | 'private',
     requires_approval: false,
     requires_approval_posts: false,
   });
@@ -52,9 +52,9 @@ export default function EditGroupPage() {
         setFormData({
           group_name: fetchedGroup.group_name,
           description: fetchedGroup.description || '',
-          visibility: fetchedGroup.visibility,
-          requires_approval: fetchedGroup.requires_approval === true || fetchedGroup.requires_approval === 1,
-          requires_approval_posts: fetchedGroup.requires_approval_posts === true || fetchedGroup.requires_approval_posts === 1,
+          visibility: (fetchedGroup.visibility === 'private' ? 'private' : 'public') as 'public' | 'private',
+          requires_approval: (fetchedGroup.requires_approval === true || (typeof fetchedGroup.requires_approval === 'number' && fetchedGroup.requires_approval === 1)),
+          requires_approval_posts: (fetchedGroup.requires_approval_posts === true || (typeof fetchedGroup.requires_approval_posts === 'number' && fetchedGroup.requires_approval_posts === 1)),
         });
 
         if (fetchedGroup.avatar) {

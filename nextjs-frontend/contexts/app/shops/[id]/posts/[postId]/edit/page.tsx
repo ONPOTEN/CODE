@@ -35,8 +35,7 @@ export default function EditShopPostPage() {
   const fetchPost = async () => {
     try {
       setLoading(true);
-      let postData = await shopPosts.getById(shopId, postId);
-      postData = postData.data;
+      const postData = await shopPosts.getById(shopId, postId);
       setPost(postData);
       setFormData({
         title: postData.title,

@@ -43,7 +43,6 @@ export default function UserProfilePage() {
         }
 
         console.log('Fetched user data:', userData);
-        userData = userData.data;
         setUser(userData);
       } catch (err) {
         if (err instanceof ApiException) {
