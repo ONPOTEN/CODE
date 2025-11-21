@@ -32,20 +32,44 @@ export default function ChatWindow({ conversation, onNewMessage }: ChatWindowPro
 
   useEffect(() => {
     loadMessages();
-  }, [conversation.id]);
+  }, [conversation.id, roomName]);
 
   useEffect(() => {
     // Join the chat room when socket connects or room changes
     if (socket && conversation.room_name) {
       // Only join if we're not already in this room
       if (joinedRoomRef.current !== conversation.room_name) {
-        console.log('[ChatWindow] Joining room:', conversation.room_name);
-        socket.emit('chat:join-room', { roomName: conversation.room_name });
+        // Detect if this is a shop message room (format: {customerId}-shop{shopId})
+        const isShopMessageRoom = conversation.room_name.includes('-shop');
+
+        if (isShopMessageRoom) {
+          // Join shop message room
+          console.log('[ChatWindow] 🏪 Joining shop message room:', conversation.room_name);
+          const match = conversation.room_name.match(/^(\d+)-shop(\d+)$/);
+          if (match) {
+            const customerId = parseInt(match[1], 10);
+            const shopId = parseInt(match[2], 10);
+            socket.emit('join:shop:chat', {
+              userId: user?.id,
+              shopId: shopId,
+              shopOwnerId: conversation.shop_owner_id,
+              roomName: conversation.room_name,
+              userName: user?.display_name || user?.username || 'User',
+            });
+            console.log('[ChatWindow] ✅ Emitted join:shop:chat for room:', conversation.room_name);
+          }
+        } else {
+          // Join regular chat room
+          console.log('[ChatWindow] 👤 Joining regular chat room:', conversation.room_name);
+          socket.emit('chat:join-room', { roomName: conversation.room_name });
+          console.log('[ChatWindow] ✅ Emitted chat:join-room for room:', conversation.room_name);
+        }
+
         setRoomName(conversation.room_name);
         joinedRoomRef.current = conversation.room_name;
       }
     }
-  }, [socket, conversation.room_name]);
+  }, [socket, conversation.room_name, conversation.shop_owner_id, user]);
 
   // Handle shop message room joining via URL params (with={customerId}&shopId={shopId})
   useEffect(() => {
@@ -62,12 +86,16 @@ export default function ChatWindow({ conversation, onNewMessage }: ChatWindowPro
 
       // Only join if we're not already in this room
       if (joinedRoomRef.current !== shopMessageRoomName) {
-        socket.emit('join:chat:room', {
+        // Use join:shop:chat for shop message rooms (not join:chat:room)
+        socket.emit('join:shop:chat', {
           userId: user.id,
+          shopId: shopIdNum,
+          shopOwnerId: user.id, // Current user is the shop owner in this context
           roomName: shopMessageRoomName,
+          userName: user?.display_name || user?.username || 'User',
         });
 
-        console.log('[ChatWindow] ✅ Emitted join:chat:room for shop message room:', shopMessageRoomName);
+        console.log('[ChatWindow] ✅ Emitted join:shop:chat for shop message room:', shopMessageRoomName);
         setRoomName(shopMessageRoomName);
         joinedRoomRef.current = shopMessageRoomName;
       }
@@ -83,12 +111,32 @@ export default function ChatWindow({ conversation, onNewMessage }: ChatWindowPro
         console.log('[ChatWindow] Leaving room:', joinedRoomRef.current);
         const currentSocket = socket;
         if (currentSocket) {
-          currentSocket.emit('chat:leave-room', { roomName: joinedRoomRef.current });
+          // Detect if this is a shop message room
+          const isShopMessageRoom = joinedRoomRef.current.includes('-shop');
+
+          if (isShopMessageRoom) {
+            // Leave shop message room
+            const match = joinedRoomRef.current.match(/^(\d+)-shop(\d+)$/);
+            if (match) {
+              const customerId = parseInt(match[1], 10);
+              const shopId = parseInt(match[2], 10);
+              currentSocket.emit('leave:shop:chat', {
+                userId: user?.id,
+                shopId: shopId,
+                roomName: joinedRoomRef.current,
+              });
+              console.log('[ChatWindow] ✅ Emitted leave:shop:chat for room:', joinedRoomRef.current);
+            }
+          } else {
+            // Leave regular chat room
+            currentSocket.emit('chat:leave-room', { roomName: joinedRoomRef.current });
+            console.log('[ChatWindow] ✅ Emitted chat:leave-room for room:', joinedRoomRef.current);
+          }
         }
         joinedRoomRef.current = null;
       }
     };
-  }, [conversation.id]);
+  }, [conversation.id, user?.id, socket]);
 
   useEffect(() => {
     // Listen for new messages from Socket.IO
@@ -129,16 +177,67 @@ export default function ChatWindow({ conversation, onNewMessage }: ChatWindowPro
       }
     };
 
+    // Listen for shop chat messages (for shop message rooms like 656-shop1)
+    const handleShopChatMessage = (data: any) => {
+      console.log('[ChatWindow] Received shop:chat:message event:', {
+        shopId: data.shopId,
+        senderId: data.senderId,
+        senderName: data.senderName,
+        message: data.message?.substring(0, 50),
+        roomName: data.roomName
+      });
+
+      // Check if this message is for our current room
+      if (data.roomName === conversation.room_name) {
+        const isMine = data.senderId === user?.id;
+
+        console.log(`💬 ChatWindow shop message - senderId=${data.senderId}, userId=${user?.id}, isMine=${isMine}`);
+
+        // Format shop message to match ChatMessage interface
+        const formattedMessage: ChatMessage = {
+          id: Math.floor(new Date(data.timestamp).getTime() / 1000) + data.senderId, // Create unique numeric ID from timestamp and sender
+          sender: {
+            id: data.senderId,
+            name: data.senderName,
+          },
+          message: data.message,
+          is_mine: isMine,
+          is_read: false,
+          created_at: data.timestamp,
+          conversation_id: conversation.id,
+          shop_id: data.shopId // Include shop info
+        };
+
+        setMessages((prev) => {
+          // Check if message already exists to avoid duplicates
+          const messageExists = prev.some(m => m.id === formattedMessage.id);
+          if (messageExists) {
+            console.log('⚠️ Shop message already exists, skipping duplicate:', formattedMessage.id);
+            return prev;
+          }
+          console.log('➕ Adding new shop message:', formattedMessage.id);
+          return [...prev, formattedMessage];
+        });
+
+        scrollToBottom();
+        if (onNewMessage) {
+          onNewMessage();
+        }
+      }
+    };
+
     if (socket) {
       socket.on('new:message', handleNewMessage);
+      socket.on('shop:chat:message', handleShopChatMessage);
     }
 
     return () => {
       if (socket) {
         socket.off('new:message', handleNewMessage);
+        socket.off('shop:chat:message', handleShopChatMessage);
       }
     };
-  }, [socket, conversation.id, onNewMessage, user]);
+  }, [socket, conversation.id, conversation.room_name, onNewMessage, user]);
 
   // Listen for incoming video calls
   useEffect(() => {
@@ -159,18 +258,22 @@ export default function ChatWindow({ conversation, onNewMessage }: ChatWindowPro
       setLoading(true);
 
       // Detect shop message room by room_name format: "{customerId}-shop{shopId}"
-      const isShopMessageRoom = conversation.room_name && conversation.room_name.includes('-shop');
+      // Check both conversation.room_name and locally set roomName (for URL param cases)
+      const effectiveRoomName = conversation.room_name || roomName;
+      const isShopMessageRoom = effectiveRoomName && effectiveRoomName.includes('-shop');
+
+      console.log('[ChatWindow] loadMessages - effectiveRoomName:', effectiveRoomName, 'isShopMessageRoom:', isShopMessageRoom);
 
       if (isShopMessageRoom) {
         // This is a shop message room - load shop messages from database
-        const roomName = conversation.room_name!;
+        const room = effectiveRoomName!;
 
-        console.log('[ChatWindow] Loading shop messages for room:', roomName);
+        console.log('[ChatWindow] Loading shop messages for room:', room);
 
         try {
           // Fetch historical messages from API using room name
-          console.log('[ChatWindow] About to fetch messages from API for room:', roomName);
-          const data = await chat.getShopMessagesByRoomName(roomName);
+          console.log('[ChatWindow] About to fetch messages from API for room:', room);
+          const data = await chat.getShopMessagesByRoomName(room);
 
           console.log('[ChatWindow] ✅ API returned room data:', {
             roomName: data.room_name,
@@ -195,9 +298,9 @@ export default function ChatWindow({ conversation, onNewMessage }: ChatWindowPro
           // If API call fails, show empty array - new messages will come via Socket.IO
           console.log('[ChatWindow] Continuing without historical messages');
           setMessages([]);
-          setRoomName(roomName);
+          setRoomName(room);
         }
-      } else {
+      } else if (conversation.id) {
         // Regular conversation - load from API
         console.log('[ChatWindow] Loading regular conversation, ID:', conversation.id, 'Room name:', conversation.room_name);
 
@@ -209,6 +312,8 @@ export default function ChatWindow({ conversation, onNewMessage }: ChatWindowPro
           messageCount: data.messages.length,
           roomName: data.room_name,
         });
+      } else {
+        console.log('[ChatWindow] No room or conversation to load messages for');
       }
 
       scrollToBottom();
@@ -251,19 +356,21 @@ export default function ChatWindow({ conversation, onNewMessage }: ChatWindowPro
       setSending(true);
 
       // Detect shop message room by room_name format: "{customerId}-shop{shopId}"
-      const isShopMessageRoom = conversation.room_name && conversation.room_name.includes('-shop');
+      // Check both conversation.room_name and locally set roomName (for URL param cases)
+      const effectiveRoomName = conversation.room_name || roomName;
+      const isShopMessageRoom = effectiveRoomName && effectiveRoomName.includes('-shop');
 
       if (isShopMessageRoom && user) {
         // This is a shop message reply - send via API
-        const roomName = conversation.room_name!;
+        const room = effectiveRoomName!;
 
         // Extract customer ID and shop ID from room name: "656-shop1" → customerId=656, shopId=1
-        const match = roomName.match(/^(\d+)-shop(\d+)$/);
+        const match = room.match(/^(\d+)-shop(\d+)$/);
         const customerId = match ? parseInt(match[1], 10) : 0;
         const shopIdNum = match ? parseInt(match[2], 10) : 0;
 
         console.log('[ChatWindow] Sending shop message via API');
-        console.log('[ChatWindow] Extracted IDs from room name:', { roomName, customerId, shopId: shopIdNum });
+        console.log('[ChatWindow] Extracted IDs from room name:', { roomName: room, customerId, shopId: shopIdNum });
         console.log('[ChatWindow] Message content:', messageText);
 
         // Send shop message via API
@@ -287,14 +394,34 @@ export default function ChatWindow({ conversation, onNewMessage }: ChatWindowPro
             messageId: response.id,
             message: response.message.substring(0, 50)
           });
+
+          // After successful API save, emit to Socket.IO for real-time delivery
+          if (socket && isConnected) {
+            console.log('[ChatWindow] 📡 Emitting shop message to Socket.IO for real-time broadcast');
+            socket.emit('shop:chat:message', {
+              shopId: shopIdNum,
+              shopName: '', // Shop name not available in conversation, can be fetched from API if needed
+              shopOwnerId: conversation.shop_owner_id,
+              senderId: user.id,
+              senderName: user?.display_name || user?.username || 'User',
+              message: messageText,
+              roomName: room,
+              timestamp: new Date().toISOString()
+            });
+            console.log('[ChatWindow] ✅ Shop message emitted to Socket.IO');
+          } else {
+            console.warn('[ChatWindow] ⚠️ Socket not connected, message will not be broadcast in real-time');
+          }
         } catch (error) {
           console.error('[ChatWindow] Failed to send shop message:', error);
           throw error;
         }
-      } else {
+      } else if (conversation.id) {
         // Regular chat message
         await chat.sendMessage(conversation.id, messageText);
         console.log('📤 Message sent, waiting for Socket.IO broadcast');
+      } else {
+        console.warn('[ChatWindow] No room or conversation to send message to');
       }
 
       // Note: The message will be added via the Socket.IO 'new:message' or 'shop:message' event

@@ -47,8 +47,7 @@ export default function ShopOrdersPage() {
         setError(null);
 
         // Fetch shop details
-        const shopData = await shops.getById(shopId);
-        const shopInfo = shopData.data || shopData;
+        const shopInfo = await shops.getById(shopId);
         setShop(shopInfo);
 
         // Check if user owns this shop

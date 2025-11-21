@@ -1330,13 +1330,16 @@ export interface ChatMessage {
   sender: {
     id: number;
     name: string;
+    email?: string;
   };
+  sender_id?: number;
   is_mine: boolean;
   is_read: boolean;
   created_at: string;
   conversation_id?: number;
   host_room?: string;
   remote_room?: string;
+  shop_id?: number;
 }
 
 export interface Conversation {
@@ -1696,7 +1699,7 @@ export const chat = {
       payload_string: JSON.stringify(payloadData),
     });
 
-    const response = await apiRequest<{ id: number; message: string; sender_id: number; created_at: string }>(
+    const response = await apiRequest<{ message: string; data: { id: number; message: string; sender_id: number; created_at: string } }>(
       `/shops/${shopId}/messages`,
       {
         method: 'POST',
@@ -1704,9 +1707,24 @@ export const chat = {
       }
     );
 
-    console.log('[api.sendShopMessage] Message sent successfully:', response);
+    console.log('[api.sendShopMessage] Full API response:', response);
 
-    return response;
+    // Extract the actual message data from the response wrapper
+    // API returns { message: "...", data: { id, message, sender_id, created_at, ... } }
+    if (response && response.data) {
+      const messageData = {
+        id: response.data.id,
+        message: response.data.message,
+        sender_id: response.data.sender_id,
+        created_at: response.data.created_at,
+      };
+
+      console.log('[api.sendShopMessage] Message sent successfully with ID:', messageData.id);
+      return messageData;
+    } else {
+      console.error('[api.sendShopMessage] Unexpected API response structure:', response);
+      throw new Error('Invalid API response: missing data field');
+    }
   },
 };
 

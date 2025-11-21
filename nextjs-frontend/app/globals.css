@@ -1,6 +1,11 @@
 @import "tailwindcss";
 
 @layer base {
+  html,
+  body {
+    background-color: #ffffff;
+  }
+
   body {
     font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     color: rgb(17 24 39);
@@ -31,7 +36,7 @@
   }
 
   .btn-primary {
-    background-color: #f53d2d;
+    background-color: #000000;
     color: white;
     font-weight: 400;
     padding: 0.5rem 1.5rem;
@@ -40,11 +45,11 @@
   }
 
   .btn-primary:hover {
-    background-color: #ee4d2d;
+    background-color: #1a1a1a;
   }
 
   .btn-secondary {
-    background-color: #f6470e;
+    background-color: #000000;
     color: white;
     font-weight: 400;
     padding: 0.5rem 1.5rem;
@@ -53,7 +58,7 @@
   }
 
   .btn-secondary:hover {
-    opacity: 0.9;
+    opacity: 0.8;
   }
 
   .product-card {
@@ -65,7 +70,7 @@
   }
 
   .product-card:hover {
-    border-color: #f53d2d;
+    border-color: #333333;
     box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
   }
 
@@ -79,12 +84,344 @@
   .input-field:focus {
     outline: 2px solid transparent;
     outline-offset: 2px;
-    box-shadow: 0 0 0 2px #f53d2d;
+    box-shadow: 0 0 0 2px #333333;
     border-color: transparent;
   }
 }
 
 @layer utilities {
+  /* Override all button background colors to black */
+  button,
+  [role="button"],
+  input[type="button"],
+  input[type="submit"],
+  input[type="reset"],
+  a[class*="bg-"],
+  a[class*="hover:bg-"] {
+    @apply !bg-black hover:!bg-gray-900 focus:!ring-gray-900;
+  }
+
+  /* Ensure button text is white - comprehensive selector */
+  button,
+  [role="button"],
+  input[type="button"],
+  input[type="submit"],
+  input[type="reset"],
+  a[class*="bg-"],
+  a[class*="hover:bg-"],
+  a[class*="px-"],
+  a[class*="py-"],
+  a[class*="rounded"],
+  button *,
+  [role="button"] *,
+  a[class*="bg-"] *,
+  a[class*="hover:bg-"] *,
+  a[class*="px-"] *,
+  a[class*="py-"] *,
+  /* Additional button-like elements */
+  .btn-primary,
+  .btn-primary *,
+  .btn-secondary,
+  .btn-secondary *,
+  /* Any anchor with flex/inline-flex that looks like a button */
+  a[class*="flex"],
+  a[class*="inline"] {
+    @apply !text-white;
+  }
+
+  /* Override light gradient backgrounds to grey FIRST (before dark gradient overrides) */
+  [class*="from-blue-50"],
+  [class*="from-cyan-50"],
+  [class*="from-gray-50"],
+  [class*="from-slate-50"],
+  [class*="from-zinc-50"],
+  [class*="to-blue-50"],
+  [class*="to-cyan-50"],
+  [class*="to-gray-50"],
+  [class*="to-slate-50"],
+  [class*="to-zinc-50"],
+  [class*="from-blue-100"],
+  [class*="from-cyan-100"],
+  [class*="from-gray-100"],
+  [class*="from-slate-100"],
+  [class*="from-zinc-100"],
+  [class*="to-blue-100"],
+  [class*="to-cyan-100"],
+  [class*="to-gray-100"],
+  [class*="to-slate-100"],
+  [class*="to-zinc-100"] {
+    @apply !bg-gray-200;
+  }
+
+  /* Override Tailwind color classes on buttons and links */
+  button[class*="bg-blue"],
+  button[class*="bg-green"],
+  button[class*="bg-red"],
+  button[class*="bg-cyan"],
+  button[class*="bg-sky"],
+  button[class*="bg-indigo"],
+  button[class*="bg-emerald"],
+  button[class*="bg-teal"],
+  button[class*="bg-pink"],
+  button[class*="bg-purple"],
+  button[class*="bg-amber"],
+  [role="button"][class*="bg-blue"],
+  [role="button"][class*="bg-green"],
+  [role="button"][class*="bg-red"],
+  [role="button"][class*="bg-cyan"],
+  [role="button"][class*="bg-sky"],
+  [role="button"][class*="bg-indigo"],
+  [role="button"][class*="bg-emerald"],
+  [role="button"][class*="bg-teal"],
+  [role="button"][class*="bg-pink"],
+  [role="button"][class*="bg-purple"],
+  [role="button"][class*="bg-amber"],
+  a[class*="bg-blue"],
+  a[class*="bg-green"],
+  a[class*="bg-red"],
+  a[class*="bg-cyan"],
+  a[class*="bg-sky"],
+  a[class*="bg-indigo"],
+  a[class*="bg-emerald"],
+  a[class*="bg-teal"],
+  a[class*="bg-pink"],
+  a[class*="bg-purple"],
+  a[class*="bg-amber"],
+  /* Override gradient backgrounds to black (except light shades) */
+  [class*="from-blue-6"],
+  [class*="from-blue-7"],
+  [class*="from-blue-8"],
+  [class*="from-blue-9"],
+  [class*="from-green"],
+  [class*="from-red"],
+  [class*="from-cyan-6"],
+  [class*="from-cyan-7"],
+  [class*="from-cyan-8"],
+  [class*="from-cyan-9"],
+  [class*="from-sky"],
+  [class*="from-indigo"],
+  [class*="from-emerald"],
+  [class*="from-teal"],
+  [class*="from-pink"],
+  [class*="from-purple"],
+  [class*="from-amber"],
+  [class*="to-blue-6"],
+  [class*="to-blue-7"],
+  [class*="to-blue-8"],
+  [class*="to-blue-9"],
+  [class*="to-green"],
+  [class*="to-red"],
+  [class*="to-cyan-6"],
+  [class*="to-cyan-7"],
+  [class*="to-cyan-8"],
+  [class*="to-cyan-9"],
+  [class*="to-sky"],
+  [class*="to-indigo"],
+  [class*="to-emerald"],
+  [class*="to-teal"],
+  [class*="to-pink"],
+  [class*="to-purple"],
+  [class*="to-amber"] {
+    @apply !bg-black;
+  }
+
+  button[class*="hover:bg-blue"],
+  button[class*="hover:bg-green"],
+  button[class*="hover:bg-red"],
+  button[class*="hover:bg-cyan"],
+  button[class*="hover:bg-sky"],
+  button[class*="hover:bg-indigo"],
+  button[class*="hover:bg-emerald"],
+  button[class*="hover:bg-teal"],
+  button[class*="hover:bg-pink"],
+  button[class*="hover:bg-purple"],
+  button[class*="hover:bg-amber"],
+  [role="button"][class*="hover:bg-blue"],
+  [role="button"][class*="hover:bg-green"],
+  [role="button"][class*="hover:bg-red"],
+  [role="button"][class*="hover:bg-cyan"],
+  [role="button"][class*="hover:bg-sky"],
+  [role="button"][class*="hover:bg-indigo"],
+  [role="button"][class*="hover:bg-emerald"],
+  [role="button"][class*="hover:bg-teal"],
+  [role="button"][class*="hover:bg-pink"],
+  [role="button"][class*="hover:bg-purple"],
+  [role="button"][class*="hover:bg-amber"],
+  a[class*="hover:bg-blue"],
+  a[class*="hover:bg-green"],
+  a[class*="hover:bg-red"],
+  a[class*="hover:bg-cyan"],
+  a[class*="hover:bg-sky"],
+  a[class*="hover:bg-indigo"],
+  a[class*="hover:bg-emerald"],
+  a[class*="hover:bg-teal"],
+  a[class*="hover:bg-pink"],
+  a[class*="hover:bg-purple"],
+  a[class*="hover:bg-amber"] {
+    @apply hover:!bg-gray-900;
+  }
+
+  /* Override focus ring colors on buttons */
+  button[class*="focus:ring"],
+  [role="button"][class*="focus:ring"],
+  a[class*="focus:ring"] {
+    @apply focus:!ring-gray-900;
+  }
+
+  /* Override all page backgrounds to white */
+  main,
+  [role="main"],
+  .bg-gray-50,
+  .bg-gray-100,
+  .bg-gray-200,
+  .bg-slate-50,
+  .bg-slate-100,
+  .bg-zinc-50,
+  [class*="bg-gray"],
+  [class*="bg-slate"],
+  [class*="bg-zinc"],
+  div[class*="bg-gray"],
+  div[class*="bg-slate"],
+  div[class*="bg-zinc"],
+  div[class*="bg-stone"],
+  section[class*="bg-gray"],
+  section[class*="bg-slate"],
+  section[class*="bg-zinc"],
+  article[class*="bg-gray"],
+  article[class*="bg-slate"],
+  article[class*="bg-zinc"] {
+    @apply !bg-white;
+  }
+
+  /* Override all remaining non-white backgrounds to white */
+  [class*="bg-gray-"],
+  [class*="bg-slate-"],
+  [class*="bg-zinc-"],
+  [class*="bg-stone-"],
+  [class*="bg-neutral-"] {
+    @apply !bg-white;
+  }
+
+  /* Override ALL colored backgrounds to white */
+  [class*="bg-red"],
+  [class*="bg-blue"],
+  [class*="bg-green"],
+  [class*="bg-yellow"],
+  [class*="bg-purple"],
+  [class*="bg-pink"],
+  [class*="bg-indigo"],
+  [class*="bg-cyan"],
+  [class*="bg-sky"],
+  [class*="bg-emerald"],
+  [class*="bg-teal"],
+  [class*="bg-orange"],
+  [class*="bg-amber"],
+  [class*="bg-lime"],
+  [class*="bg-rose"],
+  [class*="bg-fuchsia"],
+  [class*="bg-violet"],
+  [class*="bg-gradient"] {
+    @apply !bg-white !text-black;
+  }
+
+  /* Override light text colors to black for readability (except white text on buttons) */
+  button[class*="text-red-"],
+  button[class*="text-blue-"],
+  button[class*="text-green-"],
+  button[class*="text-yellow-"],
+  button[class*="text-purple-"],
+  button[class*="text-pink-"],
+  button[class*="text-indigo-"],
+  button[class*="text-cyan-"],
+  button[class*="text-sky-"],
+  button[class*="text-emerald-"],
+  button[class*="text-teal-"],
+  button[class*="text-orange-"],
+  button[class*="text-amber-"],
+  button[class*="text-lime-"],
+  button[class*="text-rose-"],
+  button[class*="text-fuchsia-"],
+  button[class*="text-violet-"],
+  button[class*="text-gray-"],
+  button[class*="text-slate-"],
+  button[class*="text-zinc-"],
+  button[class*="text-stone-"],
+  [class*="text-red-"]:not(button):not([role="button"]):not(a[class*="bg-"]):not(a[class*="hover:bg-"]),
+  [class*="text-blue-"]:not(button):not([role="button"]):not(a[class*="bg-"]):not(a[class*="hover:bg-"]),
+  [class*="text-green-"]:not(button):not([role="button"]):not(a[class*="bg-"]):not(a[class*="hover:bg-"]),
+  [class*="text-yellow-"]:not(button):not([role="button"]):not(a[class*="bg-"]):not(a[class*="hover:bg-"]),
+  [class*="text-purple-"]:not(button):not([role="button"]):not(a[class*="bg-"]):not(a[class*="hover:bg-"]),
+  [class*="text-pink-"]:not(button):not([role="button"]):not(a[class*="bg-"]):not(a[class*="hover:bg-"]),
+  [class*="text-indigo-"]:not(button):not([role="button"]):not(a[class*="bg-"]):not(a[class*="hover:bg-"]),
+  [class*="text-cyan-"]:not(button):not([role="button"]):not(a[class*="bg-"]):not(a[class*="hover:bg-"]),
+  [class*="text-sky-"]:not(button):not([role="button"]):not(a[class*="bg-"]):not(a[class*="hover:bg-"]),
+  [class*="text-emerald-"]:not(button):not([role="button"]):not(a[class*="bg-"]):not(a[class*="hover:bg-"]),
+  [class*="text-teal-"]:not(button):not([role="button"]):not(a[class*="bg-"]):not(a[class*="hover:bg-"]),
+  [class*="text-orange-"]:not(button):not([role="button"]):not(a[class*="bg-"]):not(a[class*="hover:bg-"]),
+  [class*="text-amber-"]:not(button):not([role="button"]):not(a[class*="bg-"]):not(a[class*="hover:bg-"]),
+  [class*="text-lime-"]:not(button):not([role="button"]):not(a[class*="bg-"]):not(a[class*="hover:bg-"]),
+  [class*="text-rose-"]:not(button):not([role="button"]):not(a[class*="bg-"]):not(a[class*="hover:bg-"]),
+  [class*="text-fuchsia-"]:not(button):not([role="button"]):not(a[class*="bg-"]):not(a[class*="hover:bg-"]),
+  [class*="text-violet-"]:not(button):not([role="button"]):not(a[class*="bg-"]):not(a[class*="hover:bg-"]),
+  [class*="text-gray-"]:not(button):not([role="button"]):not(a[class*="bg-"]):not(a[class*="hover:bg-"]),
+  [class*="text-slate-"]:not(button):not([role="button"]):not(a[class*="bg-"]):not(a[class*="hover:bg-"]),
+  [class*="text-zinc-"]:not(button):not([role="button"]):not(a[class*="bg-"]):not(a[class*="hover:bg-"]),
+  [class*="text-stone-"]:not(button):not([role="button"]):not(a[class*="bg-"]):not(a[class*="hover:bg-"]) {
+    @apply !text-black;
+  }
+
+  /* Override light gradient backgrounds to grey */
+  [class*="from-blue-50"],
+  [class*="from-cyan-50"],
+  [class*="from-gray-50"],
+  [class*="from-slate-50"],
+  [class*="from-zinc-50"],
+  [class*="to-blue-50"],
+  [class*="to-cyan-50"],
+  [class*="to-gray-50"],
+  [class*="to-slate-50"],
+  [class*="to-zinc-50"],
+  [class*="from-blue-100"],
+  [class*="from-cyan-100"],
+  [class*="from-gray-100"],
+  [class*="from-slate-100"],
+  [class*="from-zinc-100"],
+  [class*="to-blue-100"],
+  [class*="to-cyan-100"],
+  [class*="to-gray-100"],
+  [class*="to-slate-100"],
+  [class*="to-zinc-100"] {
+    @apply !bg-gray-200;
+  }
+
+  /* Override light background colors to grey */
+  [class*="bg-blue-50"],
+  [class*="bg-cyan-50"],
+  [class*="bg-gray-50"],
+  [class*="bg-slate-50"],
+  [class*="bg-zinc-50"],
+  [class*="bg-blue-100"],
+  [class*="bg-cyan-100"],
+  [class*="bg-gray-100"],
+  [class*="bg-slate-100"],
+  [class*="bg-zinc-100"] {
+    @apply !bg-gray-200;
+  }
+
+  /* Override light border colors to grey */
+  [class*="border-blue-50"],
+  [class*="border-cyan-50"],
+  [class*="border-gray-50"],
+  [class*="border-slate-50"],
+  [class*="border-zinc-50"],
+  [class*="border-blue-100"],
+  [class*="border-cyan-100"],
+  [class*="border-gray-100"],
+  [class*="border-slate-100"],
+  [class*="border-zinc-100"] {
+    @apply !border-gray-300;
+  }
+
   @keyframes fadeIn {
     from {
       opacity: 0;
@@ -107,6 +444,14 @@
 
   .animate-fade-in {
     animation: fadeIn 0.3s ease-out;
+  }
+
+  .animate-fadeIn {
+    animation: fadeIn 0.3s ease-out forwards;
+  }
+
+  .animation-delay-100 {
+    animation-delay: 100ms;
   }
 
   .animate-shrink {

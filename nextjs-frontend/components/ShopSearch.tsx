@@ -181,7 +181,7 @@ export function ShopSearch() {
 
         {/* No Search Yet - Show CTA */}
         {!hasSearched && (
-          <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg p-8 text-center border border-blue-100">
+          <div className="rounded-lg p-8 text-center border border-blue-100">
             <p className="text-gray-600 mb-4">
               Search for shops above or explore all available businesses
             </p>

@@ -36,8 +36,31 @@ export default function ShopDetailPage() {
   });
   const [generatedQR, setGeneratedQR] = useState<string | null>(null);
   const [savingPaymentSettings, setSavingPaymentSettings] = useState(false);
+  const [carouselIndex, setCarouselIndex] = useState(0);
+  const [touchStart, setTouchStart] = useState(0);
+  const [touchEnd, setTouchEnd] = useState(0);
 
   const isOwner = user && shop && shop.user_id === user.id;
+
+  // Handle swipe gesture
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    setTouchEnd(e.changedTouches[0].clientX);
+    handleSwipe();
+  };
+
+  const handleSwipe = () => {
+    if (touchStart - touchEnd > 50) {
+      // Swiped left, go to next
+      setCarouselIndex((prev) => (prev + 1) % 5);
+    } else if (touchEnd - touchStart > 50) {
+      // Swiped right, go to previous
+      setCarouselIndex((prev) => (prev - 1 + 5) % 5);
+    }
+  };
 
   useEffect(() => {
     fetchShopData();
@@ -325,79 +348,6 @@ export default function ShopDetailPage() {
             </div>
           </div>
 
-          {/* Thông Tin Cửa Hàng Images - Full Width Horizontal Section */}
-          {(shop.image_1 || shop.image_2 || shop.image_3 || shop.image_4 || shop.image_5) && (
-            <div className="pt-6 border-t border-gray-200">
-              <p className="text-sm font-bold text-gray-900 mb-4">Thông Tin Cửa Hàng</p>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 auto-rows-max">
-                {/* Image 1: Giấy DKKD */}
-                {shop.image_1 && (
-                  <div title="Giấy DKKD" className="group">
-                    <img
-                      src={shop.image_1}
-                      alt="Giấy DKKD"
-                      className="w-full aspect-square rounded-lg object-cover border border-gray-300 cursor-pointer hover:shadow-lg transition-shadow"
-                      onClick={() => window.open(shop.image_1, '_blank')}
-                    />
-                    <p className="text-xs text-gray-600 text-center mt-1">Giấy DKKD</p>
-                  </div>
-                )}
-
-                {/* Image 2: Giấy phép kinh doanh */}
-                {shop.image_2 && (
-                  <div title="Giấy phép kinh doanh" className="group">
-                    <img
-                      src={shop.image_2}
-                      alt="Giấy phép kinh doanh"
-                      className="w-full aspect-square rounded-lg object-cover border border-gray-300 cursor-pointer hover:shadow-lg transition-shadow"
-                      onClick={() => window.open(shop.image_2, '_blank')}
-                    />
-                    <p className="text-xs text-gray-600 text-center mt-1">Giấy phép kinh doanh</p>
-                  </div>
-                )}
-
-                {/* Image 3: Chứng chỉ liên quan */}
-                {shop.image_3 && (
-                  <div title="Chứng chỉ liên quan" className="group">
-                    <img
-                      src={shop.image_3}
-                      alt="Chứng chỉ liên quan"
-                      className="w-full aspect-square rounded-lg object-cover border border-gray-300 cursor-pointer hover:shadow-lg transition-shadow"
-                      onClick={() => window.open(shop.image_3, '_blank')}
-                    />
-                    <p className="text-xs text-gray-600 text-center mt-1">Chứng chỉ liên quan</p>
-                  </div>
-                )}
-
-                {/* Image 4: Hình ảnh cửa hàng */}
-                {shop.image_4 && (
-                  <div title="Hình ảnh cửa hàng" className="group">
-                    <img
-                      src={shop.image_4}
-                      alt="Hình ảnh cửa hàng"
-                      className="w-full aspect-square rounded-lg object-cover border border-gray-300 cursor-pointer hover:shadow-lg transition-shadow"
-                      onClick={() => window.open(shop.image_4, '_blank')}
-                    />
-                    <p className="text-xs text-gray-600 text-center mt-1">Hình ảnh cửa hàng</p>
-                  </div>
-                )}
-
-                {/* Image 5: Ảnh bổ sung */}
-                {shop.image_5 && (
-                  <div title="Ảnh bổ sung" className="group">
-                    <img
-                      src={shop.image_5}
-                      alt="Ảnh bổ sung"
-                      className="w-full aspect-square rounded-lg object-cover border border-gray-300 cursor-pointer hover:shadow-lg transition-shadow"
-                      onClick={() => window.open(shop.image_5, '_blank')}
-                    />
-                    <p className="text-xs text-gray-600 text-center mt-1">Ảnh bổ sung</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
           {/* Shop Action Buttons - Share, Call, Find Path, Message */}
           <div className="pt-6 border-t border-gray-200">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -473,6 +423,200 @@ export default function ShopDetailPage() {
               </button>
             </div>
           </div>
+          
+          {/* Thông Tin Cửa Hàng Images - Carousel Slider */}
+          {(shop.image_1 || shop.image_2 || shop.image_3 || shop.image_4 || shop.image_5) && (
+            <div className="pt-3 border-t border-gray-200">
+              <p className="text-xs font-bold text-gray-900 mb-2">Thông Tin Cửa Hàng</p>
+
+              {/* Carousel Container */}
+              <div
+                className="relative select-none"
+                onTouchStart={handleTouchStart}
+                onTouchEnd={handleTouchEnd}
+              >
+                {/* Images Container - Shows 2 images with smooth transition */}
+                <div className="grid grid-cols-2 gap-2 transition-all duration-300 ease-in-out">
+                  {/* Image Set 0: image_1, image_2 */}
+                  {carouselIndex % 5 === 0 && (
+                    <>
+                      {shop.image_1 && (
+                        <div title="Giấy DKKD" className="group animate-fadeIn">
+                          <img
+                            src={shop.image_1}
+                            alt="Giấy DKKD"
+                            className="w-full aspect-video rounded-lg object-cover border border-gray-300 cursor-pointer hover:shadow-lg transition-shadow"
+                            onClick={() => window.open(shop.image_1, '_blank')}
+                          />
+                          <p className="text-xs text-gray-600 text-center mt-1">Giấy DKKD</p>
+                        </div>
+                      )}
+                      {shop.image_2 && (
+                        <div title="Giấy phép kinh doanh" className="group animate-fadeIn animation-delay-100">
+                          <img
+                            src={shop.image_2}
+                            alt="Giấy phép kinh doanh"
+                            className="w-full aspect-video rounded-lg object-cover border border-gray-300 cursor-pointer hover:shadow-lg transition-shadow"
+                            onClick={() => window.open(shop.image_2, '_blank')}
+                          />
+                          <p className="text-xs text-gray-600 text-center mt-1">Giấy phép kinh doanh</p>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {/* Image Set 1: image_2, image_3 */}
+                  {carouselIndex % 5 === 1 && (
+                    <>
+                      {shop.image_2 && (
+                        <div title="Giấy phép kinh doanh" className="group">
+                          <img
+                            src={shop.image_2}
+                            alt="Giấy phép kinh doanh"
+                            className="w-full aspect-video rounded-lg object-cover border border-gray-300 cursor-pointer hover:shadow-lg transition-shadow"
+                            onClick={() => window.open(shop.image_2, '_blank')}
+                          />
+                          <p className="text-xs text-gray-600 text-center mt-1">Giấy phép kinh doanh</p>
+                        </div>
+                      )}
+                      {shop.image_3 && (
+                        <div title="Chứng chỉ liên quan" className="group">
+                          <img
+                            src={shop.image_3}
+                            alt="Chứng chỉ liên quan"
+                            className="w-full aspect-video rounded-lg object-cover border border-gray-300 cursor-pointer hover:shadow-lg transition-shadow"
+                            onClick={() => window.open(shop.image_3, '_blank')}
+                          />
+                          <p className="text-xs text-gray-600 text-center mt-1">Chứng chỉ liên quan</p>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {/* Image Set 2: image_3, image_4 */}
+                  {carouselIndex % 5 === 2 && (
+                    <>
+                      {shop.image_3 && (
+                        <div title="Chứng chỉ liên quan" className="group">
+                          <img
+                            src={shop.image_3}
+                            alt="Chứng chỉ liên quan"
+                            className="w-full aspect-video rounded-lg object-cover border border-gray-300 cursor-pointer hover:shadow-lg transition-shadow"
+                            onClick={() => window.open(shop.image_3, '_blank')}
+                          />
+                          <p className="text-xs text-gray-600 text-center mt-1">Chứng chỉ liên quan</p>
+                        </div>
+                      )}
+                      {shop.image_4 && (
+                        <div title="Hình ảnh cửa hàng" className="group">
+                          <img
+                            src={shop.image_4}
+                            alt="Hình ảnh cửa hàng"
+                            className="w-full aspect-video rounded-lg object-cover border border-gray-300 cursor-pointer hover:shadow-lg transition-shadow"
+                            onClick={() => window.open(shop.image_4, '_blank')}
+                          />
+                          <p className="text-xs text-gray-600 text-center mt-1">Hình ảnh cửa hàng</p>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {/* Image Set 3: image_4, image_5 */}
+                  {carouselIndex % 5 === 3 && (
+                    <>
+                      {shop.image_4 && (
+                        <div title="Hình ảnh cửa hàng" className="group">
+                          <img
+                            src={shop.image_4}
+                            alt="Hình ảnh cửa hàng"
+                            className="w-full aspect-video rounded-lg object-cover border border-gray-300 cursor-pointer hover:shadow-lg transition-shadow"
+                            onClick={() => window.open(shop.image_4, '_blank')}
+                          />
+                          <p className="text-xs text-gray-600 text-center mt-1">Hình ảnh cửa hàng</p>
+                        </div>
+                      )}
+                      {shop.image_5 && (
+                        <div title="Ảnh bổ sung" className="group">
+                          <img
+                            src={shop.image_5}
+                            alt="Ảnh bổ sung"
+                            className="w-full aspect-video rounded-lg object-cover border border-gray-300 cursor-pointer hover:shadow-lg transition-shadow"
+                            onClick={() => window.open(shop.image_5, '_blank')}
+                          />
+                          <p className="text-xs text-gray-600 text-center mt-1">Ảnh bổ sung</p>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {/* Image Set 4: image_5, image_1 (wrap around) */}
+                  {carouselIndex % 5 === 4 && (
+                    <>
+                      {shop.image_5 && (
+                        <div title="Ảnh bổ sung" className="group">
+                          <img
+                            src={shop.image_5}
+                            alt="Ảnh bổ sung"
+                            className="w-full aspect-video rounded-lg object-cover border border-gray-300 cursor-pointer hover:shadow-lg transition-shadow"
+                            onClick={() => window.open(shop.image_5, '_blank')}
+                          />
+                          <p className="text-xs text-gray-600 text-center mt-1">Ảnh bổ sung</p>
+                        </div>
+                      )}
+                      {shop.image_1 && (
+                        <div title="Giấy DKKD" className="group">
+                          <img
+                            src={shop.image_1}
+                            alt="Giấy DKKD"
+                            className="w-full aspect-video rounded-lg object-cover border border-gray-300 cursor-pointer hover:shadow-lg transition-shadow"
+                            onClick={() => window.open(shop.image_1, '_blank')}
+                          />
+                          <p className="text-xs text-gray-600 text-center mt-1">Giấy DKKD</p>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+
+                {/* Navigation Buttons */}
+                <button
+                  onClick={() => setCarouselIndex((prev) => (prev + 1) % 5)}
+                  className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-10 md:translate-x-0 md:right-0 bg-white hover:bg-gray-100 border border-gray-300 rounded-full p-1.5 shadow-md transition-all"
+                  aria-label="Next images"
+                >
+                  <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+
+                <button
+                  onClick={() => setCarouselIndex((prev) => (prev - 1 + 5) % 5)}
+                  className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-10 md:-translate-x-0 md:left-0 bg-white hover:bg-gray-100 border border-gray-300 rounded-full p-1.5 shadow-md transition-all"
+                  aria-label="Previous images"
+                >
+                  <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Indicators */}
+              <div className="flex justify-center gap-1.5 mt-2">
+                {[0, 1, 2, 3, 4].map((i) => (
+                  <button
+                    key={i}
+                    onClick={() => setCarouselIndex(i)}
+                    className={`w-1.5 h-1.5 rounded-full transition-all ${
+                      carouselIndex % 5 === i ? 'bg-gray-900 w-4' : 'bg-gray-300'
+                    }`}
+                    aria-label={`Go to image set ${i + 1}`}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          
         </div>
       </div>
 

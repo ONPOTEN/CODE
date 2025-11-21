@@ -111,14 +111,18 @@ export default function ShopChatRoom({
         shopId,
         shopName,
         shopOwnerId,
-        userId: user.id,
-        userName: user.display_name || user.username,
+        senderId: user.id,
+        senderName: user.display_name || user.username,
         message: inputMessage.trim(),
         roomName,
         timestamp: new Date().toISOString(),
       });
 
-      console.log('[ShopChatRoom] Message sent:', inputMessage);
+      console.log('[ShopChatRoom] Message sent:', inputMessage, {
+        roomName,
+        senderId: user.id,
+        senderName: user.display_name || user.username,
+      });
 
       // Add the message to local state immediately
       const sentMessage: ChatMessage = {

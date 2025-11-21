@@ -10,12 +10,12 @@ const config: Config = {
     extend: {
       colors: {
         primary: {
-          DEFAULT: '#f53d2d',
-          light: '#ff6633',
-          dark: '#ee4d2d',
+          DEFAULT: '#000000',
+          light: '#1a1a1a',
+          dark: '#000000',
         },
         secondary: {
-          DEFAULT: '#f6470e',
+          DEFAULT: '#000000',
         },
       },
       fontFamily: {
