@@ -81,15 +81,15 @@ export default function OrderDetailPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'completed':
-        return 'bg-green-100 text-green-800';
+        return 'bg-blue-500 text-green-800';
       case 'processing':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-blue-500 text-blue-800';
       case 'pending':
         return 'bg-yellow-100 text-yellow-800';
       case 'cancelled':
-        return 'bg-red-100 text-red-800';
+        return 'bg-blue-500 text-red-800';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-blue-500 text-gray-800';
     }
   };
 
@@ -124,19 +124,19 @@ export default function OrderDetailPage() {
   const getProductTypeBgColor = (type: string) => {
     switch (type) {
       case 'Đơn giản':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-blue-500 text-blue-800';
       case 'Biến thể':
-        return 'bg-purple-100 text-purple-800';
+        return 'bg-blue-500 text-purple-800';
       case 'Tải xuống':
-        return 'bg-green-100 text-green-800';
+        return 'bg-blue-500 text-green-800';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-blue-500 text-gray-800';
     }
   };
 
   if (authLoading || isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 py-12">
+      <div className="min-h-screen bg-white py-12">
         <div className="max-w-4xl mx-auto px-4">
           <div className="text-center">
             <div className="animate-spin h-12 w-12 text-blue-600 mx-auto mb-4">
@@ -162,9 +162,9 @@ export default function OrderDetailPage() {
 
   if (error || !order) {
     return (
-      <div className="min-h-screen bg-gray-50 py-12">
+      <div className="min-h-screen bg-white py-12">
         <div className="max-w-4xl mx-auto px-4">
-          <div className="bg-white rounded-lg shadow-md p-8 text-center">
+          <div className="bg-grey-200 rounded-lg shadow-md p-8 text-center">
             <svg className="w-16 h-16 mx-auto mb-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
@@ -177,7 +177,7 @@ export default function OrderDetailPage() {
             <p className="text-gray-600 mb-6">{error || 'The order you are looking for does not exist.'}</p>
             <Link
               href="/my-orders"
-              className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded transition-colors"
+              className="inline-block bg-blue-500 hover:bg-blue-700 text-gray-900 font-medium py-2 px-6 rounded transition-colors"
             >
               Back to Orders
             </Link>
@@ -188,7 +188,7 @@ export default function OrderDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12">
+    <div className="min-h-screen bg-white py-12">
       <div className="max-w-4xl mx-auto px-4">
         {/* Header */}
         <div className="mb-8">
@@ -210,7 +210,7 @@ export default function OrderDetailPage() {
         </div>
 
         {/* Order Summary Card */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+        <div className="bg-grey-200 rounded-lg shadow-md p-6 mb-6">
           <h2 className="text-xl font-bold text-gray-900 mb-4">Order Summary</h2>
           <div className="space-y-3">
             <div className="flex justify-between">
@@ -243,12 +243,12 @@ export default function OrderDetailPage() {
         </div>
 
         {/* Order Items */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+        <div className="bg-grey-200 rounded-lg shadow-md p-6 mb-6">
           <h2 className="text-xl font-bold text-gray-900 mb-4">Order Items</h2>
           {order.items && order.items.length > 0 ? (
             <div className="space-y-4">
               {order.items.map((item, index) => (
-                <div key={index} className="border border-gray-200 rounded-lg p-4">
+                <div key={index} className="border border-gray-300 rounded-lg p-4">
                   <div className="flex justify-between items-start mb-3">
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900">{item.product_name}</h3>
@@ -264,7 +264,7 @@ export default function OrderDetailPage() {
 
                   {/* Variant Options */}
                   {item.variant_options && Object.keys(item.variant_options).length > 0 && (
-                    <div className="bg-gray-50 rounded p-3 mb-3">
+                    <div className="bg-white rounded p-3 mb-3">
                       <p className="text-sm font-medium text-gray-700 mb-2">Selected Options:</p>
                       <div className="grid grid-cols-2 gap-2">
                         {Object.entries(item.variant_options).map(([key, value]) => (
@@ -279,7 +279,7 @@ export default function OrderDetailPage() {
 
                   {/* Download Files */}
                   {item.product_type === 'Tải xuống' && (
-                    <div className="bg-blue-50 rounded p-3 mb-3">
+                    <div className="bg-grey-200 rounded p-3 mb-3">
                       <p className="text-sm font-medium text-blue-900 mb-2">Download Files:</p>
                       {item.download_files ? (
                         <a
@@ -301,7 +301,7 @@ export default function OrderDetailPage() {
 
                   {/* Download Links */}
                   {item.product_type === 'Tải xuống' && item.link_files && item.link_files.length > 0 && (
-                    <div className="bg-green-50 rounded p-3">
+                    <div className="bg-grey-200 rounded p-3">
                       <p className="text-sm font-medium text-green-900 mb-2">Download Links:</p>
                       <ul className="space-y-2">
                         {item.link_files.map((link: any, linkIdx: number) => (
@@ -333,7 +333,7 @@ export default function OrderDetailPage() {
         {/* Shipping Address */}
         {order.shipping_address && (
           <div className="grid md:grid-cols-2 gap-6 mb-6">
-            <div className="bg-white rounded-lg shadow-md p-6">
+            <div className="bg-grey-200 rounded-lg shadow-md p-6">
               <h3 className="text-lg font-bold text-gray-900 mb-4">Shipping Address</h3>
               <div className="space-y-2 text-gray-700">
                 <p>
@@ -358,7 +358,7 @@ export default function OrderDetailPage() {
 
             {/* Billing Address */}
             {order.billing_address && JSON.stringify(order.billing_address) !== JSON.stringify(order.shipping_address) && (
-              <div className="bg-white rounded-lg shadow-md p-6">
+              <div className="bg-grey-200 rounded-lg shadow-md p-6">
                 <h3 className="text-lg font-bold text-gray-900 mb-4">Billing Address</h3>
                 <div className="space-y-2 text-gray-700">
                   <p>
@@ -385,12 +385,12 @@ export default function OrderDetailPage() {
         )}
 
         {/* Order Timeline */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+        <div className="bg-grey-200 rounded-lg shadow-md p-6 mb-6">
           <h3 className="text-lg font-bold text-gray-900 mb-4">Order Timeline</h3>
           <div className="space-y-4">
             <div className="flex gap-4">
               <div className="flex flex-col items-center">
-                <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white">
+                <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-gray-900">
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
@@ -404,7 +404,7 @@ export default function OrderDetailPage() {
 
             <div className="flex gap-4">
               <div className="flex flex-col items-center">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white ${order.status !== 'pending' ? 'bg-blue-600' : 'bg-gray-300'}`}>
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-gray-900 ${order.status !== 'pending' ? 'bg-blue-500' : 'bg-blue-300'}`}>
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
@@ -418,7 +418,7 @@ export default function OrderDetailPage() {
 
             <div className="flex gap-4">
               <div className="flex flex-col items-center">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white ${order.status === 'completed' ? 'bg-green-600' : 'bg-gray-300'}`}>
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-gray-900 ${order.status === 'completed' ? 'bg-blue-500' : 'bg-blue-300'}`}>
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
@@ -436,17 +436,17 @@ export default function OrderDetailPage() {
         <div className="flex gap-4">
           <Link
             href="/my-orders"
-            className="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-medium py-3 px-6 rounded text-center transition-colors"
+            className="flex-1 bg-blue-500 hover:bg-blue-700 text-gray-900 font-medium py-3 px-6 rounded text-center transition-colors"
           >
             Back to Orders
           </Link>
           {order.status === 'pending' && (
-            <button className="flex-1 bg-red-600 hover:bg-red-700 text-white font-medium py-3 px-6 rounded transition-colors">
+            <button className="flex-1 bg-blue-500 hover:bg-blue-700 text-gray-900 font-medium py-3 px-6 rounded transition-colors">
               Cancel Order
             </button>
           )}
           {order.status === 'completed' && (
-            <button className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded transition-colors">
+            <button className="flex-1 bg-blue-500 hover:bg-blue-700 text-gray-900 font-medium py-3 px-6 rounded transition-colors">
               Return Item
             </button>
           )}

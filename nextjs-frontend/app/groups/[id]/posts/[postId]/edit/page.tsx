@@ -198,7 +198,7 @@ export default function EditGroupPostPage() {
   // Show loading while checking authentication
   if (!isAuthenticated && pageLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <div className="text-gray-600">Checking authentication...</div>
@@ -210,7 +210,7 @@ export default function EditGroupPostPage() {
   // If not authenticated, show loading (will redirect shortly)
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <div className="text-gray-600">Redirecting to login...</div>
@@ -221,7 +221,7 @@ export default function EditGroupPostPage() {
 
   if (pageLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-gray-600">Loading post...</div>
       </div>
     );
@@ -229,7 +229,7 @@ export default function EditGroupPostPage() {
 
   if (!group) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-white">
         <div className="max-w-2xl mx-auto px-4 py-8">
           <div className="text-center">
             <h1 className="text-2xl font-bold text-gray-900 mb-4">Group not found</h1>
@@ -244,13 +244,13 @@ export default function EditGroupPostPage() {
 
   if (!post) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-white">
         <div className="max-w-2xl mx-auto px-4 py-8">
           <Link href={`/groups/${groupId}/manage-posts`} className="text-blue-600 hover:text-blue-700 font-medium mb-8 inline-block">
             ← Back to Manage Posts
           </Link>
 
-          <div className="bg-white rounded-lg shadow p-8 text-center border border-gray-200">
+          <div className="bg-grey-200 rounded-lg shadow p-8 text-center border border-gray-300">
             <p className="text-gray-600 text-lg">Post not found</p>
           </div>
         </div>
@@ -259,7 +259,7 @@ export default function EditGroupPostPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       <div className="max-w-2xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
@@ -271,9 +271,9 @@ export default function EditGroupPostPage() {
         </div>
 
         {/* Form */}
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-grey-200 rounded-lg shadow p-6">
           {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+            <div className="mb-6 p-4 bg-grey-200 border border-red-200 rounded-lg text-red-700">
               {error}
             </div>
           )}
@@ -290,7 +290,7 @@ export default function EditGroupPostPage() {
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Give your post a title..."
                 disabled={loading}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-blue-500"
               />
             </div>
 
@@ -305,7 +305,7 @@ export default function EditGroupPostPage() {
                 placeholder="Share your thoughts, updates, or ideas..."
                 rows={6}
                 disabled={loading}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 resize-vertical"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-blue-500 resize-vertical"
               />
               <p className="text-xs text-gray-500 mt-1">{content.length} characters</p>
             </div>
@@ -321,7 +321,7 @@ export default function EditGroupPostPage() {
                 onChange={(e) => setExcerpt(e.target.value)}
                 placeholder="Brief summary of your post..."
                 disabled={loading}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-blue-500"
               />
             </div>
 
@@ -334,7 +334,7 @@ export default function EditGroupPostPage() {
                 value={visibility}
                 onChange={(e) => setVisibility(e.target.value as 'public' | 'private')}
                 disabled={loading}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-blue-500"
               >
                 <option value="public">Public - Visible to all group members</option>
                 <option value="private">Private - Only visible to you</option>
@@ -404,7 +404,7 @@ export default function EditGroupPostPage() {
                     className={`cursor-pointer block ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
                     <svg
-                      className="w-12 h-12 mx-auto mb-2 text-gray-400"
+                      className="w-12 h-12 mx-auto mb-2 text-gray-600"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -443,7 +443,7 @@ export default function EditGroupPostPage() {
                         type="button"
                         onClick={() => removeImage(index)}
                         disabled={loading}
-                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 disabled:opacity-50"
+                        className="absolute -top-2 -right-2 bg-grey-2000 text-gray-900 rounded-full w-6 h-6 flex items-center justify-center hover:bg-blue-500 disabled:opacity-50"
                         title="Remove image"
                       >
                         ×
@@ -455,17 +455,17 @@ export default function EditGroupPostPage() {
             )}
 
             {/* Action Buttons */}
-            <div className="flex gap-3 pt-6 border-t border-gray-200">
+            <div className="flex gap-3 pt-6 border-t border-gray-300">
               <Link
                 href={`/groups/${groupId}/manage-posts`}
-                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors"
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-white font-medium transition-colors"
               >
                 Cancel
               </Link>
               <button
                 type="submit"
                 disabled={loading}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="flex-1 px-4 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {loading ? (
                   <>

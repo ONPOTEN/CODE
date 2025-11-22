@@ -8,7 +8,7 @@ interface ShopCardProps {
 export function ShopCard({ shop }: ShopCardProps) {
   return (
     <Link href={`/shops/${shop.id}`}>
-      <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow overflow-hidden h-full cursor-pointer group">
+      <div className="bg-gray-50 rounded-lg shadow-md hover:shadow-lg transition-shadow overflow-hidden h-full cursor-pointer group">
         {/* Shop Logo/Banner */}
         <div className="relative h-40 bg-gradient-to-br from-blue-100 to-blue-50 overflow-hidden">
           {shop.banner ? (
@@ -73,7 +73,7 @@ export function ShopCard({ shop }: ShopCardProps) {
           <div className="mb-3 space-y-1">
             {shop.city && (
               <div className="flex items-center gap-2 text-xs text-gray-600">
-                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -87,7 +87,7 @@ export function ShopCard({ shop }: ShopCardProps) {
             )}
             {shop.country && (
               <div className="flex items-center gap-2 text-xs text-gray-600">
-                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20H7m6-4h6" />
                 </svg>
                 <span>{shop.country}</span>
@@ -99,7 +99,7 @@ export function ShopCard({ shop }: ShopCardProps) {
           <div className="space-y-1 mb-3">
             {shop.phone && (
               <div className="flex items-center gap-2 text-xs text-gray-600">
-                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -112,7 +112,7 @@ export function ShopCard({ shop }: ShopCardProps) {
             )}
             {shop.email && (
               <div className="flex items-center gap-2 text-xs text-gray-600">
-                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -127,9 +127,9 @@ export function ShopCard({ shop }: ShopCardProps) {
 
           {/* Owner Info */}
           {shop.owner && (
-            <div className="pt-3 border-t border-gray-200">
+            <div className="pt-3 border-t border-gray-300">
               <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-xs font-bold">
+                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-gray-900 text-xs font-bold">
                   {shop.owner.name?.charAt(0).toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">

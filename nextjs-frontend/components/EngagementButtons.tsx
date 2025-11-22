@@ -257,13 +257,13 @@ export function EngagementButtons({
 
         {/* Share Platform Menu */}
         {showShareMenu && (
-          <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-[9999] fixed-menu" style={{ zIndex: 9999 }}>
+          <div className="absolute right-0 mt-2 w-48 bg-gray-50 rounded-lg shadow-xl border border-gray-300 z-[9999] fixed-menu" style={{ zIndex: 9999 }}>
             <div className="p-2">
               {/* Share to My Wall */}
               <button
                 onClick={handleShareToMyWall}
                 disabled={isShareToWallLoading}
-                className="w-full text-left px-4 py-2 hover:bg-purple-50 rounded flex items-center gap-2 border-b border-gray-200 mb-2 pb-2 disabled:opacity-50"
+                className="w-full text-left px-4 py-2 hover:bg-purple-50 rounded flex items-center gap-2 border-b border-gray-300 mb-2 pb-2 disabled:opacity-50"
               >
                 <span>{isShareToWallLoading ? '⏳' : '📌'}</span> Share to My Wall
               </button>
@@ -295,13 +295,13 @@ export function EngagementButtons({
               </button>
               <button
                 onClick={() => handleShare('email')}
-                className="w-full text-left px-4 py-2 hover:bg-gray-50 rounded flex items-center gap-2"
+                className="w-full text-left px-4 py-2 hover:bg-white rounded flex items-center gap-2"
               >
                 <span>✉️</span> Email
               </button>
               <button
                 onClick={() => handleShare('direct')}
-                className="w-full text-left px-4 py-2 hover:bg-gray-50 rounded flex items-center gap-2 border-t border-gray-200 mt-2 pt-2"
+                className="w-full text-left px-4 py-2 hover:bg-white rounded flex items-center gap-2 border-t border-gray-300 mt-2 pt-2"
               >
                 <span>🔗</span> Direct Link
               </button>

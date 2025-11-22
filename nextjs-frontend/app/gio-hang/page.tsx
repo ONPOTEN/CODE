@@ -71,7 +71,7 @@ export default function CartPage() {
         {/* Cart Items */}
         <div className="lg:col-span-2 space-y-4">
           {cart.map((item) => (
-            <div key={item.id} className="bg-white rounded-sm shadow-sm p-4">
+            <div key={item.id} className="bg-grey-200 rounded-sm shadow-sm p-4">
               <div className="flex gap-4">
                 {/* Product Image */}
                 <div className="relative w-24 h-24 flex-shrink-0">
@@ -102,7 +102,7 @@ export default function CartPage() {
                       <div className="flex items-center border border-gray-300 rounded-sm">
                         <button
                           onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                          className="w-8 h-8 flex items-center justify-center hover:bg-gray-100"
+                          className="w-8 h-8 flex items-center justify-center hover:bg-blue-500"
                         >
                           −
                         </button>
@@ -111,7 +111,7 @@ export default function CartPage() {
                         </span>
                         <button
                           onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                          className="w-8 h-8 flex items-center justify-center hover:bg-gray-100"
+                          className="w-8 h-8 flex items-center justify-center hover:bg-blue-500"
                         >
                           +
                         </button>
@@ -139,7 +139,7 @@ export default function CartPage() {
 
         {/* Order Summary */}
         <div className="lg:col-span-1">
-          <div className="bg-white rounded-sm shadow-sm p-6 sticky top-24">
+          <div className="bg-grey-200 rounded-sm shadow-sm p-6 sticky top-24">
             <h3 className="text-lg font-medium mb-4">Tổng đơn hàng</h3>
 
             <div className="space-y-3 mb-6">
@@ -153,7 +153,7 @@ export default function CartPage() {
                 <span className="text-gray-600">Phí vận chuyển:</span>
                 <span className="font-medium">Miễn phí</span>
               </div>
-              <div className="border-t border-gray-200 pt-3">
+              <div className="border-t border-gray-300 pt-3">
                 <div className="flex justify-between">
                   <span className="font-medium">Tổng cộng:</span>
                   <span className="text-xl font-medium text-primary">

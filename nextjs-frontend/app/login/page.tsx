@@ -90,7 +90,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-white py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         {/* Header */}
         <div>
@@ -107,7 +107,7 @@ export default function LoginPage() {
 
         {/* Error Message */}
         {error && (
-          <div className="rounded-md bg-red-50 p-4">
+          <div className="rounded-md bg-grey-200 p-4">
             <div className="text-sm font-medium text-red-800">{error}</div>
           </div>
         )}
@@ -153,7 +153,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
+                className="absolute right-3 top-2.5 text-gray-600 hover:text-gray-600"
                 disabled={isLoading}
               >
                 {showPassword ? '👁️' : '👁️‍🗨️'}
@@ -161,19 +161,11 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* Helper text */}
-          <p className="text-xs text-gray-500 text-center">
-            <strong>Email:</strong> user@example.com<br />
-            <strong>Username:</strong> johndoe<br />
-            <strong>Phone:</strong> <code>+{'{'}country_code{'}'}{'{'}number{'}'}</code> or just digits
-            (e.g., <code>+12125551234</code>, <code>+84867631313</code>, or <code>0961440086</code>)
-          </p>
-
           {/* Submit Button */}
           <button
             type="submit"
             disabled={isLoading}
-            className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-gray-900 bg-blue-500 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLoading ? 'Signing in...' : 'Sign in'}
           </button>
@@ -192,7 +184,7 @@ export default function LoginPage() {
             <div className="w-full border-t border-gray-300" />
           </div>
           <div className="relative flex justify-center text-sm">
-            <span className="px-2 bg-gray-50 text-gray-500">Or continue with</span>
+            <span className="px-2 bg-white text-gray-500">Or continue with</span>
           </div>
         </div>
 
@@ -203,7 +195,7 @@ export default function LoginPage() {
             type="button"
             onClick={handleGoogleLogin}
             disabled={isLoading}
-            className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-grey-200 text-sm font-medium text-gray-500 hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <span className="text-xl">🔷</span>
             <span className="ml-2">Google</span>
@@ -214,7 +206,7 @@ export default function LoginPage() {
             type="button"
             onClick={handleFacebookLogin}
             disabled={isLoading}
-            className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-grey-200 text-sm font-medium text-gray-500 hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <span className="text-xl">📘</span>
             <span className="ml-2">Facebook</span>
@@ -225,7 +217,7 @@ export default function LoginPage() {
             type="button"
             onClick={handleAppleLogin}
             disabled={isLoading}
-            className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-grey-200 text-sm font-medium text-gray-500 hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <span className="text-xl">🍎</span>
             <span className="ml-2">Apple</span>
@@ -234,7 +226,7 @@ export default function LoginPage() {
           {/* Phone */}
           <Link
             href="/firebase-phone-login"
-            className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
+            className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-grey-200 text-sm font-medium text-gray-500 hover:bg-white"
           >
             <span className="text-xl">📱</span>
             <span className="ml-2">Phone</span>

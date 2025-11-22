@@ -318,12 +318,12 @@ export default function GroupWallPage() {
 
   if (error && !group) {
     return (
-      <div className="min-h-screen bg-gray-50 px-4 py-8">
+      <div className="min-h-screen bg-white px-4 py-8">
         <div className="max-w-4xl mx-auto">
-          <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+          <div className="p-4 bg-grey-200 border border-red-200 rounded-lg text-red-700">
             {error}
           </div>
-          <Link href="/groups" className="mt-4 inline-block px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+          <Link href="/groups" className="mt-4 inline-block px-4 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-700">
             Back to Groups
           </Link>
         </div>
@@ -333,10 +333,10 @@ export default function GroupWallPage() {
 
   if (!group) {
     return (
-      <div className="min-h-screen bg-gray-50 px-4 py-8">
+      <div className="min-h-screen bg-white px-4 py-8">
         <div className="max-w-4xl mx-auto text-center py-12">
           <p className="text-gray-500 text-lg">Group not found</p>
-          <Link href="/groups" className="mt-4 inline-block px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+          <Link href="/groups" className="mt-4 inline-block px-4 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-700">
             Back to Groups
           </Link>
         </div>
@@ -345,9 +345,9 @@ export default function GroupWallPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       {/* Group Header */}
-      <div className="bg-white border-b border-gray-200">
+      <div className="bg-grey-200 border-b border-gray-300">
         {/* Cover Image with Avatar */}
         <div className="relative h-64 bg-gradient-to-r from-blue-400 to-blue-600 overflow-visible pb-16">
           {group.cover_image ? (
@@ -379,7 +379,7 @@ export default function GroupWallPage() {
                 }}
               />
             ) : (
-              <div className="w-32 h-32 rounded-full border-4 border-white shadow-lg bg-gray-300 flex items-center justify-center">
+              <div className="w-32 h-32 rounded-full border-4 border-white shadow-lg bg-blue-300 flex items-center justify-center">
                 <svg className="w-16 h-16 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
                 </svg>
@@ -404,7 +404,7 @@ export default function GroupWallPage() {
               <div className="text-sm text-gray-600">Members</div>
             </div>
             <div>
-              <span className={`px-3 py-1 text-sm font-medium rounded-full ${group.visibility === 'public' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}`}>
+              <span className={`px-3 py-1 text-sm font-medium rounded-full ${group.visibility === 'public' ? 'bg-blue-500 text-blue-800' : 'bg-blue-500 text-gray-800'}`}>
                 {group.visibility}
               </span>
             </div>
@@ -437,13 +437,13 @@ export default function GroupWallPage() {
                         // If authenticated, navigate to create post
                         router.push(`/groups/${group.group_id}/create-post`);
                       }}
-                      className="inline-block px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors"
+                      className="inline-block px-6 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-700 font-medium transition-colors"
                     >
                       Create Post
                     </button>
                     <button
                       onClick={handleInviteFriend}
-                      className="inline-block px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition-colors"
+                      className="inline-block px-6 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-700 font-medium transition-colors"
                     >
                       Invite Friends
                     </button>
@@ -451,13 +451,13 @@ export default function GroupWallPage() {
                 )}
                 <Link
                   href={`/groups/${group.group_id}/requests`}
-                  className="inline-block px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium transition-colors"
+                  className="inline-block px-6 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-700 font-medium transition-colors"
                 >
                   Manage Requests
                 </Link>
                 <Link
                   href={`/groups/${group.group_id}/manage-group`}
-                  className="inline-block px-6 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 font-medium transition-colors"
+                  className="inline-block px-6 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-700 font-medium transition-colors"
                 >
                   Group Manager
                 </Link>
@@ -465,7 +465,7 @@ export default function GroupWallPage() {
                   <button
                     onClick={handleLeaveGroup}
                     disabled={isJoiningOrLeaving}
-                    className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-6 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isJoiningOrLeaving ? 'Leaving...' : 'Leave Group'}
                   </button>
@@ -484,26 +484,26 @@ export default function GroupWallPage() {
                     // If authenticated, navigate to create post
                     router.push(`/groups/${group.group_id}/create-post`);
                   }}
-                  className="inline-block px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors"
+                  className="inline-block px-6 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-700 font-medium transition-colors"
                 >
                   Create Post
                 </button>
                 <button
                   onClick={handleInviteFriend}
-                  className="inline-block px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition-colors"
+                  className="inline-block px-6 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-700 font-medium transition-colors"
                 >
                   Invite Friends
                 </button>
                 <Link
                   href={`/groups/${group.group_id}/my-posts`}
-                  className="inline-block px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium transition-colors"
+                  className="inline-block px-6 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-700 font-medium transition-colors"
                 >
                   Manage Posts
                 </Link>
                 <button
                   onClick={handleLeaveGroup}
                   disabled={isJoiningOrLeaving}
-                  className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-6 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isJoiningOrLeaving ? 'Leaving...' : 'Leave Group'}
                 </button>
@@ -519,7 +519,7 @@ export default function GroupWallPage() {
               <button
                 onClick={handleJoinGroup}
                 disabled={isJoiningOrLeaving || isCheckingMembership}
-                className="inline-block px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-block px-6 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isJoiningOrLeaving ? 'Joining...' : isCheckingMembership ? 'Loading...' : 'Join Group'}
               </button>
@@ -551,7 +551,7 @@ export default function GroupWallPage() {
                 <p className="text-yellow-700 mb-4">You must be signed in to create posts in this group. Please log in to continue.</p>
                 <Link
                   href="/login"
-                  className="inline-block px-6 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 font-medium transition-colors"
+                  className="inline-block px-6 py-2 bg-yellow-600 text-gray-900 rounded-lg hover:bg-yellow-700 font-medium transition-colors"
                 >
                   Sign In
                 </Link>
@@ -567,7 +567,7 @@ export default function GroupWallPage() {
               />
             ) : (
               // User is authenticated but not a member - show join prompt
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8 text-center">
+              <div className="bg-grey-200 border border-blue-200 rounded-lg p-6 mb-8 text-center">
                 <svg className="w-12 h-12 mx-auto mb-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
@@ -581,7 +581,7 @@ export default function GroupWallPage() {
                 <button
                   onClick={handleJoinGroup}
                   disabled={isJoiningOrLeaving}
-                  className="inline-block px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="inline-block px-6 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isJoiningOrLeaving ? 'Joining...' : 'Join Group'}
                 </button>
@@ -618,7 +618,7 @@ export default function GroupWallPage() {
 
         {/* Error Message */}
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+          <div className="mb-6 p-4 bg-grey-200 border border-red-200 rounded-lg text-red-700">
             {error}
           </div>
         )}
@@ -634,9 +634,9 @@ export default function GroupWallPage() {
       {/* Invite Modal */}
       {showInviteModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-96 flex flex-col">
+          <div className="bg-grey-200 rounded-lg shadow-xl max-w-md w-full max-h-96 flex flex-col">
             {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+            <div className="flex items-center justify-between p-6 border-b border-gray-300">
               <h2 className="text-xl font-bold text-gray-900">Invite Friends</h2>
               <button
                 onClick={() => {
@@ -644,7 +644,7 @@ export default function GroupWallPage() {
                   setSearchQuery('');
                   setSearchResults([]);
                 }}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
+                className="text-gray-600 hover:text-gray-600 transition-colors"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -653,7 +653,7 @@ export default function GroupWallPage() {
             </div>
 
             {/* Tabs */}
-            <div className="flex border-b border-gray-200 px-6 pt-4">
+            <div className="flex border-b border-gray-300 px-6 pt-4">
               <button
                 onClick={() => setInviteTab('link')}
                 className={`px-4 py-2 font-medium transition-colors ${
@@ -679,7 +679,7 @@ export default function GroupWallPage() {
             {/* Content */}
             <div className="p-6 space-y-4 overflow-y-auto flex-1">
               {/* Group Info */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="bg-grey-200 border border-blue-200 rounded-lg p-4">
                 <p className="text-sm font-medium text-gray-900 mb-2">
                   Invite friends to: <strong>{group?.group_name}</strong>
                 </p>
@@ -703,11 +703,11 @@ export default function GroupWallPage() {
                     type="text"
                     value={inviteLink}
                     readOnly
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-sm text-gray-600 focus:outline-none"
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg bg-white text-sm text-gray-600 focus:outline-none"
                   />
                   <button
                     onClick={copyToClipboard}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors whitespace-nowrap text-sm"
+                    className="px-4 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-700 font-medium transition-colors whitespace-nowrap text-sm"
                   >
                     Copy Link
                   </button>
@@ -722,7 +722,7 @@ export default function GroupWallPage() {
                 <div className="grid grid-cols-3 gap-2">
                   <button
                     onClick={shareOnFacebook}
-                    className="flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                    className="flex items-center justify-center gap-2 px-3 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-700 transition-colors text-sm"
                   >
                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                       <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
@@ -730,7 +730,7 @@ export default function GroupWallPage() {
                   </button>
                   <button
                     onClick={shareOnTwitter}
-                    className="flex items-center justify-center gap-2 px-3 py-2 bg-blue-400 text-white rounded-lg hover:bg-blue-500 transition-colors text-sm"
+                    className="flex items-center justify-center gap-2 px-3 py-2 bg-blue-400 text-gray-900 rounded-lg hover:bg-grey-2000 transition-colors text-sm"
                   >
                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                       <path d="M23.953 4.57a10 10 0 002.856-3.915 9.964 9.964 0 01-2.866.36 3.995 3.995 0 001.753-2.199 7.978 7.978 0 01-2.537.967 3.996 3.996 0 00-6.868 3.645 11.38 11.38 0 01-8.25-4.144A3.99 3.99 0 005.031 6.694a3.995 3.995 0 01-1.853-.505c0 .153 0 .306.015.459A3.996 3.996 0 007.98 9.967a3.996 3.996 0 01-1.853.07 3.995 3.995 0 003.734 2.774 8.007 8.007 0 01-4.947 1.707c-.323 0-.64-.02-.955-.059a11.37 11.37 0 006.167 1.8c7.4 0 11.439-6.147 11.439-11.48 0-.175-.005-.348-.015-.52a8.179 8.179 0 002.085-2.083"/>
@@ -738,7 +738,7 @@ export default function GroupWallPage() {
                   </button>
                   <button
                     onClick={shareOnWhatsApp}
-                    className="flex items-center justify-center gap-2 px-3 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm"
+                    className="flex items-center justify-center gap-2 px-3 py-2 bg-grey-2000 text-gray-900 rounded-lg hover:bg-blue-500 transition-colors text-sm"
                   >
                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                       <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.67-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.076 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421-7.403h-.004a9.87 9.87 0 00-4.947 1.227l-.356.214-3.71-.975 1.005 3.652-.235.364a9.868 9.868 0 001.51 5.335c2.34 4.053 6.965 6.456 11.313 6.456 2.205 0 4.396-.503 6.289-1.504l.364-.214 3.677 1.018-1.035-3.68.221-.364a9.86 9.86 0 00-.663-5.573 9.87 9.87 0 00-8.184-5.623"/>
@@ -748,7 +748,7 @@ export default function GroupWallPage() {
               </div>
 
                   {/* Info Message */}
-                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                  <div className="bg-white border border-gray-300 rounded-lg p-3">
                     <p className="text-xs text-gray-600">
                       Friends can click the link to view the group and join.
                       {group?.requires_approval && ' Membership requests require your approval.'}
@@ -769,7 +769,7 @@ export default function GroupWallPage() {
 
                   {/* Error Message */}
                   {searchError && (
-                    <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
+                    <div className="p-3 bg-grey-200 border border-red-200 rounded-lg text-red-600 text-sm">
                       {searchError}
                     </div>
                   )}
@@ -778,7 +778,7 @@ export default function GroupWallPage() {
                   {!isLoadingFriends && allFriends.length > 0 && (
                     <>
                       {/* Select All Button */}
-                      <div className="flex items-center justify-between mb-3 pb-3 border-b border-gray-200">
+                      <div className="flex items-center justify-between mb-3 pb-3 border-b border-gray-300">
                         <label className="flex items-center gap-2 cursor-pointer">
                           <input
                             type="checkbox"
@@ -798,7 +798,7 @@ export default function GroupWallPage() {
                         {allFriends.map((friend) => (
                           <label
                             key={friend.id}
-                            className="flex items-center gap-3 p-3 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+                            className="flex items-center gap-3 p-3 bg-white border border-gray-300 rounded-lg hover:bg-blue-500 transition-colors cursor-pointer"
                           >
                             <input
                               type="checkbox"
@@ -827,11 +827,11 @@ export default function GroupWallPage() {
 
                       {/* Send Invitations Button */}
                       {selectedFriends.size > 0 && (
-                        <div className="mt-4 pt-4 border-t border-gray-200">
+                        <div className="mt-4 pt-4 border-t border-gray-300">
                           <button
                             onClick={sendInvitationsToSelectedFriends}
                             disabled={invitingFriends}
-                            className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            className="w-full px-4 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                           >
                             {invitingFriends ? (
                               <>
@@ -849,8 +849,8 @@ export default function GroupWallPage() {
 
                   {/* No Friends Message */}
                   {!isLoadingFriends && allFriends.length === 0 && !searchError && (
-                    <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg text-center">
-                      <svg className="w-12 h-12 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="p-4 bg-white border border-gray-300 rounded-lg text-center">
+                      <svg className="w-12 h-12 mx-auto mb-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.856-1.487M15 10a3 3 0 11-6 0 3 3 0 016 0zM15 20H9m6 0h6" />
                       </svg>
                       <p className="text-sm text-gray-600 mt-2">You don't have any friends yet</p>
@@ -862,10 +862,10 @@ export default function GroupWallPage() {
             </div>
 
             {/* Footer */}
-            <div className="px-6 py-4 border-t border-gray-200">
+            <div className="px-6 py-4 border-t border-gray-300">
               <button
                 onClick={() => setShowInviteModal(false)}
-                className="w-full px-4 py-2 bg-gray-200 text-gray-900 rounded-lg hover:bg-gray-300 font-medium transition-colors"
+                className="w-full px-4 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-300 font-medium transition-colors"
               >
                 Close
               </button>

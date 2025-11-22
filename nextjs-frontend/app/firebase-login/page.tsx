@@ -93,7 +93,7 @@ export default function FirebaseLoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-white py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         {/* Header */}
         <div>
@@ -110,7 +110,7 @@ export default function FirebaseLoginPage() {
 
         {/* Error Message */}
         {(error || loginError) && (
-          <div className="rounded-md bg-red-50 p-4">
+          <div className="rounded-md bg-grey-200 p-4">
             <div className="text-sm font-medium text-red-800">{error || loginError}</div>
           </div>
         )}
@@ -162,7 +162,7 @@ export default function FirebaseLoginPage() {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
+                className="absolute right-3 top-2.5 text-gray-600 hover:text-gray-600"
                 disabled={isLoading}
               >
                 {showPassword ? '👁️' : '👁️‍🗨️'}
@@ -174,7 +174,7 @@ export default function FirebaseLoginPage() {
           <button
             type="submit"
             disabled={isLoading}
-            className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-gray-900 bg-blue-500 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLoading ? 'Signing in...' : 'Sign in'}
           </button>
@@ -186,7 +186,7 @@ export default function FirebaseLoginPage() {
             <div className="w-full border-t border-gray-300" />
           </div>
           <div className="relative flex justify-center text-sm">
-            <span className="px-2 bg-gray-50 text-gray-500">Or continue with</span>
+            <span className="px-2 bg-white text-gray-500">Or continue with</span>
           </div>
         </div>
 
@@ -199,7 +199,7 @@ export default function FirebaseLoginPage() {
               type="button"
               onClick={handleGoogleLogin}
               disabled={isLoading}
-              className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-grey-200 text-sm font-medium text-gray-500 hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed"
               title="Sign in with Google"
             >
               <span className="text-xl">🔷</span>
@@ -210,7 +210,7 @@ export default function FirebaseLoginPage() {
               type="button"
               onClick={handleFacebookLogin}
               disabled={isLoading}
-              className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-grey-200 text-sm font-medium text-gray-500 hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed"
               title="Sign in with Facebook"
             >
               <span className="text-xl">📘</span>
@@ -221,7 +221,7 @@ export default function FirebaseLoginPage() {
               type="button"
               onClick={handleAppleLogin}
               disabled={isLoading}
-              className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-grey-200 text-sm font-medium text-gray-500 hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed"
               title="Sign in with Apple"
             >
               <span className="text-xl">🍎</span>
@@ -231,7 +231,7 @@ export default function FirebaseLoginPage() {
           {/* Phone Login with SMS Button */}
           <Link
             href="/firebase-phone-login"
-            className="w-full inline-flex justify-center items-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+            className="w-full inline-flex justify-center items-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-grey-200 text-sm font-medium text-gray-700 hover:bg-white transition-colors"
             title="Register with phone and SMS code"
           >
             <span className="text-xl mr-2">📱</span>

@@ -139,15 +139,15 @@ export default function ShopOrderDetailPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'completed':
-        return 'bg-green-100 text-green-800';
+        return 'bg-blue-500 text-green-800';
       case 'processing':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-blue-500 text-blue-800';
       case 'pending':
         return 'bg-yellow-100 text-yellow-800';
       case 'cancelled':
-        return 'bg-red-100 text-red-800';
+        return 'bg-blue-500 text-red-800';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-blue-500 text-gray-800';
     }
   };
 
@@ -169,19 +169,19 @@ export default function ShopOrderDetailPage() {
   const getProductTypeColor = (type: string) => {
     switch (type) {
       case 'Đơn giản':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-blue-500 text-blue-800';
       case 'Biến thể':
-        return 'bg-purple-100 text-purple-800';
+        return 'bg-blue-500 text-purple-800';
       case 'Tải xuống':
-        return 'bg-green-100 text-green-800';
+        return 'bg-blue-500 text-green-800';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-blue-500 text-gray-800';
     }
   };
 
   if (authLoading || isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 py-12">
+      <div className="min-h-screen bg-white py-12">
         <div className="max-w-4xl mx-auto px-4">
           <div className="text-center">
             <div className="animate-spin h-12 w-12 text-blue-600 mx-auto mb-4">
@@ -207,9 +207,9 @@ export default function ShopOrderDetailPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 py-12">
+      <div className="min-h-screen bg-white py-12">
         <div className="max-w-4xl mx-auto px-4">
-          <div className="bg-white rounded-lg shadow-md p-8 text-center">
+          <div className="bg-grey-200 rounded-lg shadow-md p-8 text-center">
             <svg className="w-16 h-16 mx-auto mb-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
@@ -222,7 +222,7 @@ export default function ShopOrderDetailPage() {
             <p className="text-gray-600 mb-6">{error}</p>
             <Link
               href={`/shops/${shopId}/orders`}
-              className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded transition-colors"
+              className="inline-block bg-blue-500 hover:bg-blue-700 text-gray-900 font-medium py-2 px-6 rounded transition-colors"
             >
               Back to Orders
             </Link>
@@ -234,10 +234,10 @@ export default function ShopOrderDetailPage() {
 
   if (!order) {
     return (
-      <div className="min-h-screen bg-gray-50 py-12">
+      <div className="min-h-screen bg-white py-12">
         <div className="max-w-4xl mx-auto px-4">
-          <div className="bg-white rounded-lg shadow-md p-8 text-center">
-            <svg className="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="bg-grey-200 rounded-lg shadow-md p-8 text-center">
+            <svg className="w-16 h-16 mx-auto mb-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -249,7 +249,7 @@ export default function ShopOrderDetailPage() {
             <p className="text-gray-600 mb-6">The order you're looking for could not be found.</p>
             <Link
               href={`/shops/${shopId}/orders`}
-              className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded transition-colors"
+              className="inline-block bg-blue-500 hover:bg-blue-700 text-gray-900 font-medium py-2 px-6 rounded transition-colors"
             >
               Back to Orders
             </Link>
@@ -260,7 +260,7 @@ export default function ShopOrderDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12">
+    <div className="min-h-screen bg-white py-12">
       <div className="max-w-4xl mx-auto px-4">
         {/* Header */}
         <div className="mb-8">
@@ -283,7 +283,7 @@ export default function ShopOrderDetailPage() {
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
             {/* Status Update Section */}
-            <div className="bg-white rounded-lg shadow-md p-6">
+            <div className="bg-grey-200 rounded-lg shadow-md p-6">
               <h2 className="text-xl font-bold text-gray-900 mb-4">Order Status</h2>
               <div className="flex items-center gap-4">
                 <span className={`px-4 py-2 rounded-full font-semibold text-sm ${getStatusColor(order.status)}`}>
@@ -302,25 +302,25 @@ export default function ShopOrderDetailPage() {
                 <button
                   onClick={handleStatusUpdate}
                   disabled={statusLoading || selectedStatus === order.status}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-md font-medium transition-colors"
+                  className="px-4 py-2 bg-blue-500 hover:bg-blue-700 disabled:bg-blue-400 text-gray-900 rounded-md font-medium transition-colors"
                 >
                   {statusLoading ? 'Updating...' : 'Update'}
                 </button>
               </div>
               {updateMessage && (
-                <div className={`mt-4 p-3 rounded ${updateMessage.includes('success') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                <div className={`mt-4 p-3 rounded ${updateMessage.includes('success') ? 'bg-blue-500 text-green-800' : 'bg-blue-500 text-red-800'}`}>
                   {updateMessage}
                 </div>
               )}
             </div>
 
             {/* Order Items */}
-            <div className="bg-white rounded-lg shadow-md p-6">
+            <div className="bg-grey-200 rounded-lg shadow-md p-6">
               <h2 className="text-xl font-bold text-gray-900 mb-4">Order Items</h2>
               <div className="space-y-4">
                 {order.items && order.items.length > 0 ? (
                   order.items.map((item, index) => (
-                    <div key={item.id} className="border border-gray-200 rounded-lg p-4">
+                    <div key={item.id} className="border border-gray-300 rounded-lg p-4">
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex-1">
                           <h3 className="font-semibold text-gray-900">{item.product_name}</h3>
@@ -333,7 +333,7 @@ export default function ShopOrderDetailPage() {
 
                       {/* Variant Options */}
                       {item.product_type === 'Biến thể' && item.variant_options && Object.keys(item.variant_options).length > 0 && (
-                        <div className="mb-3 p-3 bg-gray-50 rounded">
+                        <div className="mb-3 p-3 bg-white rounded">
                           <p className="text-sm font-semibold text-gray-700 mb-2">Selected Options:</p>
                           <div className="grid grid-cols-2 gap-2">
                             {Object.entries(item.variant_options).map(([key, value]) => (
@@ -394,7 +394,7 @@ export default function ShopOrderDetailPage() {
                       )}
 
                       {/* Pricing */}
-                      <div className="border-t border-gray-200 pt-3 text-right">
+                      <div className="border-t border-gray-300 pt-3 text-right">
                         <p className="text-sm text-gray-600">
                           ₫{(item.unit_price).toLocaleString('vi-VN')} × {item.quantity} = <span className="font-semibold text-gray-900">₫{(item.subtotal).toLocaleString('vi-VN')}</span>
                         </p>
@@ -409,7 +409,7 @@ export default function ShopOrderDetailPage() {
 
             {/* Shipping Address */}
             {order.shipping_address && (
-              <div className="bg-white rounded-lg shadow-md p-6">
+              <div className="bg-grey-200 rounded-lg shadow-md p-6">
                 <h2 className="text-xl font-bold text-gray-900 mb-4">Shipping Address</h2>
                 <div className="space-y-2 text-gray-700">
                   <p className="font-semibold">{order.shipping_address.full_name}</p>
@@ -428,7 +428,7 @@ export default function ShopOrderDetailPage() {
           <div className="lg:col-span-1 space-y-6">
             {/* Customer Info */}
             {order.customer && (
-              <div className="bg-white rounded-lg shadow-md p-6">
+              <div className="bg-grey-200 rounded-lg shadow-md p-6">
                 <h3 className="text-lg font-bold text-gray-900 mb-4">Customer</h3>
                 <div className="space-y-2">
                   <div>
@@ -448,7 +448,7 @@ export default function ShopOrderDetailPage() {
             )}
 
             {/* Order Summary */}
-            <div className="bg-white rounded-lg shadow-md p-6">
+            <div className="bg-grey-200 rounded-lg shadow-md p-6">
               <h3 className="text-lg font-bold text-gray-900 mb-4">Order Summary</h3>
               <div className="space-y-3">
                 <div className="flex justify-between text-sm">
@@ -473,7 +473,7 @@ export default function ShopOrderDetailPage() {
                     <span className="text-red-600">-₫{(order.discount).toLocaleString('vi-VN')}</span>
                   </div>
                 )}
-                <div className="border-t border-gray-200 pt-3 flex justify-between">
+                <div className="border-t border-gray-300 pt-3 flex justify-between">
                   <span className="font-bold text-gray-900">Total:</span>
                   <span className="font-bold text-lg text-blue-600">₫{(order.total_amount).toLocaleString('vi-VN')}</span>
                 </div>
@@ -481,11 +481,11 @@ export default function ShopOrderDetailPage() {
             </div>
 
             {/* Order Timeline */}
-            <div className="bg-white rounded-lg shadow-md p-6">
+            <div className="bg-grey-200 rounded-lg shadow-md p-6">
               <h3 className="text-lg font-bold text-gray-900 mb-4">Timeline</h3>
               <div className="space-y-3 text-sm">
                 <div className="flex gap-3">
-                  <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white flex-shrink-0">
+                  <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-gray-900 flex-shrink-0">
                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                     </svg>
@@ -498,8 +498,8 @@ export default function ShopOrderDetailPage() {
 
                 {order.status !== 'pending' && (
                   <div className="flex gap-3">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white flex-shrink-0 ${
-                      ['processing', 'completed'].includes(order.status) ? 'bg-blue-600' : 'bg-gray-300'
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-gray-900 flex-shrink-0 ${
+                      ['processing', 'completed'].includes(order.status) ? 'bg-blue-500' : 'bg-blue-300'
                     }`}>
                       <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
@@ -514,7 +514,7 @@ export default function ShopOrderDetailPage() {
 
                 {order.status === 'completed' && (
                   <div className="flex gap-3">
-                    <div className="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center text-white flex-shrink-0">
+                    <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-gray-900 flex-shrink-0">
                       <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                       </svg>

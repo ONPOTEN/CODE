@@ -64,7 +64,7 @@ export default function ShopPostsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-gray-600">Loading...</div>
       </div>
     );
@@ -72,17 +72,17 @@ export default function ShopPostsPage() {
 
   if (!shop) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-red-600">Shop not found</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-white py-8">
       <div className="max-w-6xl mx-auto px-4">
         {/* Header */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+        <div className="bg-grey-200 rounded-lg shadow-md p-6 mb-6">
           <div className="flex justify-between items-center mb-4">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">{shop.name}</h1>
@@ -91,7 +91,7 @@ export default function ShopPostsPage() {
             {isOwner && (
               <button
                 onClick={() => router.push(`/shops/${shopId}/posts/create`)}
-                className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                className="bg-blue-500 text-gray-900 px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
               >
                 Create New Post/Page
               </button>
@@ -99,12 +99,12 @@ export default function ShopPostsPage() {
           </div>
 
           {/* Product Type View Tabs */}
-          <div className="flex gap-2 mt-6 border-b border-gray-200 pb-4">
+          <div className="flex gap-2 mt-6 border-b border-gray-300 pb-4">
             <button
               onClick={() => setProductTypeView('all')}
               className={`px-4 py-2 font-medium rounded-t-lg transition-colors ${
                 productTypeView === 'all'
-                  ? 'bg-gray-100 text-gray-900 border-b-2 border-gray-900'
+                  ? 'bg-blue-500 text-gray-900 border-b-2 border-gray-900'
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
@@ -114,7 +114,7 @@ export default function ShopPostsPage() {
               onClick={() => setProductTypeView('simple')}
               className={`px-4 py-2 font-medium rounded-t-lg transition-colors ${
                 productTypeView === 'simple'
-                  ? 'bg-blue-50 text-blue-900 border-b-2 border-blue-600'
+                  ? 'bg-grey-200 text-blue-900 border-b-2 border-blue-600'
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
@@ -124,7 +124,7 @@ export default function ShopPostsPage() {
               onClick={() => setProductTypeView('variant')}
               className={`px-4 py-2 font-medium rounded-t-lg transition-colors ${
                 productTypeView === 'variant'
-                  ? 'bg-purple-50 text-purple-900 border-b-2 border-purple-600'
+                  ? 'bg-grey-200 text-purple-900 border-b-2 border-purple-600'
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
@@ -134,7 +134,7 @@ export default function ShopPostsPage() {
               onClick={() => setProductTypeView('download')}
               className={`px-4 py-2 font-medium rounded-t-lg transition-colors ${
                 productTypeView === 'download'
-                  ? 'bg-green-50 text-green-900 border-b-2 border-green-600'
+                  ? 'bg-grey-200 text-green-900 border-b-2 border-green-600'
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
@@ -185,7 +185,7 @@ export default function ShopPostsPage() {
         {productTypeView === 'all' && (
           <>
             {posts.length === 0 ? (
-              <div className="bg-white rounded-lg shadow-md p-12 text-center">
+              <div className="bg-grey-200 rounded-lg shadow-md p-12 text-center">
                 <p className="text-gray-500 text-lg">No posts found</p>
                 {isOwner && (
                   <button
@@ -199,18 +199,18 @@ export default function ShopPostsPage() {
             ) : (
               <div className="space-y-4">
                 {posts.map((post) => (
-                  <div key={post.id} className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
+                  <div key={post.id} className="bg-grey-200 rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
                           <h2 className="text-xl font-semibold text-gray-900">{post.title}</h2>
-                          <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                          <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-500 text-blue-800">
                             {post.type}
                           </span>
                           <span
                             className={`px-2 py-1 text-xs font-medium rounded-full ${
                               post.status === 'published'
-                                ? 'bg-green-100 text-green-800'
+                                ? 'bg-blue-500 text-green-800'
                                 : 'bg-yellow-100 text-yellow-800'
                             }`}
                           >
@@ -236,13 +236,13 @@ export default function ShopPostsPage() {
                         <div className="flex gap-2 ml-4">
                           <button
                             onClick={() => router.push(`/shops/${shopId}/posts/${post.id}/edit`)}
-                            className="px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                            className="px-4 py-2 text-blue-600 hover:bg-grey-200 rounded-md transition-colors"
                           >
                             Edit
                           </button>
                           <button
                             onClick={() => handleDelete(post.id, post.title)}
-                            className="px-4 py-2 text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                            className="px-4 py-2 text-red-600 hover:bg-grey-200 rounded-md transition-colors"
                           >
                             Delete
                           </button>

@@ -72,7 +72,7 @@ export default function ProductDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
@@ -80,7 +80,7 @@ export default function ProductDetailPage() {
 
   if (error || !post) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
           <svg className="w-16 h-16 mx-auto mb-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -89,7 +89,7 @@ export default function ProductDetailPage() {
           <p className="text-gray-500 mb-6">{error || 'The product you are looking for does not exist.'}</p>
           <Link
             href={`/shops/${shopId}`}
-            className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+            className="inline-flex items-center px-4 py-2 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-lg font-medium transition-colors"
           >
             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -104,9 +104,9 @@ export default function ProductDetailPage() {
   const isOwner = user && post.user_id === user.id;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
+      <div className="bg-grey-200 border-b border-gray-300 sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link
@@ -122,7 +122,7 @@ export default function ProductDetailPage() {
           <div className="flex items-center gap-3">
             <Link
               href="/cart"
-              className="inline-flex items-center gap-2 px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-colors whitespace-nowrap shadow-md hover:shadow-lg"
+              className="inline-flex items-center gap-2 px-6 py-2 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-lg font-semibold transition-colors whitespace-nowrap shadow-md hover:shadow-lg"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -132,7 +132,7 @@ export default function ProductDetailPage() {
             {isOwner && (
               <Link
                 href={`/shops/${shopId}/posts/${postId}/edit`}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-lg font-medium transition-colors"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -146,30 +146,30 @@ export default function ProductDetailPage() {
 
       {/* Main Content */}
       <div className="max-w-4xl mx-auto px-4 py-8">
-        <article className="bg-white rounded-lg shadow-md p-8 space-y-8">
+        <article className="bg-grey-200 rounded-lg shadow-md p-8 space-y-8">
           {/* Title and Badges */}
           <div>
             <div className="flex items-center gap-3 mb-4 flex-wrap">
               <h1 className="text-4xl font-bold text-gray-900">{post.title}</h1>
               <span className={`px-3 py-1.5 text-sm font-semibold rounded-full ${
-                post.type === 'post' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'
+                post.type === 'post' ? 'bg-blue-500 text-blue-800' : 'bg-blue-500 text-purple-800'
               }`}>
                 {post.type.toUpperCase()}
               </span>
               {post.product_type && (
                 <span className={`px-3 py-1.5 text-sm font-semibold rounded-full ${
                   post.product_type === 'Đơn giản'
-                    ? 'bg-blue-100 text-blue-800'
+                    ? 'bg-blue-500 text-blue-800'
                     : post.product_type === 'Biến thể'
-                    ? 'bg-purple-100 text-purple-800'
-                    : 'bg-green-100 text-green-800'
+                    ? 'bg-blue-500 text-purple-800'
+                    : 'bg-blue-500 text-green-800'
                 }`}>
                   {post.product_type}
                 </span>
               )}
               <span className={`px-3 py-1.5 text-sm font-semibold rounded-full ${
                 post.status === 'published'
-                  ? 'bg-green-100 text-green-800'
+                  ? 'bg-blue-500 text-green-800'
                   : 'bg-yellow-100 text-yellow-800'
               }`}>
                 {post.status.toUpperCase()}
@@ -177,7 +177,7 @@ export default function ProductDetailPage() {
             </div>
 
             {/* Metadata */}
-            <div className="flex items-center gap-6 text-sm text-gray-600 py-4 border-t border-b border-gray-200">
+            <div className="flex items-center gap-6 text-sm text-gray-600 py-4 border-t border-b border-gray-300">
               <span className="flex items-center gap-2">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -265,7 +265,7 @@ export default function ProductDetailPage() {
 
           {/* Price Information & Add to Cart */}
           {(post.price_range || (post as any).price || post.product_type === 'Tải xuống') && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+            <div className="bg-grey-200 border border-green-200 rounded-lg p-6">
               <h3 className="text-lg font-semibold text-green-900 mb-3">Pricing</h3>
               <div className="space-y-2 mb-6">
                 {post.price_range && (
@@ -302,7 +302,7 @@ export default function ProductDetailPage() {
                   <div className="flex items-center border border-green-300 rounded-lg">
                     <button
                       onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                      className="px-3 py-1 text-green-600 hover:bg-green-100 transition-colors"
+                      className="px-3 py-1 text-green-600 hover:bg-blue-500 transition-colors"
                     >
                       −
                     </button>
@@ -311,7 +311,7 @@ export default function ProductDetailPage() {
                     </span>
                     <button
                       onClick={() => setQuantity(quantity + 1)}
-                      className="px-3 py-1 text-green-600 hover:bg-green-100 transition-colors"
+                      className="px-3 py-1 text-green-600 hover:bg-blue-500 transition-colors"
                     >
                       +
                     </button>
@@ -320,7 +320,7 @@ export default function ProductDetailPage() {
 
                 <button
                   onClick={handleAddToCart}
-                  className="w-full px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
+                  className="w-full px-6 py-3 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -330,7 +330,7 @@ export default function ProductDetailPage() {
 
                 {/* Notification */}
                 {showAddedNotification && (
-                  <div className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium animate-pulse">
+                  <div className="px-4 py-2 bg-blue-500 text-gray-900 rounded-lg text-sm font-medium animate-pulse">
                     ✓ Added {quantity} item(s) to cart!
                   </div>
                 )}
@@ -340,7 +340,7 @@ export default function ProductDetailPage() {
 
           {/* Short Description */}
           {post.short_description && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+            <div className="bg-grey-200 border border-blue-200 rounded-lg p-6">
               <h3 className="text-lg font-semibold text-blue-900 mb-2">Summary</h3>
               <p className="text-gray-700 text-lg leading-relaxed">{post.short_description}</p>
             </div>
@@ -348,7 +348,7 @@ export default function ProductDetailPage() {
 
           {/* Detail Description */}
           {(post as any).detail_description && (
-            <div className="bg-purple-50 border border-purple-200 rounded-lg p-6">
+            <div className="bg-grey-200 border border-purple-200 rounded-lg p-6">
               <h3 className="text-lg font-semibold text-purple-900 mb-2">Details</h3>
               <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{(post as any).detail_description}</p>
             </div>
@@ -372,7 +372,7 @@ export default function ProductDetailPage() {
                 {((post as any).categories as string[]).map((category, index) => (
                   <span
                     key={index}
-                    className="px-3 py-1.5 bg-gray-200 text-gray-800 rounded-full text-sm font-medium"
+                    className="px-3 py-1.5 bg-blue-500 text-gray-800 rounded-full text-sm font-medium"
                   >
                     {category}
                   </span>
@@ -383,17 +383,17 @@ export default function ProductDetailPage() {
 
           {/* Attributes (for variant products) */}
           {(post as any).attributes && (post as any).attributes.length > 0 && (
-            <div className="bg-purple-50 border border-purple-200 rounded-lg p-6">
+            <div className="bg-grey-200 border border-purple-200 rounded-lg p-6">
               <h3 className="text-lg font-semibold text-purple-900 mb-4">Attributes</h3>
               <div className="space-y-4">
                 {((post as any).attributes as any[]).map((attribute, attrIndex) => (
-                  <div key={attrIndex} className="bg-white rounded-lg p-4">
+                  <div key={attrIndex} className="bg-grey-200 rounded-lg p-4">
                     <h4 className="font-semibold text-gray-900 mb-2">{attribute.name}</h4>
                     <div className="flex flex-wrap gap-2">
                       {attribute.options && attribute.options.map((option: any, optIndex: number) => (
                         <span
                           key={optIndex}
-                          className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm"
+                          className="px-3 py-1 bg-blue-500 text-purple-800 rounded-full text-sm"
                         >
                           {option.value}
                         </span>
@@ -407,10 +407,10 @@ export default function ProductDetailPage() {
 
           {/* Download Files (for download products) */}
           {(post as any).download_files && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+            <div className="bg-grey-200 border border-green-200 rounded-lg p-6">
               <h3 className="text-lg font-semibold text-green-900 mb-4">Available for Download</h3>
               <div className="space-y-3">
-                <div className="bg-white rounded-lg p-4 flex items-center justify-between">
+                <div className="bg-grey-200 rounded-lg p-4 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -425,7 +425,7 @@ export default function ProductDetailPage() {
                       // In a real app, this would trigger download
                       alert('Download functionality would be implemented here');
                     }}
-                    className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors"
+                    className="px-4 py-2 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-lg font-medium transition-colors"
                   >
                     Download
                   </button>
@@ -436,7 +436,7 @@ export default function ProductDetailPage() {
 
           {/* External Links (for download products) */}
           {(post as any).link_files && (post as any).link_files.length > 0 && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+            <div className="bg-grey-200 border border-green-200 rounded-lg p-6">
               <h3 className="text-lg font-semibold text-green-900 mb-4">External Links</h3>
               <div className="space-y-3">
                 {((post as any).link_files as any[]).map((link, index) => (
@@ -445,7 +445,7 @@ export default function ProductDetailPage() {
                     href={link.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="block bg-white rounded-lg p-4 hover:shadow-md transition-shadow"
+                    className="block bg-grey-200 rounded-lg p-4 hover:shadow-md transition-shadow"
                   >
                     <div className="flex items-center justify-between">
                       <div>

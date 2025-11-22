@@ -82,7 +82,7 @@ export default function ShopsPage() {
   if (error) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-4xl mx-auto">
+        <div className="bg-grey-200 border border-red-200 rounded-lg p-6 max-w-4xl mx-auto">
           <h3 className="text-lg font-semibold text-red-900 mb-2">Error Loading Shops</h3>
           <p className="text-red-700">{error}</p>
         </div>
@@ -100,7 +100,7 @@ export default function ShopsPage() {
             {user?.role === 'admin' && (
               <Link
                 href="/admin/shops"
-                className="inline-flex items-center px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors"
+                className="inline-flex items-center px-6 py-3 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-lg font-medium transition-colors"
               >
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
@@ -111,7 +111,7 @@ export default function ShopsPage() {
             {isAuthenticated && (
               <Link
                 href="/shops/create"
-                className="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+                className="inline-flex items-center px-6 py-3 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-lg font-medium transition-colors"
               >
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -141,8 +141,8 @@ export default function ShopsPage() {
 
         {/* Shops Grid */}
         {shopsList.length === 0 ? (
-          <div className="text-center py-12 bg-white rounded-lg shadow">
-            <svg className="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="text-center py-12 bg-grey-200 rounded-lg shadow">
+            <svg className="w-16 h-16 mx-auto mb-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
             </svg>
             <p className="text-lg text-gray-600 mb-2">No shops available yet</p>
@@ -153,11 +153,11 @@ export default function ShopsPage() {
             {shopsList.map((shop) => (
               <div
                 key={shop.id}
-                className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow border border-gray-200 overflow-hidden"
+                className="bg-grey-200 rounded-lg shadow-sm hover:shadow-md transition-shadow border border-gray-300 overflow-hidden"
               >
                 {/* Shop Banner/Cover Image */}
                 {shop.banner ? (
-                  <div className="relative h-40 bg-gray-200 overflow-hidden">
+                  <div className="relative h-40 bg-blue-500 overflow-hidden">
                     <img src={shop.banner} alt="Shop banner" className="w-full h-full object-cover" />
                   </div>
                 ) : (
@@ -174,7 +174,7 @@ export default function ShopsPage() {
                           <img
                             src={shop.logo}
                             alt={shop.name}
-                            className="w-16 h-16 rounded-lg object-cover border border-gray-200"
+                            className="w-16 h-16 rounded-lg object-cover border border-gray-300"
                           />
                         </div>
                       )}
@@ -187,9 +187,9 @@ export default function ShopsPage() {
                         <span
                           className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${
                             shop.status === 'active'
-                              ? 'bg-green-100 text-green-800'
+                              ? 'bg-blue-500 text-green-800'
                               : shop.status === 'inactive'
-                              ? 'bg-gray-100 text-gray-800'
+                              ? 'bg-blue-500 text-gray-800'
                               : 'bg-yellow-100 text-yellow-800'
                           }`}
                         >
@@ -277,10 +277,10 @@ export default function ShopsPage() {
 
                   {/* Action Buttons */}
                   {user && shop.user_id === user.id && (
-                    <div className="flex gap-2 pt-4 border-t border-gray-200">
+                    <div className="flex gap-2 pt-4 border-t border-gray-300">
                       <Link
                         href={`/shops/${shop.id}/edit`}
-                        className="flex-1 flex items-center justify-center gap-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors text-sm"
+                        className="flex-1 flex items-center justify-center gap-1 px-4 py-2 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-lg font-medium transition-colors text-sm"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path
@@ -294,7 +294,7 @@ export default function ShopsPage() {
                       </Link>
                       <button
                         onClick={() => handleDelete(shop.id, shop.name)}
-                        className="flex-1 flex items-center justify-center gap-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors text-sm"
+                        className="flex-1 flex items-center justify-center gap-1 px-4 py-2 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-lg font-medium transition-colors text-sm"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path

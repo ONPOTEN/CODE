@@ -142,7 +142,7 @@ export default function ManageUsersPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex justify-center items-center bg-gray-50">
+      <div className="min-h-screen flex justify-center items-center bg-white">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
@@ -150,12 +150,12 @@ export default function ManageUsersPage() {
 
   if (error && !group) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-white">
         <div className="max-w-4xl mx-auto px-4 py-8">
           <Link href="/my-groups" className="text-blue-600 hover:text-blue-700 font-medium">
             ← Back to My Groups
           </Link>
-          <div className="mt-8 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+          <div className="mt-8 p-4 bg-grey-200 border border-red-200 rounded-lg text-red-700">
             {error}
           </div>
         </div>
@@ -165,10 +165,10 @@ export default function ManageUsersPage() {
 
   if (!group) {
     return (
-      <div className="min-h-screen bg-gray-50 px-4 py-8">
+      <div className="min-h-screen bg-white px-4 py-8">
         <div className="max-w-4xl mx-auto text-center py-12">
           <p className="text-gray-500 text-lg">Group not found</p>
-          <Link href="/my-groups" className="mt-4 inline-block px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+          <Link href="/my-groups" className="mt-4 inline-block px-4 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-700">
             Back to My Groups
           </Link>
         </div>
@@ -177,7 +177,7 @@ export default function ManageUsersPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
@@ -189,14 +189,14 @@ export default function ManageUsersPage() {
         </div>
 
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+          <div className="mb-6 p-4 bg-grey-200 border border-red-200 rounded-lg text-red-700">
             {error}
           </div>
         )}
 
         {/* Pending Requests Section */}
         {pendingRequests.length > 0 && (
-          <div className="bg-white rounded-lg shadow p-6 mb-8">
+          <div className="bg-grey-200 rounded-lg shadow p-6 mb-8">
             <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
               <svg className="w-5 h-5 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M10 18a8 8 0 100-16 8 8 0 000 16zm0-2a6 6 0 100-12 6 6 0 000 12zm0-5a1 1 0 100-2 1 1 0 000 2z" />
@@ -221,14 +221,14 @@ export default function ManageUsersPage() {
                     <button
                       onClick={() => handleApproveMember(request.user_id)}
                       disabled={approvingId === request.user_id}
-                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-4 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {approvingId === request.user_id ? 'Approving...' : 'Approve'}
                     </button>
                     <button
                       onClick={() => handleRejectMember(request.user_id)}
                       disabled={rejectingId === request.user_id}
-                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-4 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {rejectingId === request.user_id ? 'Rejecting...' : 'Reject'}
                     </button>
@@ -240,7 +240,7 @@ export default function ManageUsersPage() {
         )}
 
         {/* Approved Members Section */}
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-grey-200 rounded-lg shadow p-6">
           <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
             <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
               <path d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" />
@@ -253,7 +253,7 @@ export default function ManageUsersPage() {
           ) : (
             <div className="space-y-3">
               {approvedMembers.map((member) => (
-                <div key={member.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                <div key={member.id} className="flex items-center justify-between p-4 border border-gray-300 rounded-lg hover:bg-white transition-colors">
                   <div className="flex items-center gap-3">
                     {member.user?.avatar && (
                       <img src={member.user.avatar} alt={member.user?.name} className="w-10 h-10 rounded-full object-cover" />
@@ -268,7 +268,7 @@ export default function ManageUsersPage() {
                   <button
                     onClick={() => handleDeleteMember(member.group_user_id)}
                     disabled={deletingId === member.group_user_id}
-                    className="px-4 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-4 py-2 bg-blue-500 text-red-600 rounded-lg hover:bg-blue-500 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {deletingId === member.group_user_id ? 'Removing...' : 'Remove'}
                   </button>

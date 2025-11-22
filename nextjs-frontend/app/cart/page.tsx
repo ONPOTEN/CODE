@@ -16,7 +16,7 @@ export default function CartPage() {
 
   if (!isHydrated) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
@@ -26,9 +26,9 @@ export default function CartPage() {
   const itemCount = items.length;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
+      <div className="bg-grey-200 border-b border-gray-300 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold text-gray-900">Shopping Cart</h1>
@@ -43,9 +43,9 @@ export default function CartPage() {
       <div className="max-w-7xl mx-auto px-4 py-8">
         {items.length === 0 ? (
           // Empty Cart
-          <div className="bg-white rounded-lg shadow-md p-12 text-center">
+          <div className="bg-grey-200 rounded-lg shadow-md p-12 text-center">
             <svg
-              className="w-16 h-16 mx-auto mb-4 text-gray-300"
+              className="w-16 h-16 mx-auto mb-4 text-gray-700"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -61,7 +61,7 @@ export default function CartPage() {
             <p className="text-gray-600 mb-6">Add some products to get started!</p>
             <Link
               href="/"
-              className="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+              className="inline-flex items-center px-6 py-3 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-lg font-medium transition-colors"
             >
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -75,7 +75,7 @@ export default function CartPage() {
             {/* Cart Items */}
             <div className="lg:col-span-2 space-y-4">
               {items.map((item, index) => (
-                <div key={index} className="bg-white rounded-lg shadow-md p-6 flex gap-4">
+                <div key={index} className="bg-grey-200 rounded-lg shadow-md p-6 flex gap-4">
                   {/* Product Image */}
                   <img
                     src={item.image}
@@ -106,7 +106,7 @@ export default function CartPage() {
                               item.attributes
                             )
                           }
-                          className="px-3 py-1 text-gray-600 hover:bg-gray-100 transition-colors"
+                          className="px-3 py-1 text-gray-600 hover:bg-blue-500 transition-colors"
                         >
                           −
                         </button>
@@ -122,7 +122,7 @@ export default function CartPage() {
                               item.attributes
                             )
                           }
-                          className="px-3 py-1 text-gray-600 hover:bg-gray-100 transition-colors"
+                          className="px-3 py-1 text-gray-600 hover:bg-blue-500 transition-colors"
                         >
                           +
                         </button>
@@ -148,7 +148,7 @@ export default function CartPage() {
 
             {/* Cart Summary */}
             <div className="lg:col-span-1">
-              <div className="bg-white rounded-lg shadow-md p-6 sticky top-20 space-y-6">
+              <div className="bg-grey-200 rounded-lg shadow-md p-6 sticky top-20 space-y-6">
                 <h2 className="text-xl font-bold text-gray-900">Order Summary</h2>
 
                 {/* Items Count */}
@@ -160,7 +160,7 @@ export default function CartPage() {
                 </div>
 
                 {/* Divider */}
-                <div className="border-t border-gray-200"></div>
+                <div className="border-t border-gray-300"></div>
 
                 {/* Totals */}
                 <div className="space-y-4">
@@ -172,7 +172,7 @@ export default function CartPage() {
                   {/* Checkout Button */}
                   <button
                     onClick={() => router.push('/checkout')}
-                    className="w-full px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
+                    className="w-full px-6 py-3 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path
@@ -188,7 +188,7 @@ export default function CartPage() {
                   {/* Continue Shopping Button */}
                   <button
                     onClick={() => router.back()}
-                    className="w-full px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-900 rounded-lg font-semibold transition-colors"
+                    className="w-full px-6 py-3 bg-blue-500 hover:bg-blue-300 text-gray-900 rounded-lg font-semibold transition-colors"
                   >
                     Continue Shopping
                   </button>
@@ -207,7 +207,7 @@ export default function CartPage() {
                 </div>
 
                 {/* Additional Info */}
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="bg-grey-200 border border-blue-200 rounded-lg p-4">
                   <p className="text-xs text-gray-600">
                     <span className="font-semibold">Note:</span> Shipping, taxes, and other fees will be calculated at checkout.
                   </p>

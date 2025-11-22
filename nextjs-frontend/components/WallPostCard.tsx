@@ -109,7 +109,7 @@ export function WallPostCard({ wallPost, post: legacyPost, isCurrentUserModerato
   };
 
   return (
-    <article className="bg-white rounded-lg shadow-sm hover:shadow-lg transition-shadow border border-gray-200 overflow-hidden hover:border-blue-300 h-full flex flex-col">
+    <article className="bg-gray-50 rounded-lg shadow-sm hover:shadow-lg transition-shadow border border-gray-300 overflow-hidden hover:border-blue-300 h-full flex flex-col">
       <Link href={postLink} className="flex-1 flex flex-col">
         {/* Featured Image */}
         {featuredImageUrl && (
@@ -227,18 +227,18 @@ export function WallPostCard({ wallPost, post: legacyPost, isCurrentUserModerato
 
       {/* Moderation Buttons - only for pending posts and authorized users */}
       {isCurrentUserModerator && actualWallPost.status === 'pending' && (
-        <div className="px-4 py-3 bg-gray-50 border-t border-gray-200 flex gap-2">
+        <div className="px-4 py-3 bg-white border-t border-gray-300 flex gap-2">
           <button
             onClick={handleApprove}
             disabled={isApproving || isRejecting}
-            className="flex-1 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+            className="flex-1 px-3 py-2 bg-green-600 text-gray-900 rounded-lg hover:bg-green-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
           >
             {isApproving ? 'Approving...' : '✓ Approve'}
           </button>
           <button
             onClick={handleReject}
             disabled={isApproving || isRejecting}
-            className="flex-1 px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+            className="flex-1 px-3 py-2 bg-red-600 text-gray-900 rounded-lg hover:bg-red-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
           >
             {isRejecting ? 'Rejecting...' : '✗ Reject'}
           </button>

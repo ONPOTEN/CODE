@@ -59,7 +59,7 @@ export default function AddToCartButton({ product }: AddToCartButtonProps) {
         <div className="flex items-center border border-gray-300 rounded-sm">
           <button
             onClick={() => setQuantity(Math.max(1, quantity - 1))}
-            className="w-8 h-8 flex items-center justify-center hover:bg-gray-100"
+            className="w-8 h-8 flex items-center justify-center hover:bg-gray-200"
           >
             −
           </button>
@@ -72,7 +72,7 @@ export default function AddToCartButton({ product }: AddToCartButtonProps) {
           />
           <button
             onClick={() => setQuantity(quantity + 1)}
-            className="w-8 h-8 flex items-center justify-center hover:bg-gray-100"
+            className="w-8 h-8 flex items-center justify-center hover:bg-gray-200"
           >
             +
           </button>
@@ -84,14 +84,14 @@ export default function AddToCartButton({ product }: AddToCartButtonProps) {
         <button
           onClick={handleAddToCart}
           disabled={adding || product.stock_status !== 'instock'}
-          className="flex-1 border-2 border-primary text-primary py-3 rounded-sm hover:bg-primary hover:text-white transition-colors font-normal disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex-1 border-2 border-primary text-primary py-3 rounded-sm hover:bg-primary hover:text-gray-900 transition-colors font-normal disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {adding ? 'Đang thêm...' : 'Thêm vào giỏ hàng'}
         </button>
         <button
           onClick={handleBuyNow}
           disabled={adding || product.stock_status !== 'instock'}
-          className="flex-1 bg-secondary text-white py-3 rounded-sm hover:opacity-90 transition-opacity font-normal disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex-1 bg-secondary text-gray-900 py-3 rounded-sm hover:opacity-90 transition-opacity font-normal disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Mua ngay
         </button>

@@ -87,7 +87,7 @@ export default function GroupPostDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex justify-center items-center bg-gray-50">
+      <div className="min-h-screen flex justify-center items-center bg-white">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
@@ -95,14 +95,14 @@ export default function GroupPostDetailPage() {
 
   if (error || !post) {
     return (
-      <div className="min-h-screen bg-gray-50 px-4 py-12">
+      <div className="min-h-screen bg-white px-4 py-12">
         <div className="max-w-3xl mx-auto">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+          <div className="bg-grey-200 border border-red-200 rounded-lg p-6">
             <h2 className="text-xl font-semibold text-red-900 mb-2">Error</h2>
             <p className="text-red-700 mb-4">{error || 'Post not found'}</p>
             <Link
               href="/"
-              className="inline-block px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+              className="inline-block px-4 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-700 font-medium"
             >
               ← Back to Home
             </Link>
@@ -114,7 +114,7 @@ export default function GroupPostDetailPage() {
 
   return (
     <GroupEngagementProvider token={localStorage.getItem('api_token') || ''}>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-white">
         <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Back Button */}
         <Link
@@ -142,7 +142,7 @@ export default function GroupPostDetailPage() {
           <Link href="/" className="text-blue-600 hover:text-blue-700 font-medium transition-colors">
             Home
           </Link>
-          <span className="text-gray-400">/</span>
+          <span className="text-gray-600">/</span>
           {post.group && (
             <>
               <Link
@@ -151,17 +151,17 @@ export default function GroupPostDetailPage() {
               >
                 {post.group.group_name}
               </Link>
-              <span className="text-gray-400">/</span>
+              <span className="text-gray-600">/</span>
             </>
           )}
           <span className="text-gray-600 truncate">{post.post_title?.substring(0, 30)}...</span>
         </div>
 
         {/* Main Content */}
-        <article className="bg-white rounded-lg shadow-lg overflow-hidden border border-gray-200">
+        <article className="bg-grey-200 rounded-lg shadow-lg overflow-hidden border border-gray-300">
           {/* Featured Image */}
           {(post.featured_image || (post.images && post.images.length > 0)) && (
-            <div className="w-full h-96 bg-gray-200 relative">
+            <div className="w-full h-96 bg-blue-500 relative">
               <img
                 src={post.featured_image || (post.images && post.images.length > 0 ? post.images[0] : '')}
                 alt={post.post_title}
@@ -175,33 +175,33 @@ export default function GroupPostDetailPage() {
 
           <div className="p-8 md:p-12">
             {/* Header Section */}
-            <header className="mb-8 pb-8 border-b border-gray-200">
+            <header className="mb-8 pb-8 border-b border-gray-300">
               {/* Status Badges */}
               <div className="flex flex-wrap items-center gap-3 mb-6">
                 {post.post_status && (
                   <span
                     className={`px-3 py-1 rounded-full text-sm font-semibold ${
                       post.post_status === 'publish'
-                        ? 'bg-green-100 text-green-800'
+                        ? 'bg-blue-500 text-green-800'
                         : post.post_status === 'pending'
                         ? 'bg-yellow-100 text-yellow-800'
                         : post.post_status === 'draft'
-                        ? 'bg-gray-100 text-gray-800'
-                        : 'bg-red-100 text-red-800'
+                        ? 'bg-blue-500 text-gray-800'
+                        : 'bg-blue-500 text-red-800'
                     }`}
                   >
                     {post.post_status.charAt(0).toUpperCase() + post.post_status.slice(1)}
                   </span>
                 )}
-                <span className="px-3 py-1 rounded-full text-sm font-semibold bg-blue-100 text-blue-800">
+                <span className="px-3 py-1 rounded-full text-sm font-semibold bg-blue-500 text-blue-800">
                   🏘️ Group Post
                 </span>
                 {post.visibility && (
                   <span
                     className={`px-3 py-1 rounded-full text-sm font-semibold ${
                       post.visibility === 'public'
-                        ? 'bg-blue-100 text-blue-800'
-                        : 'bg-gray-100 text-gray-800'
+                        ? 'bg-blue-500 text-blue-800'
+                        : 'bg-blue-500 text-gray-800'
                     }`}
                   >
                     {post.visibility === 'public' ? '🌍 Public' : '🔒 Private'}
@@ -219,7 +219,7 @@ export default function GroupPostDetailPage() {
                         e.stopPropagation();
                         setShowMenu(!showMenu);
                       }}
-                      className="p-2 hover:bg-gray-100 rounded-full transition-colors flex-shrink-0"
+                      className="p-2 hover:bg-blue-500 rounded-full transition-colors flex-shrink-0"
                       title="Post options"
                     >
                       <svg className="w-6 h-6 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
@@ -229,14 +229,14 @@ export default function GroupPostDetailPage() {
 
                     {/* Dropdown Menu */}
                     {showMenu && (
-                      <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-20 py-1">
+                      <div className="absolute right-0 mt-2 w-48 bg-grey-200 rounded-lg shadow-xl border border-gray-300 z-20 py-1">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             handleDeletePost();
                           }}
                           disabled={isDeleting}
-                          className="w-full text-left px-4 py-2 hover:bg-red-50 transition-colors flex items-center gap-2 text-red-600 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="w-full text-left px-4 py-2 hover:bg-grey-200 transition-colors flex items-center gap-2 text-red-600 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -288,7 +288,7 @@ export default function GroupPostDetailPage() {
             {/* Author Info */}
             {post.author && (
               <div className="flex items-center gap-4 mb-8">
-                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-lg font-bold flex-shrink-0">
+                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-gray-900 text-lg font-bold flex-shrink-0">
                   {post.author.name?.charAt(0).toUpperCase() ||
                     post.author.username?.charAt(0).toUpperCase()}
                 </div>
@@ -296,7 +296,7 @@ export default function GroupPostDetailPage() {
                   <div className="flex items-center gap-2">
                     <h3 className="font-semibold text-gray-900">{post.author.name || post.author.username}</h3>
                     {currentUser?.id === post.author.id && (
-                      <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded">You</span>
+                      <span className="px-2 py-1 text-xs font-medium bg-blue-500 text-blue-800 rounded">You</span>
                     )}
                   </div>
                   <p className="text-sm text-gray-600 mt-1">@{post.author.username}</p>
@@ -322,7 +322,7 @@ export default function GroupPostDetailPage() {
                   {post.images.map((image, index) => (
                     <div
                       key={index}
-                      className="relative aspect-square bg-gray-200 rounded-lg overflow-hidden group cursor-pointer"
+                      className="relative aspect-square bg-blue-500 rounded-lg overflow-hidden group cursor-pointer"
                       onClick={() => {
                         setSelectedImageIndex(index);
                         setShowLightbox(true);
@@ -345,7 +345,7 @@ export default function GroupPostDetailPage() {
 
             {/* Excerpt */}
             {post.post_excerpt && (
-              <div className="mb-8 p-4 bg-blue-50 border-l-4 border-blue-500 rounded">
+              <div className="mb-8 p-4 bg-grey-200 border-l-4 border-blue-500 rounded">
                 <p className="text-sm font-semibold text-blue-900 mb-1">Summary</p>
                 <p className="text-lg text-gray-700 italic">{post.post_excerpt}</p>
               </div>
@@ -366,7 +366,7 @@ export default function GroupPostDetailPage() {
                   Content
                 </h3>
                 <div className="prose prose-lg max-w-none">
-                  <div className="text-gray-800 whitespace-pre-wrap leading-relaxed bg-gray-50 p-6 rounded-lg border border-gray-200">
+                  <div className="text-gray-800 whitespace-pre-wrap leading-relaxed bg-white p-6 rounded-lg border border-gray-300">
                     {post.post_content}
                   </div>
                 </div>
@@ -375,7 +375,7 @@ export default function GroupPostDetailPage() {
 
             {/* Engagement Buttons */}
             {currentUser && (
-              <div className="mb-8 p-6 border-t border-gray-200">
+              <div className="mb-8 p-6 border-t border-gray-300">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path
@@ -395,22 +395,22 @@ export default function GroupPostDetailPage() {
             )}
 
             {/* Post Meta Stats */}
-            <div className="mb-8 p-6 border-t border-gray-200">
+            <div className="mb-8 p-6 border-t border-gray-300">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Post Statistics</h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                <div className="bg-grey-200 p-4 rounded-lg border border-blue-200">
                   <p className="text-xs text-blue-600 uppercase font-semibold">Likes</p>
                   <p className="text-2xl font-bold text-blue-900 mt-2">{post.likes_count || 0}</p>
                 </div>
-                <div className="bg-red-50 p-4 rounded-lg border border-red-200">
+                <div className="bg-grey-200 p-4 rounded-lg border border-red-200">
                   <p className="text-xs text-red-600 uppercase font-semibold">Dislikes</p>
                   <p className="text-2xl font-bold text-red-900 mt-2">{post.dislikes_count || 0}</p>
                 </div>
-                <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                <div className="bg-grey-200 p-4 rounded-lg border border-green-200">
                   <p className="text-xs text-green-600 uppercase font-semibold">Comments</p>
                   <p className="text-2xl font-bold text-green-900 mt-2">{post.comments_count || 0}</p>
                 </div>
-                <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                <div className="bg-grey-200 p-4 rounded-lg border border-purple-200">
                   <p className="text-xs text-purple-600 uppercase font-semibold">Last Updated</p>
                   <p className="text-sm text-purple-900 mt-2">
                     {post.post_modified
@@ -426,13 +426,13 @@ export default function GroupPostDetailPage() {
             </div>
 
             {/* Comments Section */}
-            <div className="mb-8 p-6 border-t border-gray-200">
+            <div className="mb-8 p-6 border-t border-gray-300">
               <GroupCommentsSection postId={post.id} currentUserId={currentUser?.id} className="mt-6" />
             </div>
 
             {/* Group Info */}
             {post.group && (
-              <div className="p-6 bg-blue-50 rounded-lg border border-blue-200 mb-8">
+              <div className="p-6 bg-grey-200 rounded-lg border border-blue-200 mb-8">
                 <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -466,7 +466,7 @@ export default function GroupPostDetailPage() {
                   e.stopPropagation();
                   setShowLightbox(false);
                 }}
-                className="absolute top-4 right-4 text-white hover:bg-white/20 p-2 rounded-full transition-colors z-10"
+                className="absolute top-4 right-4 text-gray-900 hover:bg-grey-200/20 p-2 rounded-full transition-colors z-10"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -480,7 +480,7 @@ export default function GroupPostDetailPage() {
                     e.stopPropagation();
                     setSelectedImageIndex(selectedImageIndex - 1);
                   }}
-                  className="absolute left-4 text-white hover:bg-white/20 p-2 rounded-full transition-colors"
+                  className="absolute left-4 text-gray-900 hover:bg-grey-200/20 p-2 rounded-full transition-colors"
                 >
                   <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -503,7 +503,7 @@ export default function GroupPostDetailPage() {
                     e.stopPropagation();
                     setSelectedImageIndex(selectedImageIndex + 1);
                   }}
-                  className="absolute right-4 text-white hover:bg-white/20 p-2 rounded-full transition-colors"
+                  className="absolute right-4 text-gray-900 hover:bg-grey-200/20 p-2 rounded-full transition-colors"
                 >
                   <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -513,7 +513,7 @@ export default function GroupPostDetailPage() {
             </div>
 
             {/* Image Counter */}
-            <div className="text-white text-center mb-4">
+            <div className="text-gray-900 text-center mb-4">
               <p className="text-sm">
                 {selectedImageIndex + 1} / {post.images.length}
               </p>
@@ -551,7 +551,7 @@ export default function GroupPostDetailPage() {
         <div className="mt-12 flex gap-4 justify-center flex-wrap">
           <Link
             href={post.group ? `/groups/${post.group_id}/create-post` : '/'}
-            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+            className="px-6 py-3 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-lg font-medium transition-colors flex items-center gap-2"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -560,7 +560,7 @@ export default function GroupPostDetailPage() {
           </Link>
           <Link
             href={post.group ? `/groups/${post.group_id}` : '/'}
-            className="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+            className="px-6 py-3 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-lg font-medium transition-colors flex items-center gap-2"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />

@@ -131,12 +131,12 @@ export default function GroupPostForm({ groupId, group, onPostCreated, onCancel 
   };
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8">
+    <div className="bg-gray-50 rounded-lg border border-gray-300 p-6 mb-8">
       {/* Header */}
       {!showForm && (
         <button
           onClick={() => setShowForm(true)}
-          className="w-full text-left px-4 py-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors text-gray-600 font-medium"
+          className="w-full text-left px-4 py-3 bg-white rounded-lg hover:bg-gray-200 transition-colors text-gray-600 font-medium"
         >
           What's on your mind? Share something with the group...
         </button>
@@ -260,14 +260,14 @@ export default function GroupPostForm({ groupId, group, onPostCreated, onCancel 
                 if (onCancel) onCancel();
               }}
               disabled={loading}
-              className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 py-2 bg-blue-600 text-gray-900 rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Creating...' : 'Create Post'}
             </button>
@@ -278,7 +278,7 @@ export default function GroupPostForm({ groupId, group, onPostCreated, onCancel 
       {/* Post Approval Modal */}
       {showApprovalModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 text-center">
+          <div className="bg-gray-50 rounded-lg shadow-xl max-w-md w-full p-6 text-center">
             {/* Icon */}
             <div className="mx-auto w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-4">
               <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -300,7 +300,7 @@ export default function GroupPostForm({ groupId, group, onPostCreated, onCancel 
                 setShowApprovalModal(false);
                 setShowForm(false);
               }}
-              className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors"
+              className="w-full px-4 py-2 bg-blue-600 text-gray-900 rounded-lg hover:bg-blue-700 font-medium transition-colors"
             >
               Got it, Thanks!
             </button>

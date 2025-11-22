@@ -113,7 +113,7 @@ export default function ViewPostPage() {
     return (
       <div className="container mx-auto px-4 py-12">
         <div className="max-w-4xl mx-auto">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+          <div className="bg-grey-200 border border-red-200 rounded-lg p-6">
             <h2 className="text-xl font-semibold text-red-900 mb-2">Error</h2>
             <p className="text-red-700">{error || 'Post not found'}</p>
             <Link
@@ -155,10 +155,10 @@ export default function ViewPostPage() {
         </Link>
 
         {/* Post Content */}
-        <article className="bg-white rounded-lg shadow-lg overflow-hidden border border-gray-200">
+        <article className="bg-grey-200 rounded-lg shadow-lg overflow-hidden border border-gray-300">
           {/* Featured Image */}
           {(post.featured_image || (post.images && post.images.length > 0)) && (
-            <div className="w-full h-96 bg-gray-200 relative">
+            <div className="w-full h-96 bg-blue-500 relative">
               <img
                 src={post.featured_image || (post.images && post.images.length > 0 ? post.images[0].url : '')}
                 alt={post.title}
@@ -172,16 +172,16 @@ export default function ViewPostPage() {
 
           <div className="p-8">
             {/* Header */}
-            <header className="mb-8 pb-6 border-b border-gray-200">
+            <header className="mb-8 pb-6 border-b border-gray-300">
               <div className="flex items-start justify-between mb-4">
                 <h1 className="text-4xl font-bold text-gray-900 flex-1">{post.title}</h1>
                 <span
                   className={`px-3 py-1 text-sm font-medium rounded-full whitespace-nowrap ml-4 ${
                     post.status === 'publish'
-                      ? 'bg-green-100 text-green-800'
+                      ? 'bg-blue-500 text-green-800'
                       : post.status === 'draft'
                       ? 'bg-yellow-100 text-yellow-800'
-                      : 'bg-gray-100 text-gray-800'
+                      : 'bg-blue-500 text-gray-800'
                   }`}
                 >
                   {post.status}
@@ -266,7 +266,7 @@ export default function ViewPostPage() {
                       />
                     </svg>
                     <span className="font-medium">Slug:</span>{' '}
-                    <code className="bg-gray-100 px-2 py-0.5 rounded">{post.slug}</code>
+                    <code className="bg-blue-500 px-2 py-0.5 rounded">{post.slug}</code>
                   </div>
                 )}
 
@@ -286,7 +286,7 @@ export default function ViewPostPage() {
 
             {/* Excerpt */}
             {post.excerpt && (
-              <div className="mb-8 p-4 bg-blue-50 border-l-4 border-blue-500 rounded">
+              <div className="mb-8 p-4 bg-grey-200 border-l-4 border-blue-500 rounded">
                 <p className="text-sm font-semibold text-blue-900 mb-1">Summary</p>
                 <p className="text-lg text-gray-700 italic">{post.excerpt}</p>
               </div>
@@ -310,7 +310,7 @@ export default function ViewPostPage() {
                   {post.images.map((image, index) => (
                     <div
                       key={image.id || index}
-                      className="relative aspect-square bg-gray-200 rounded-lg overflow-hidden group cursor-pointer"
+                      className="relative aspect-square bg-blue-500 rounded-lg overflow-hidden group cursor-pointer"
                       onClick={() => setSelectedImageIndex(index)}
                     >
                       <img
@@ -330,7 +330,7 @@ export default function ViewPostPage() {
 
             {/* Debug info for images */}
             {(!post.images || !Array.isArray(post.images) || post.images.length === 0) && (
-              <div className="mb-8 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+              <div className="mb-8 p-4 bg-white border border-gray-300 rounded-lg">
                 <p className="text-sm text-gray-600">
                   <span className="font-medium">Debug:</span> No additional images array found.
                   {post.featured_image && ' (Featured image is displayed above)'}
@@ -352,14 +352,14 @@ export default function ViewPostPage() {
                 Content
               </h3>
               <div className="prose prose-lg max-w-none">
-                <div className="text-gray-800 whitespace-pre-wrap leading-relaxed bg-gray-50 p-6 rounded-lg border border-gray-200">
+                <div className="text-gray-800 whitespace-pre-wrap leading-relaxed bg-white p-6 rounded-lg border border-gray-300">
                   {post.content || 'No content available.'}
                 </div>
               </div>
             </div>
 
             {/* Engagement Buttons */}
-            <div className="mb-8 p-6 border-t border-gray-200">
+            <div className="mb-8 p-6 border-t border-gray-300">
               <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
@@ -382,23 +382,23 @@ export default function ViewPostPage() {
             </div>
 
             {/* Comments Section */}
-            <div className="mb-8 p-6 border-t border-gray-200">
+            <div className="mb-8 p-6 border-t border-gray-300">
               <CommentsSection postId={post.id} currentUserId={user?.id} className="mt-6" />
             </div>
 
             {/* Action Buttons */}
             {isOwner && (
-              <div className="flex gap-3 p-6 border-t border-gray-200">
+              <div className="flex gap-3 p-6 border-t border-gray-300">
                 <Link
                   href={`/posts/edit/${post.id}`}
-                  className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+                  className="px-6 py-2 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-lg font-medium transition-colors"
                 >
                   Edit Post
                 </Link>
                 <button
                   onClick={handleDelete}
                   disabled={deleting}
-                  className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-6 py-2 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {deleting ? 'Deleting...' : 'Delete Post'}
                 </button>
@@ -411,13 +411,13 @@ export default function ViewPostPage() {
         <div className="mt-8 flex gap-4 justify-center">
           <Link
             href="/posts/create"
-            className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors"
+            className="px-6 py-3 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-lg font-medium transition-colors"
           >
             Create New Post
           </Link>
           <Link
             href="/my-posts"
-            className="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors"
+            className="px-6 py-3 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-lg font-medium transition-colors"
           >
             View My Posts
           </Link>

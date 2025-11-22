@@ -38,7 +38,7 @@ export function PostCardExample({ post, currentUserId }: PostCardExampleProps) {
   };
 
   return (
-    <article className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+    <article className="bg-gray-50 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
       {/* Featured Image */}
       {post.featured_image && (
         <div className="h-48 bg-gray-200 overflow-hidden">
@@ -70,7 +70,7 @@ export function PostCardExample({ post, currentUserId }: PostCardExampleProps) {
 
         {/* Engagement Stats Bar */}
         {engagement ? (
-          <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-200">
+          <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-300">
             <div className="text-sm text-gray-600 flex gap-4">
               <span title="Likes">
                 <span className="font-semibold text-gray-900">

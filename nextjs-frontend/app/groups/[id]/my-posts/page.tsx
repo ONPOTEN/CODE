@@ -77,7 +77,7 @@ export default function MyPostsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex justify-center items-center bg-gray-50">
+      <div className="min-h-screen flex justify-center items-center bg-white">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
@@ -85,12 +85,12 @@ export default function MyPostsPage() {
 
   if (error && !group) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-white">
         <div className="max-w-4xl mx-auto px-4 py-8">
           <Link href={`/groups/${groupId}`} className="text-blue-600 hover:text-blue-700 font-medium">
             ← Back to Group
           </Link>
-          <div className="mt-8 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+          <div className="mt-8 p-4 bg-grey-200 border border-red-200 rounded-lg text-red-700">
             {error}
           </div>
         </div>
@@ -100,10 +100,10 @@ export default function MyPostsPage() {
 
   if (!group) {
     return (
-      <div className="min-h-screen bg-gray-50 px-4 py-8">
+      <div className="min-h-screen bg-white px-4 py-8">
         <div className="max-w-4xl mx-auto text-center py-12">
           <p className="text-gray-500 text-lg">Group not found</p>
-          <Link href="/groups" className="mt-4 inline-block px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+          <Link href="/groups" className="mt-4 inline-block px-4 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-700">
             Back to Groups
           </Link>
         </div>
@@ -112,7 +112,7 @@ export default function MyPostsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
@@ -124,23 +124,23 @@ export default function MyPostsPage() {
         </div>
 
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+          <div className="mb-6 p-4 bg-grey-200 border border-red-200 rounded-lg text-red-700">
             {error}
           </div>
         )}
 
         {/* Posts Container */}
-        <div className="bg-white rounded-lg shadow border border-gray-200">
+        <div className="bg-grey-200 rounded-lg shadow border border-gray-300">
           {myPosts.length === 0 ? (
             <div className="p-8 text-center">
-              <svg className="w-12 h-12 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-12 h-12 mx-auto mb-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
               </svg>
               <p className="text-gray-500 text-lg">No posts yet</p>
-              <p className="text-gray-400 mt-2">Create your first post to get started!</p>
+              <p className="text-gray-600 mt-2">Create your first post to get started!</p>
               <Link
                 href={`/groups/${groupId}/create-post`}
-                className="mt-4 inline-block px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors"
+                className="mt-4 inline-block px-6 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-700 font-medium transition-colors"
               >
                 Create Post
               </Link>
@@ -148,7 +148,7 @@ export default function MyPostsPage() {
           ) : (
             <div className="divide-y divide-gray-200">
               {myPosts.map((post) => (
-                <div key={post.id} className="p-6 hover:bg-gray-50 transition-colors">
+                <div key={post.id} className="p-6 hover:bg-white transition-colors">
                   <div className="flex gap-4">
                     {/* Post Author Avatar */}
                     {post.author?.avatar && (
@@ -164,10 +164,10 @@ export default function MyPostsPage() {
                       <div className="mt-3 flex items-center gap-3">
                         <span className={`text-xs px-3 py-1 rounded-full font-medium ${
                           post.post_status === 'publish'
-                            ? 'bg-green-100 text-green-800'
+                            ? 'bg-blue-500 text-green-800'
                             : post.post_status === 'draft'
-                            ? 'bg-amber-100 text-amber-800'
-                            : 'bg-red-100 text-red-800'
+                            ? 'bg-blue-500 text-amber-800'
+                            : 'bg-blue-500 text-red-800'
                         }`}>
                           {post.post_status?.charAt(0).toUpperCase() + post.post_status?.slice(1) || 'Draft'}
                         </span>
@@ -188,7 +188,7 @@ export default function MyPostsPage() {
                       {post.post_status === 'publish' && (
                         <button
                           onClick={() => router.push(`/groups/${groupId}/posts/${post.id}/edit`)}
-                          className="px-4 py-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 font-medium transition-colors whitespace-nowrap"
+                          className="px-4 py-2 bg-blue-500 text-blue-600 rounded-lg hover:bg-blue-500 font-medium transition-colors whitespace-nowrap"
                         >
                           Edit
                         </button>
@@ -196,7 +196,7 @@ export default function MyPostsPage() {
                       <button
                         onClick={() => handleDeletePost(post.id)}
                         disabled={deletingId === post.id}
-                        className="px-4 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                        className="px-4 py-2 bg-blue-500 text-red-600 rounded-lg hover:bg-blue-500 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                       >
                         {deletingId === post.id ? 'Deleting...' : 'Delete'}
                       </button>

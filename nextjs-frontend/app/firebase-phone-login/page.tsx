@@ -118,7 +118,7 @@ export default function FirebasePhoneLoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-white py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         {/* Header */}
         <div>
@@ -135,7 +135,7 @@ export default function FirebasePhoneLoginPage() {
 
         {/* Error Message */}
         {error && (
-          <div className="rounded-md bg-red-50 p-4">
+          <div className="rounded-md bg-grey-200 p-4">
             <div className="text-sm font-medium text-red-800">{error}</div>
           </div>
         )}
@@ -169,7 +169,7 @@ export default function FirebasePhoneLoginPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-gray-900 bg-blue-500 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? 'Sending code...' : 'Send verification code'}
             </button>
@@ -180,7 +180,7 @@ export default function FirebasePhoneLoginPage() {
         {step === 'verify' && (
           <form className="mt-8 space-y-6" onSubmit={handleCodeSubmit}>
             {/* Info Box */}
-            <div className="rounded-md bg-blue-50 p-4">
+            <div className="rounded-md bg-grey-200 p-4">
               <div className="flex">
                 <div className="text-sm font-medium text-blue-800">
                   Verification code sent to {phoneNumber}
@@ -212,7 +212,7 @@ export default function FirebasePhoneLoginPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-gray-900 bg-blue-500 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? 'Verifying...' : 'Verify and sign in'}
             </button>
@@ -225,7 +225,7 @@ export default function FirebasePhoneLoginPage() {
                 setSmsCode('');
               }}
               disabled={isLoading}
-              className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-grey-200 hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Use different phone number
             </button>

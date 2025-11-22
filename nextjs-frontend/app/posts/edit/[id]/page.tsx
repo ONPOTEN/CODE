@@ -160,7 +160,7 @@ export default function EditPostPage() {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {error && !validationErrors && (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+            <div className="bg-blue-500 border border-red-400 text-red-700 px-4 py-3 rounded">
               {error}
             </div>
           )}
@@ -244,7 +244,7 @@ export default function EditPostPage() {
                       type="button"
                       onClick={() => removeExistingImage(index)}
                       disabled={isLoading}
-                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 disabled:opacity-50"
+                      className="absolute -top-2 -right-2 bg-grey-2000 text-gray-900 rounded-full w-6 h-6 flex items-center justify-center hover:bg-blue-500 disabled:opacity-50"
                     >
                       ×
                     </button>
@@ -283,7 +283,7 @@ export default function EditPostPage() {
                       type="button"
                       onClick={() => removeNewImage(index)}
                       disabled={isLoading}
-                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 disabled:opacity-50"
+                      className="absolute -top-2 -right-2 bg-grey-2000 text-gray-900 rounded-full w-6 h-6 flex items-center justify-center hover:bg-blue-500 disabled:opacity-50"
                     >
                       ×
                     </button>
@@ -337,7 +337,7 @@ export default function EditPostPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-6 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="bg-blue-500 hover:bg-blue-700 text-gray-900 font-medium py-2 px-6 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? 'Updating...' : 'Update Post'}
             </button>
@@ -345,7 +345,7 @@ export default function EditPostPage() {
               type="button"
               onClick={() => router.back()}
               disabled={isLoading}
-              className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium py-2 px-6 rounded transition-colors disabled:opacity-50"
+              className="bg-blue-300 hover:bg-blue-400 text-gray-800 font-medium py-2 px-6 rounded transition-colors disabled:opacity-50"
             >
               Cancel
             </button>

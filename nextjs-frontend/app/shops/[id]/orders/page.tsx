@@ -83,15 +83,15 @@ export default function ShopOrdersPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'completed':
-        return 'bg-green-100 text-green-800';
+        return 'bg-blue-500 text-green-800';
       case 'processing':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-blue-500 text-blue-800';
       case 'pending':
         return 'bg-yellow-100 text-yellow-800';
       case 'cancelled':
-        return 'bg-red-100 text-red-800';
+        return 'bg-blue-500 text-red-800';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-blue-500 text-gray-800';
     }
   };
 
@@ -164,7 +164,7 @@ export default function ShopOrdersPage() {
 
   if (authLoading || isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 py-12">
+      <div className="min-h-screen bg-white py-12">
         <div className="max-w-7xl mx-auto px-4">
           <div className="text-center">
             <div className="animate-spin h-12 w-12 text-blue-600 mx-auto mb-4">
@@ -190,9 +190,9 @@ export default function ShopOrdersPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 py-12">
+      <div className="min-h-screen bg-white py-12">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="bg-white rounded-lg shadow-md p-8 text-center">
+          <div className="bg-grey-200 rounded-lg shadow-md p-8 text-center">
             <svg className="w-16 h-16 mx-auto mb-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
@@ -205,7 +205,7 @@ export default function ShopOrdersPage() {
             <p className="text-gray-600 mb-6">{error}</p>
             <Link
               href="/my-shops"
-              className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded transition-colors"
+              className="inline-block bg-blue-500 hover:bg-blue-700 text-gray-900 font-medium py-2 px-6 rounded transition-colors"
             >
               Back to My Shops
             </Link>
@@ -216,7 +216,7 @@ export default function ShopOrdersPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12">
+    <div className="min-h-screen bg-white py-12">
       <div className="max-w-7xl mx-auto px-4">
         {/* Header */}
         <div className="mb-8">
@@ -233,7 +233,7 @@ export default function ShopOrdersPage() {
         </div>
 
         {/* Filters and Actions */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+        <div className="bg-grey-200 rounded-lg shadow-md p-6 mb-6">
           <div className="grid md:grid-cols-3 gap-4 items-end">
             {/* Status Filter */}
             <div>
@@ -263,19 +263,19 @@ export default function ShopOrdersPage() {
                 <div className="flex gap-2">
                   <button
                     onClick={() => handleBulkStatusUpdate('processing')}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors text-sm font-medium"
+                    className="px-4 py-2 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded transition-colors text-sm font-medium"
                   >
                     Mark Processing
                   </button>
                   <button
                     onClick={() => handleBulkStatusUpdate('completed')}
-                    className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded transition-colors text-sm font-medium"
+                    className="px-4 py-2 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded transition-colors text-sm font-medium"
                   >
                     Mark Completed
                   </button>
                   <button
                     onClick={() => handleBulkStatusUpdate('cancelled')}
-                    className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded transition-colors text-sm font-medium"
+                    className="px-4 py-2 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded transition-colors text-sm font-medium"
                   >
                     Mark Cancelled
                   </button>
@@ -287,8 +287,8 @@ export default function ShopOrdersPage() {
 
         {/* Orders Table */}
         {orders.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-md p-8 text-center">
-            <svg className="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="bg-grey-200 rounded-lg shadow-md p-8 text-center">
+            <svg className="w-16 h-16 mx-auto mb-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -300,10 +300,10 @@ export default function ShopOrdersPage() {
             <p className="text-gray-600">Your shop doesn't have any orders yet.</p>
           </div>
         ) : (
-          <div className="bg-white rounded-lg shadow-md overflow-hidden">
+          <div className="bg-grey-200 rounded-lg shadow-md overflow-hidden">
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+                <thead className="bg-white">
                   <tr>
                     <th className="px-6 py-3 text-left">
                       <input
@@ -336,9 +336,9 @@ export default function ShopOrdersPage() {
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-grey-200 divide-y divide-gray-200">
                   {orders.map((order) => (
-                    <tr key={order.id} className="hover:bg-gray-50">
+                    <tr key={order.id} className="hover:bg-white">
                       <td className="px-6 py-4">
                         <input
                           type="checkbox"
@@ -389,23 +389,23 @@ export default function ShopOrdersPage() {
         {/* Summary Stats */}
         {orders.length > 0 && (
           <div className="grid md:grid-cols-4 gap-4 mt-6">
-            <div className="bg-white rounded-lg shadow-md p-6">
+            <div className="bg-grey-200 rounded-lg shadow-md p-6">
               <p className="text-gray-600 text-sm">Total Orders</p>
               <p className="text-3xl font-bold text-gray-900">{orders.length}</p>
             </div>
-            <div className="bg-white rounded-lg shadow-md p-6">
+            <div className="bg-grey-200 rounded-lg shadow-md p-6">
               <p className="text-gray-600 text-sm">Pending</p>
               <p className="text-3xl font-bold text-yellow-600">
                 {orders.filter((o) => o.status === 'pending').length}
               </p>
             </div>
-            <div className="bg-white rounded-lg shadow-md p-6">
+            <div className="bg-grey-200 rounded-lg shadow-md p-6">
               <p className="text-gray-600 text-sm">Processing</p>
               <p className="text-3xl font-bold text-blue-600">
                 {orders.filter((o) => o.status === 'processing').length}
               </p>
             </div>
-            <div className="bg-white rounded-lg shadow-md p-6">
+            <div className="bg-grey-200 rounded-lg shadow-md p-6">
               <p className="text-gray-600 text-sm">Completed</p>
               <p className="text-3xl font-bold text-green-600">
                 {orders.filter((o) => o.status === 'completed').length}

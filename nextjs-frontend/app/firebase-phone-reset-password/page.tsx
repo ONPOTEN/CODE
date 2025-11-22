@@ -255,7 +255,7 @@ export default function FirebasePhoneResetPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-white py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         {/* Header */}
         <div>
@@ -269,7 +269,7 @@ export default function FirebasePhoneResetPasswordPage() {
 
         {/* Error Message */}
         {errorMessage && (
-          <div className="rounded-md bg-red-50 p-4">
+          <div className="rounded-md bg-grey-200 p-4">
             <div className="text-sm font-medium text-red-800">{errorMessage}</div>
           </div>
         )}
@@ -301,7 +301,7 @@ export default function FirebasePhoneResetPasswordPage() {
             <button
               type="submit"
               disabled={isLoading || !phoneNumber}
-              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-gray-900 bg-blue-500 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? 'Sending SMS...' : 'Send Verification Code'}
             </button>
@@ -311,7 +311,7 @@ export default function FirebasePhoneResetPasswordPage() {
         {/* Step 2: SMS Code Verification */}
         {step === 'verify' && (
           <form className="mt-8 space-y-6" onSubmit={handleSmsVerification}>
-            <div className="rounded-md bg-blue-50 p-4">
+            <div className="rounded-md bg-grey-200 p-4">
               <div className="text-sm text-blue-800">
                 <p className="font-medium">Phone: {phoneNumber}</p>
                 <p className="text-xs mt-1">Email: {userEmail}</p>
@@ -341,7 +341,7 @@ export default function FirebasePhoneResetPasswordPage() {
             <button
               type="submit"
               disabled={isLoading || smsCode.length !== 6}
-              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-gray-900 bg-blue-500 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? 'Verifying...' : 'Verify Code'}
             </button>
@@ -354,7 +354,7 @@ export default function FirebasePhoneResetPasswordPage() {
                 setSmsCode('');
                 setConfirmationResult(null);
               }}
-              className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+              className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-grey-200 hover:bg-white"
             >
               Back
             </button>
@@ -364,7 +364,7 @@ export default function FirebasePhoneResetPasswordPage() {
         {/* Step 3: Reset Password */}
         {step === 'reset' && (
           <form className="mt-8 space-y-6" onSubmit={handlePasswordReset}>
-            <div className="rounded-md bg-green-50 p-4">
+            <div className="rounded-md bg-grey-200 p-4">
               <div className="text-sm text-green-800">
                 <p className="font-medium">✓ Phone verified</p>
                 <p className="font-medium">✓ SMS verified</p>
@@ -391,7 +391,7 @@ export default function FirebasePhoneResetPasswordPage() {
                 <button
                   type="button"
                   onClick={() => setShowNewPassword(!showNewPassword)}
-                  className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+                  className="absolute right-3 top-3 text-gray-600 hover:text-gray-600"
                   disabled={isLoading}
                 >
                   {showNewPassword ? '👁️' : '👁️‍🗨️'}
@@ -421,7 +421,7 @@ export default function FirebasePhoneResetPasswordPage() {
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+                  className="absolute right-3 top-3 text-gray-600 hover:text-gray-600"
                   disabled={isLoading}
                 >
                   {showConfirmPassword ? '👁️' : '👁️‍🗨️'}
@@ -431,7 +431,7 @@ export default function FirebasePhoneResetPasswordPage() {
 
             {/* Password Requirements */}
             {newPassword && (
-              <div className="rounded-md bg-gray-50 p-4">
+              <div className="rounded-md bg-white p-4">
                 <p className="text-sm font-medium text-gray-700 mb-2">Password Requirements:</p>
                 <div className="space-y-1 text-sm">
                   <p className={newPassword.length >= 6 ? 'text-green-600' : 'text-gray-500'}>
@@ -456,7 +456,7 @@ export default function FirebasePhoneResetPasswordPage() {
             <button
               type="submit"
               disabled={isLoading || !newPassword || newPassword !== confirmNewPassword}
-              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-gray-900 bg-blue-500 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? 'Resetting password...' : 'Reset Password'}
             </button>
@@ -468,7 +468,7 @@ export default function FirebasePhoneResetPasswordPage() {
                 setNewPassword('');
                 setConfirmNewPassword('');
               }}
-              className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+              className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-grey-200 hover:bg-white"
             >
               Back
             </button>

@@ -199,9 +199,9 @@ export default function InfiniteScrollGroupPosts({
   // Show empty state
   if (!loading && postsList.length === 0 && !error) {
     return (
-      <div className="bg-white rounded-lg shadow-sm p-8 text-center">
+      <div className="bg-gray-50 rounded-lg shadow-sm p-8 text-center">
         <svg
-          className="w-16 h-16 mx-auto text-gray-400 mb-4"
+          className="w-16 h-16 mx-auto text-gray-600 mb-4"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -217,7 +217,7 @@ export default function InfiniteScrollGroupPosts({
         <p className="text-gray-500 mb-6">Be the first to post in this group!</p>
         <Link
           href={`/groups/${groupId}/create-post`}
-          className="inline-block px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          className="inline-block px-6 py-2 bg-blue-600 text-gray-900 rounded-lg hover:bg-blue-700 transition-colors"
         >
           Create Post
         </Link>
@@ -237,7 +237,7 @@ export default function InfiniteScrollGroupPosts({
       {postsList.map((post) => (
         <div
           key={post.id}
-          className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow"
+          className="bg-gray-50 rounded-lg shadow-sm border border-gray-300 overflow-hidden hover:shadow-md transition-shadow"
         >
           {/* Featured Image */}
           {post.featured_image && (
@@ -256,7 +256,7 @@ export default function InfiniteScrollGroupPosts({
           {/* Post Content */}
           <div className="p-6">
             {/* Author Info */}
-            <div className="flex items-center gap-3 mb-4 pb-4 border-b border-gray-200">
+            <div className="flex items-center gap-3 mb-4 pb-4 border-b border-gray-300">
               {post.author?.avatar ? (
                 <img
                   src={post.author.avatar}
@@ -303,7 +303,7 @@ export default function InfiniteScrollGroupPosts({
                 <div className="relative" ref={(el) => { menuRefs.current[post.id] = el; }}>
                   <button
                     onClick={() => toggleMenu(post.id)}
-                    className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                    className="p-2 hover:bg-gray-200 rounded-full transition-colors"
                     title="Post options"
                   >
                     <svg className="w-6 h-6 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
@@ -312,7 +312,7 @@ export default function InfiniteScrollGroupPosts({
                   </button>
 
                   {openMenuId === post.id && (
-                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-20 py-1">
+                    <div className="absolute right-0 mt-2 w-48 bg-gray-50 rounded-lg shadow-xl border border-gray-300 z-20 py-1">
                       <button
                         onClick={() => handleViewPost(post.id)}
                         className="w-full text-left px-4 py-2 hover:bg-blue-50 transition-colors flex items-center gap-2 text-blue-600"
@@ -430,7 +430,7 @@ export default function InfiniteScrollGroupPosts({
                   />
                   <button
                     onClick={() => handleViewPost(post.id)}
-                    className="w-full px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-lg hover:from-blue-700 hover:to-blue-600 font-medium transition-all flex items-center justify-center gap-2"
+                    className="w-full px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-500 text-gray-900 rounded-lg hover:from-blue-700 hover:to-blue-600 font-medium transition-all flex items-center justify-center gap-2"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path

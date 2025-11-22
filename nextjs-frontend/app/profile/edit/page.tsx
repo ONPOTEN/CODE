@@ -461,7 +461,7 @@ export default function EditProfilePage() {
           <h1 className="text-3xl font-bold text-gray-900">Edit Profile</h1>
           <Link
             href="/profile"
-            className="inline-flex items-center px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors"
+            className="inline-flex items-center px-4 py-2 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-lg font-medium transition-colors"
           >
             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -471,7 +471,7 @@ export default function EditProfilePage() {
         </div>
 
         {/* Profile Information Form */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
+        <div className="bg-grey-200 rounded-lg shadow p-6 mb-6">
           <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
             <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -480,13 +480,13 @@ export default function EditProfilePage() {
           </h2>
 
           {profileSuccess && (
-            <div className="mb-4 bg-green-50 border border-green-200 rounded-lg p-4">
+            <div className="mb-4 bg-grey-200 border border-green-200 rounded-lg p-4">
               <p className="text-green-800 font-medium">Profile updated successfully!</p>
             </div>
           )}
 
           {profileError && (
-            <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="mb-4 bg-grey-200 border border-red-200 rounded-lg p-4">
               <p className="text-red-800 font-medium">{profileError}</p>
             </div>
           )}
@@ -507,7 +507,7 @@ export default function EditProfilePage() {
                   onChange={(e) => setUsername(e.target.value)}
                   className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent outline-none transition-colors ${
                     usernameError
-                      ? 'border-red-300 focus:ring-red-500 bg-red-50'
+                      ? 'border-red-300 focus:ring-red-500 bg-grey-200'
                       : 'border-gray-300 focus:ring-blue-500'
                   }`}
                   placeholder="Enter your username"
@@ -648,7 +648,7 @@ export default function EditProfilePage() {
                   id="phone"
                   value={phone}
                   disabled
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-blue-500 text-gray-600 cursor-not-allowed"
                 />
                 <p className="mt-1 text-xs text-gray-500">
                   Phone number is locked for security. Contact support to change your phone number.
@@ -677,7 +677,7 @@ export default function EditProfilePage() {
                   id="role"
                   value={role}
                   disabled
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed capitalize"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-blue-500 text-gray-600 cursor-not-allowed capitalize"
                 />
                 <p className="mt-1 text-xs text-gray-500">
                   Your role cannot be changed. Contact an administrator if you need role changes.
@@ -705,7 +705,7 @@ export default function EditProfilePage() {
               <button
                 type="submit"
                 disabled={profileLoading}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-blue-500 hover:bg-blue-700 text-gray-900 font-medium py-3 px-6 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {profileLoading ? 'Updating...' : 'Update Profile Information'}
               </button>
@@ -714,7 +714,7 @@ export default function EditProfilePage() {
         </div>
 
         {/* Avatar Upload Form */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
+        <div className="bg-grey-200 rounded-lg shadow p-6 mb-6">
           <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
             <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -723,13 +723,13 @@ export default function EditProfilePage() {
           </h2>
 
           {avatarSuccess && (
-            <div className="mb-4 bg-green-50 border border-green-200 rounded-lg p-4">
+            <div className="mb-4 bg-grey-200 border border-green-200 rounded-lg p-4">
               <p className="text-green-800 font-medium">Avatar uploaded successfully!</p>
             </div>
           )}
 
           {avatarError && (
-            <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="mb-4 bg-grey-200 border border-red-200 rounded-lg p-4">
               <p className="text-red-800 font-medium">{avatarError}</p>
             </div>
           )}
@@ -739,13 +739,13 @@ export default function EditProfilePage() {
               {/* Avatar Preview */}
               <div className="flex items-center gap-6">
                 <div className="flex-shrink-0">
-                  <div className="w-24 h-24 rounded-full overflow-hidden bg-gray-200 border-2 border-gray-300">
+                  <div className="w-24 h-24 rounded-full overflow-hidden bg-blue-500 border-2 border-gray-300">
                     {avatarPreview ? (
                       <img src={avatarPreview} alt="Avatar preview" className="w-full h-full object-cover" />
                     ) : user?.avatar ? (
                       <img src={user.avatar} alt="Current avatar" className="w-full h-full object-cover" />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600 text-white text-3xl font-bold">
+                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600 text-gray-900 text-3xl font-bold">
                         {user?.display_name?.charAt(0).toUpperCase() || 'U'}
                       </div>
                     )}
@@ -761,7 +761,7 @@ export default function EditProfilePage() {
                     id="avatar"
                     accept="image/jpeg,image/png,image/jpg,image/gif"
                     onChange={handleAvatarChange}
-                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-grey-200 file:text-blue-700 hover:file:bg-blue-500"
                   />
                   <p className="mt-1 text-xs text-gray-500">JPG, PNG, or GIF (max. 2MB)</p>
                 </div>
@@ -770,7 +770,7 @@ export default function EditProfilePage() {
               <button
                 type="submit"
                 disabled={avatarLoading || !avatarFile}
-                className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-6 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-blue-500 hover:bg-blue-700 text-gray-900 font-medium py-3 px-6 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {avatarLoading ? 'Uploading...' : 'Upload Avatar'}
               </button>
@@ -779,7 +779,7 @@ export default function EditProfilePage() {
         </div>
 
         {/* Change Password Form */}
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-grey-200 rounded-lg shadow p-6">
           <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
             <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
@@ -788,13 +788,13 @@ export default function EditProfilePage() {
           </h2>
 
           {passwordSuccess && (
-            <div className="mb-4 bg-green-50 border border-green-200 rounded-lg p-4">
+            <div className="mb-4 bg-grey-200 border border-green-200 rounded-lg p-4">
               <p className="text-green-800 font-medium">Password updated successfully!</p>
             </div>
           )}
 
           {passwordError && (
-            <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="mb-4 bg-grey-200 border border-red-200 rounded-lg p-4">
               <p className="text-red-800 font-medium">{passwordError}</p>
             </div>
           )}
@@ -849,7 +849,7 @@ export default function EditProfilePage() {
               <button
                 type="submit"
                 disabled={passwordLoading}
-                className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-3 px-6 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-blue-500 hover:bg-blue-700 text-gray-900 font-medium py-3 px-6 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {passwordLoading ? 'Updating...' : 'Change Password'}
               </button>

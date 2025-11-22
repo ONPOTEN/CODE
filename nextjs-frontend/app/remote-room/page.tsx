@@ -92,7 +92,7 @@ export default function RemoteRoom() {
 
         {/* Connection Waiting State */}
         {isWaitingForInvite && (
-          <div className="mb-8 bg-blue-50 border-l-4 border-blue-500 p-6 rounded-lg">
+          <div className="mb-8 bg-grey-200 border-l-4 border-blue-500 p-6 rounded-lg">
             <p className="text-blue-800 font-semibold">
               Waiting for the host to join the call...
             </p>
@@ -105,7 +105,7 @@ export default function RemoteRoom() {
         {/* Video Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           {/* Local Video */}
-          <div className="bg-white rounded-lg shadow-xl overflow-hidden border-4 border-teal-400">
+          <div className="bg-grey-200 rounded-lg shadow-xl overflow-hidden border-4 border-teal-400">
             <div className="relative bg-black aspect-video">
               <video
                 ref={localVideoRef}
@@ -114,14 +114,14 @@ export default function RemoteRoom() {
                 playsInline
                 className="w-full h-full object-cover"
               />
-              <div className="absolute top-4 left-4 bg-teal-600 text-white px-3 py-1 rounded-full text-sm font-semibold">
+              <div className="absolute top-4 left-4 bg-blue-500 text-gray-900 px-3 py-1 rounded-full text-sm font-semibold">
                 Participant (You)
               </div>
             </div>
           </div>
 
           {/* Remote Video (Host) */}
-          <div className="bg-white rounded-lg shadow-xl overflow-hidden">
+          <div className="bg-grey-200 rounded-lg shadow-xl overflow-hidden">
             {remoteStream ? (
               <div className="relative bg-black aspect-video">
                 <video
@@ -130,14 +130,14 @@ export default function RemoteRoom() {
                   playsInline
                   className="w-full h-full object-cover"
                 />
-                <div className="absolute top-4 left-4 bg-indigo-600 text-white px-3 py-1 rounded-full text-sm font-semibold">
+                <div className="absolute top-4 left-4 bg-blue-500 text-gray-900 px-3 py-1 rounded-full text-sm font-semibold">
                   Host
                 </div>
               </div>
             ) : (
-              <div className="aspect-video bg-gray-900 flex items-center justify-center">
+              <div className="aspect-video bg-blue-900 flex items-center justify-center">
                 <div className="text-center">
-                  <div className="text-gray-400">
+                  <div className="text-gray-600">
                     {isWaitingForInvite ? (
                       <>
                         <div className="mb-4">
@@ -165,7 +165,7 @@ export default function RemoteRoom() {
           {!callActive && remoteSocketId && !isWaitingForInvite && (
             <button
               onClick={initiateCall}
-              className="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition transform hover:scale-105"
+              className="bg-grey-2000 hover:bg-blue-500 text-gray-900 font-bold py-3 px-8 rounded-lg shadow-lg transition transform hover:scale-105"
             >
               Accept Call
             </button>
@@ -174,7 +174,7 @@ export default function RemoteRoom() {
           {callActive && (
             <button
               onClick={endCall}
-              className="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition transform hover:scale-105"
+              className="bg-grey-2000 hover:bg-blue-500 text-gray-900 font-bold py-3 px-8 rounded-lg shadow-lg transition transform hover:scale-105"
             >
               End Call
             </button>
@@ -182,14 +182,14 @@ export default function RemoteRoom() {
 
           <button
             onClick={() => router.push('/')}
-            className="bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition"
+            className="bg-white0 hover:bg-blue-500 text-gray-900 font-bold py-3 px-8 rounded-lg shadow-lg transition"
           >
             Leave Room
           </button>
         </div>
 
         {/* Info Box */}
-        <div className="bg-white rounded-lg shadow-lg p-6 text-gray-700">
+        <div className="bg-grey-200 rounded-lg shadow-lg p-6 text-gray-700">
           <h2 className="text-lg font-semibold mb-4">Session Information</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
             <div>

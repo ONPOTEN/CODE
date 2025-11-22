@@ -129,7 +129,7 @@ export const VariantProductComponent: React.FC<VariantProductComponentProps> = (
   };
 
   return (
-    <div className="bg-purple-50 border border-purple-200 rounded-lg p-6 space-y-6">
+    <div className="bg-grey-200 border border-purple-200 rounded-lg p-6 space-y-6">
       <h3 className="text-lg font-semibold text-purple-900 flex items-center gap-2">
         🎨 Variant Product Fields
       </h3>
@@ -225,14 +225,14 @@ export const VariantProductComponent: React.FC<VariantProductComponentProps> = (
               <button
                 type="button"
                 onClick={removeMainImage}
-                className="absolute top-2 right-2 p-2 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors"
+                className="absolute top-2 right-2 p-2 bg-blue-500 text-gray-900 rounded-full hover:bg-blue-700 transition-colors"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
-            <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-purple-300 rounded-lg cursor-pointer bg-purple-50 hover:bg-purple-100 transition-colors">
+            <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-purple-300 rounded-lg cursor-pointer bg-grey-200 hover:bg-blue-500 transition-colors">
               <div className="flex flex-col items-center justify-center pt-2 pb-2">
                 <svg className="w-6 h-6 text-purple-600 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
@@ -243,7 +243,7 @@ export const VariantProductComponent: React.FC<VariantProductComponentProps> = (
             </label>
           </div>
         ) : (
-          <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-purple-300 rounded-lg cursor-pointer bg-purple-50 hover:bg-purple-100 transition-colors">
+          <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-purple-300 rounded-lg cursor-pointer bg-grey-200 hover:bg-blue-500 transition-colors">
             <div className="flex flex-col items-center justify-center pt-5 pb-6">
               <svg className="w-8 h-8 text-purple-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
@@ -274,7 +274,7 @@ export const VariantProductComponent: React.FC<VariantProductComponentProps> = (
                   <button
                     type="button"
                     onClick={() => removeOtherImage(index)}
-                    className="absolute top-1 right-1 p-1 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors"
+                    className="absolute top-1 right-1 p-1 bg-blue-500 text-gray-900 rounded-full hover:bg-blue-700 transition-colors"
                   >
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -285,7 +285,7 @@ export const VariantProductComponent: React.FC<VariantProductComponentProps> = (
             </div>
           </div>
         )}
-        <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-purple-300 rounded-lg cursor-pointer bg-purple-50 hover:bg-purple-100 transition-colors">
+        <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-purple-300 rounded-lg cursor-pointer bg-grey-200 hover:bg-blue-500 transition-colors">
           <div className="flex flex-col items-center justify-center pt-2 pb-2">
             <svg className="w-6 h-6 text-purple-600 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
@@ -301,7 +301,7 @@ export const VariantProductComponent: React.FC<VariantProductComponentProps> = (
         <h4 className="text-md font-semibold text-purple-900 mb-4">📋 Product Attributes</h4>
 
         {/* Add New Attribute */}
-        <div className="bg-white p-4 rounded-lg border border-purple-300 mb-4">
+        <div className="bg-grey-200 p-4 rounded-lg border border-purple-300 mb-4">
           <div className="flex gap-2 mb-2">
             <input
               type="text"
@@ -313,7 +313,7 @@ export const VariantProductComponent: React.FC<VariantProductComponentProps> = (
             <button
               type="button"
               onClick={handleAddAttribute}
-              className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
+              className="px-4 py-2 bg-blue-500 text-gray-900 rounded-md hover:bg-blue-700 transition-colors"
             >
               Add Attribute
             </button>
@@ -327,15 +327,15 @@ export const VariantProductComponent: React.FC<VariantProductComponentProps> = (
         {attributes.length > 0 && (
           <div className="space-y-3 mb-4">
             {attributes.map((attribute, attrIndex) => (
-              <div key={attrIndex} className="bg-white p-4 rounded-lg border border-purple-300">
+              <div key={attrIndex} className="bg-grey-200 p-4 rounded-lg border border-purple-300">
                 <div className="flex items-center justify-between mb-3">
                   <button
                     type="button"
                     onClick={() => setSelectedAttributeIndex(attrIndex)}
                     className={`flex-1 text-left px-3 py-2 rounded-md font-medium transition-colors ${
                       selectedAttributeIndex === attrIndex
-                        ? 'bg-purple-200 text-purple-900'
-                        : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                        ? 'bg-blue-500 text-purple-900'
+                        : 'bg-blue-500 text-gray-900 hover:bg-blue-500'
                     }`}
                   >
                     {attribute.name}
@@ -343,7 +343,7 @@ export const VariantProductComponent: React.FC<VariantProductComponentProps> = (
                   <button
                     type="button"
                     onClick={() => handleRemoveAttribute(attrIndex)}
-                    className="px-3 py-2 bg-red-100 text-red-700 rounded-md hover:bg-red-200 transition-colors ml-2"
+                    className="px-3 py-2 bg-blue-500 text-red-700 rounded-md hover:bg-blue-500 transition-colors ml-2"
                   >
                     Remove
                   </button>
@@ -366,7 +366,7 @@ export const VariantProductComponent: React.FC<VariantProductComponentProps> = (
                       <button
                         type="button"
                         onClick={handleAddOption}
-                        className="px-3 py-2 bg-purple-500 text-white rounded-md hover:bg-purple-600 transition-colors"
+                        className="px-3 py-2 bg-grey-2000 text-gray-900 rounded-md hover:bg-blue-500 transition-colors"
                       >
                         Add
                       </button>
@@ -378,7 +378,7 @@ export const VariantProductComponent: React.FC<VariantProductComponentProps> = (
                         {attribute.options.map((option, optIndex) => (
                           <div
                             key={optIndex}
-                            className="inline-flex items-center gap-2 bg-purple-100 text-purple-900 px-3 py-1 rounded-full text-sm"
+                            className="inline-flex items-center gap-2 bg-blue-500 text-purple-900 px-3 py-1 rounded-full text-sm"
                           >
                             <span>{option.value}</span>
                             <button
@@ -405,7 +405,7 @@ export const VariantProductComponent: React.FC<VariantProductComponentProps> = (
                     {attribute.options.map((option, optIndex) => (
                       <span
                         key={optIndex}
-                        className="inline-block bg-purple-200 text-purple-900 px-2 py-1 rounded text-xs"
+                        className="inline-block bg-blue-500 text-purple-900 px-2 py-1 rounded text-xs"
                       >
                         {option.value}
                       </span>
@@ -419,7 +419,7 @@ export const VariantProductComponent: React.FC<VariantProductComponentProps> = (
 
         {/* Empty State */}
         {attributes.length === 0 && (
-          <div className="bg-gray-50 rounded-lg p-4 text-center border border-dashed border-gray-300">
+          <div className="bg-white rounded-lg p-4 text-center border border-dashed border-gray-300">
             <p className="text-sm text-gray-600">
               No attributes added yet. Add attributes like Size, Color, Material, etc.
             </p>
@@ -428,7 +428,7 @@ export const VariantProductComponent: React.FC<VariantProductComponentProps> = (
 
         {/* Summary */}
         {attributes.length > 0 && (
-          <div className="mt-4 p-3 bg-purple-100 rounded-lg">
+          <div className="mt-4 p-3 bg-blue-500 rounded-lg">
             <p className="text-sm text-purple-900">
               <strong>Total Attributes:</strong> {attributes.length}
               <br />

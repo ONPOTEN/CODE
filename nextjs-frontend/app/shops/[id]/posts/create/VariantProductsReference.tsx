@@ -62,7 +62,7 @@ export const VariantProductsReference: React.FC<VariantProductsReferenceProps> =
 
   if (error) {
     return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-4 mt-6">
+      <div className="bg-grey-200 border border-red-200 rounded-lg p-4 mt-6">
         <p className="text-red-900 text-sm">Error loading variant product examples</p>
       </div>
     );
@@ -74,11 +74,11 @@ export const VariantProductsReference: React.FC<VariantProductsReferenceProps> =
   }
 
   return (
-    <div className="bg-purple-50 border border-purple-200 rounded-lg p-6 mt-8">
+    <div className="bg-grey-200 border border-purple-200 rounded-lg p-6 mt-8">
       {/* Header */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center justify-between hover:bg-purple-100 px-2 py-1 rounded transition-colors"
+        className="w-full flex items-center justify-between hover:bg-blue-500 px-2 py-1 rounded transition-colors"
       >
         <h3 className="text-lg font-semibold text-purple-900 flex items-center gap-2">
           🎨 Variant Product Examples
@@ -104,7 +104,7 @@ export const VariantProductsReference: React.FC<VariantProductsReferenceProps> =
           {products.map((product) => (
             <div
               key={product.id}
-              className="bg-white border border-purple-300 rounded-lg p-4 hover:shadow-md transition-shadow"
+              className="bg-grey-200 border border-purple-300 rounded-lg p-4 hover:shadow-md transition-shadow"
             >
               {/* Product Header */}
               <div className="flex items-start justify-between mb-3">
@@ -112,7 +112,7 @@ export const VariantProductsReference: React.FC<VariantProductsReferenceProps> =
                   <h4 className="font-semibold text-gray-900">{product.title}</h4>
                   <p className="text-xs text-gray-500 mt-1">ID: {product.id}</p>
                 </div>
-                <span className="px-2 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-800">
+                <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-500 text-purple-800">
                   Variant
                 </span>
               </div>
@@ -130,7 +130,7 @@ export const VariantProductsReference: React.FC<VariantProductsReferenceProps> =
 
               {/* Attributes Display */}
               {product.attributes && product.attributes.length > 0 && (
-                <div className="bg-purple-50 rounded p-3 mb-3">
+                <div className="bg-grey-200 rounded p-3 mb-3">
                   <p className="text-xs font-medium text-purple-900 mb-2">📋 Attributes:</p>
                   <div className="space-y-2">
                     {product.attributes.map((attr: any, idx: number) => (
@@ -141,7 +141,7 @@ export const VariantProductsReference: React.FC<VariantProductsReferenceProps> =
                             attr.options.map((opt: any, optIdx: number) => (
                               <span
                                 key={optIdx}
-                                className="inline-block px-2 py-1 bg-purple-200 text-purple-900 rounded text-xs"
+                                className="inline-block px-2 py-1 bg-blue-500 text-purple-900 rounded text-xs"
                               >
                                 {opt.value}
                               </span>
@@ -178,7 +178,7 @@ export const VariantProductsReference: React.FC<VariantProductsReferenceProps> =
           {products.slice(0, 3).map((product) => (
             <div
               key={product.id}
-              className="inline-flex items-center gap-2 bg-white border border-purple-300 rounded px-3 py-1 text-xs"
+              className="inline-flex items-center gap-2 bg-grey-200 border border-purple-300 rounded px-3 py-1 text-xs"
             >
               <span className="font-medium text-gray-900">{product.title}</span>
               {product.attributes && (
@@ -189,7 +189,7 @@ export const VariantProductsReference: React.FC<VariantProductsReferenceProps> =
             </div>
           ))}
           {products.length > 3 && (
-            <div className="inline-flex items-center gap-2 bg-white border border-purple-300 rounded px-3 py-1 text-xs text-gray-600">
+            <div className="inline-flex items-center gap-2 bg-grey-200 border border-purple-300 rounded px-3 py-1 text-xs text-gray-600">
               +{products.length - 3} more
             </div>
           )}

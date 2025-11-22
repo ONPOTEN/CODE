@@ -11,10 +11,10 @@ export default function Menu() {
   const toggleMenu = () => setIsOpen(!isOpen);
 
   return (
-    <section className="container py-12">
-      <div className="bg-white rounded-lg shadow-sm p-8 max-w-4xl mx-auto">
+    <section className="py-12">
+      <div className="bg-gray-50 border border-gray-300 rounded-lg shadow-sm p-8 max-w-4xl mx-auto">
         <h1 className="text-4xl font-bold text-gray-900 mb-4 text-center">
-          Welcome to Centimet2
+          Welcome to Threads
         </h1>
         <p className="text-gray-600 text-center mb-8 text-lg">
           A modern marketplace platform powered by Next.js and Laravel
@@ -37,15 +37,15 @@ export default function Menu() {
           </button>
 
           {isOpen && (
-            <div className="mt-4 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
+            <div className="mt-4 bg-gray-50 border border-gray-300 rounded-lg shadow-lg overflow-hidden">
               {isAuthenticated ? (
-                <div className="divide-y divide-gray-200">
+                <div className="divide-y divide-neutral-700">
                   <Link
                     href="/profile"
-                    className="block px-6 py-4 hover:bg-blue-50 transition-colors"
+                    className="block px-6 py-4 hover:bg-gray-200 transition-colors"
                     onClick={() => setIsOpen(false)}
                   >
-                    <h3 className="font-semibold text-lg mb-1">Profile</h3>
+                    <h3 className="font-semibold text-lg mb-1 text-gray-900">Profile</h3>
                     <p className="text-gray-600 text-sm">
                       View and manage your profile
                     </p>
@@ -53,10 +53,10 @@ export default function Menu() {
 
                   <Link
                     href="/my-posts"
-                    className="block px-6 py-4 hover:bg-green-50 transition-colors"
+                    className="block px-6 py-4 hover:bg-gray-200 transition-colors"
                     onClick={() => setIsOpen(false)}
                   >
-                    <h3 className="font-semibold text-lg mb-1">My Posts</h3>
+                    <h3 className="font-semibold text-lg mb-1 text-gray-900">My Posts</h3>
                     <p className="text-gray-600 text-sm">
                       Manage your posts and content
                     </p>
@@ -64,10 +64,10 @@ export default function Menu() {
 
                   <Link
                     href="/my-orders"
-                    className="block px-6 py-4 hover:bg-amber-50 transition-colors"
+                    className="block px-6 py-4 hover:bg-gray-200 transition-colors"
                     onClick={() => setIsOpen(false)}
                   >
-                    <h3 className="font-semibold text-lg mb-1">My Orders</h3>
+                    <h3 className="font-semibold text-lg mb-1 text-gray-900">My Orders</h3>
                     <p className="text-gray-600 text-sm">
                       View your orders and order history
                     </p>
@@ -76,10 +76,10 @@ export default function Menu() {
                   {user && (
                     <Link
                       href={`/users/${user.id}/wall`}
-                      className="block px-6 py-4 hover:bg-indigo-50 transition-colors"
+                      className="block px-6 py-4 hover:bg-gray-200 transition-colors"
                       onClick={() => setIsOpen(false)}
                     >
-                      <h3 className="font-semibold text-lg mb-1">My Wall</h3>
+                      <h3 className="font-semibold text-lg mb-1 text-gray-900">My Wall</h3>
                       <p className="text-gray-600 text-sm">
                         View and manage your personal wall
                       </p>
@@ -88,10 +88,10 @@ export default function Menu() {
 
                   <Link
                     href="/posts/create"
-                    className="block px-6 py-4 hover:bg-red-50 transition-colors"
+                    className="block px-6 py-4 hover:bg-gray-200 transition-colors"
                     onClick={() => setIsOpen(false)}
                   >
-                    <h3 className="font-semibold text-lg mb-1">Create Post</h3>
+                    <h3 className="font-semibold text-lg mb-1 text-gray-900">Create Post</h3>
                     <p className="text-gray-600 text-sm">
                       Share your ideas with posts
                     </p>
@@ -99,10 +99,10 @@ export default function Menu() {
 
                   <Link
                     href="/my-shops"
-                    className="block px-6 py-4 hover:bg-purple-50 transition-colors"
+                    className="block px-6 py-4 hover:bg-gray-200 transition-colors"
                     onClick={() => setIsOpen(false)}
                   >
-                    <h3 className="font-semibold text-lg mb-1">My Shops</h3>
+                    <h3 className="font-semibold text-lg mb-1 text-gray-900">My Shops</h3>
                     <p className="text-gray-600 text-sm">
                       View and manage your shops
                     </p>
@@ -110,10 +110,10 @@ export default function Menu() {
 
                   <Link
                     href="/messages"
-                    className="block px-6 py-4 hover:bg-orange-50 transition-colors"
+                    className="block px-6 py-4 hover:bg-gray-200 transition-colors"
                     onClick={() => setIsOpen(false)}
                   >
-                    <h3 className="font-semibold text-lg mb-1 flex items-center gap-2">
+                    <h3 className="font-semibold text-lg mb-1 flex items-center gap-2 text-gray-900">
                       📬 Inbox
                     </h3>
                     <p className="text-gray-600 text-sm">
@@ -123,12 +123,12 @@ export default function Menu() {
 
                   <Link
                     href="/shop-messages"
-                    className="block px-6 py-4 hover:bg-pink-50 transition-colors"
+                    className="block px-6 py-4 hover:bg-gray-200 transition-colors"
                     onClick={() => setIsOpen(false)}
                   >
-                    <h3 className="font-semibold text-lg mb-1 flex items-center gap-2">
+                    <h3 className="font-semibold text-lg mb-1 flex items-center gap-2 text-gray-900">
                       Shop Messages
-                      <span className="inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold text-white bg-red-500 rounded-full">
+                      <span className="inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold text-gray-900 bg-red-500 rounded-full">
                         New
                       </span>
                     </h3>
@@ -139,10 +139,10 @@ export default function Menu() {
 
                   <Link
                     href="/groups"
-                    className="block px-6 py-4 hover:bg-cyan-50 transition-colors"
+                    className="block px-6 py-4 hover:bg-gray-200 transition-colors"
                     onClick={() => setIsOpen(false)}
                   >
-                    <h3 className="font-semibold text-lg mb-1">Groups</h3>
+                    <h3 className="font-semibold text-lg mb-1 text-gray-900">Groups</h3>
                     <p className="text-gray-600 text-sm">
                       Browse and manage community groups
                     </p>
@@ -150,10 +150,10 @@ export default function Menu() {
 
                   <Link
                     href="/my-groups"
-                    className="block px-6 py-4 hover:bg-sky-50 transition-colors"
+                    className="block px-6 py-4 hover:bg-gray-200 transition-colors"
                     onClick={() => setIsOpen(false)}
                   >
-                    <h3 className="font-semibold text-lg mb-1">My Groups</h3>
+                    <h3 className="font-semibold text-lg mb-1 text-gray-900">My Groups</h3>
                     <p className="text-gray-600 text-sm">
                       Manage groups you own
                     </p>
@@ -161,23 +161,23 @@ export default function Menu() {
 
                   <Link
                     href="/admin/shops"
-                    className="block px-6 py-4 hover:bg-yellow-50 transition-colors"
+                    className="block px-6 py-4 hover:bg-gray-200 transition-colors"
                     onClick={() => setIsOpen(false)}
                   >
-                    <h3 className="font-semibold text-lg mb-1">Shop Admin</h3>
+                    <h3 className="font-semibold text-lg mb-1 text-gray-900">Shop Admin</h3>
                     <p className="text-gray-600 text-sm">
                       Manage pending shops
                     </p>
                   </Link>
                 </div>
               ) : (
-                <div className="divide-y divide-gray-200">
+                <div className="divide-y divide-neutral-700">
                   <Link
                     href="/api-test"
-                    className="block px-6 py-4 hover:bg-blue-50 transition-colors"
+                    className="block px-6 py-4 hover:bg-gray-200 transition-colors"
                     onClick={() => setIsOpen(false)}
                   >
-                    <h3 className="font-semibold text-lg mb-1">Browse Posts</h3>
+                    <h3 className="font-semibold text-lg mb-1 text-gray-900">Browse Posts</h3>
                     <p className="text-gray-600 text-sm">
                       Explore content from our community
                     </p>
@@ -185,10 +185,10 @@ export default function Menu() {
 
                   <Link
                     href="/groups"
-                    className="block px-6 py-4 hover:bg-cyan-50 transition-colors"
+                    className="block px-6 py-4 hover:bg-gray-200 transition-colors"
                     onClick={() => setIsOpen(false)}
                   >
-                    <h3 className="font-semibold text-lg mb-1">Browse Groups</h3>
+                    <h3 className="font-semibold text-lg mb-1 text-gray-900">Browse Groups</h3>
                     <p className="text-gray-600 text-sm">
                       Discover community groups and join
                     </p>
@@ -196,10 +196,10 @@ export default function Menu() {
 
                   <Link
                     href="/register"
-                    className="block px-6 py-4 hover:bg-green-50 transition-colors"
+                    className="block px-6 py-4 hover:bg-gray-200 transition-colors"
                     onClick={() => setIsOpen(false)}
                   >
-                    <h3 className="font-semibold text-lg mb-1">Create Account</h3>
+                    <h3 className="font-semibold text-lg mb-1 text-gray-900">Create Account</h3>
                     <p className="text-gray-600 text-sm">
                       Join our community today
                     </p>
@@ -207,10 +207,10 @@ export default function Menu() {
 
                   <Link
                     href="/login"
-                    className="block px-6 py-4 hover:bg-red-50 transition-colors"
+                    className="block px-6 py-4 hover:bg-gray-200 transition-colors"
                     onClick={() => setIsOpen(false)}
                   >
-                    <h3 className="font-semibold text-lg mb-1">Login</h3>
+                    <h3 className="font-semibold text-lg mb-1 text-gray-900">Login</h3>
                     <p className="text-gray-600 text-sm">
                       Access your account
                     </p>

@@ -187,7 +187,7 @@ export default function EditGroupPage() {
 
   if (pageLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
@@ -195,12 +195,12 @@ export default function EditGroupPage() {
 
   if (error && !group) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-white">
         <div className="max-w-2xl mx-auto px-4 py-8">
           <Link href="/my-groups" className="text-blue-600 hover:text-blue-700 font-medium">
             ← Back to My Groups
           </Link>
-          <div className="mt-8 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+          <div className="mt-8 p-4 bg-grey-200 border border-red-200 rounded-lg text-red-700">
             {error}
           </div>
         </div>
@@ -209,7 +209,7 @@ export default function EditGroupPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       <div className="max-w-2xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
@@ -221,9 +221,9 @@ export default function EditGroupPage() {
         </div>
 
         {/* Form */}
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-grey-200 rounded-lg shadow p-6">
           {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+            <div className="mb-6 p-4 bg-grey-200 border border-red-200 rounded-lg text-red-700">
               {error}
             </div>
           )}
@@ -241,7 +241,7 @@ export default function EditGroupPage() {
                 onChange={handleInputChange}
                 placeholder="Enter group name"
                 disabled={loading}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-blue-500"
               />
             </div>
 
@@ -257,7 +257,7 @@ export default function EditGroupPage() {
                 placeholder="Describe your group (optional)"
                 rows={4}
                 disabled={loading}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 resize-none"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-blue-500 resize-none"
               />
               <p className="text-xs text-gray-500 mt-1">{formData.description.length}/1000</p>
             </div>
@@ -272,7 +272,7 @@ export default function EditGroupPage() {
                 value={formData.visibility}
                 onChange={handleInputChange}
                 disabled={loading}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-blue-500"
               >
                 <option value="public">Public - Anyone can join</option>
                 <option value="private">Private - Invite only</option>
@@ -345,7 +345,7 @@ export default function EditGroupPage() {
                   ) : (
                     <>
                       <svg
-                        className="w-12 h-12 mx-auto mb-2 text-gray-400"
+                        className="w-12 h-12 mx-auto mb-2 text-gray-600"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -390,7 +390,7 @@ export default function EditGroupPage() {
                   ) : (
                     <>
                       <svg
-                        className="w-12 h-12 mx-auto mb-2 text-gray-400"
+                        className="w-12 h-12 mx-auto mb-2 text-gray-600"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -410,17 +410,17 @@ export default function EditGroupPage() {
             </div>
 
             {/* Buttons */}
-            <div className="flex gap-3 pt-6 border-t border-gray-200">
+            <div className="flex gap-3 pt-6 border-t border-gray-300">
               <Link
                 href="/my-groups"
-                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors"
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-white font-medium transition-colors"
               >
                 Cancel
               </Link>
               <button
                 type="submit"
                 disabled={loading}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="flex-1 px-4 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {loading ? (
                   <>

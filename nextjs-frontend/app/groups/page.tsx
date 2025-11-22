@@ -55,15 +55,15 @@ export default function GroupsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200">
+      <div className="bg-grey-200 border-b border-gray-300">
         <div className="max-w-6xl mx-auto px-4 py-8">
           <div className="flex items-center justify-between mb-6">
             <h1 className="text-3xl font-bold text-gray-900">Groups</h1>
             <Link
               href="/groups/create"
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors"
+              className="px-4 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-700 font-medium transition-colors"
             >
               Create Group
             </Link>
@@ -128,7 +128,7 @@ export default function GroupsPage() {
       {/* Content */}
       <div className="max-w-6xl mx-auto px-4 py-8">
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+          <div className="mb-6 p-4 bg-grey-200 border border-red-200 rounded-lg text-red-700">
             {error}
           </div>
         )}
@@ -140,7 +140,7 @@ export default function GroupsPage() {
         ) : groupsList.length === 0 ? (
           <div className="text-center py-12">
             <svg
-              className="w-16 h-16 mx-auto mb-4 text-gray-400"
+              className="w-16 h-16 mx-auto mb-4 text-gray-600"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -169,7 +169,7 @@ export default function GroupsPage() {
                 <button
                   onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
-                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Previous
                 </button>
@@ -181,8 +181,8 @@ export default function GroupsPage() {
                       onClick={() => setCurrentPage(page)}
                       className={`px-3 py-2 rounded-lg ${
                         currentPage === page
-                          ? 'bg-blue-600 text-white'
-                          : 'border border-gray-300 hover:bg-gray-50'
+                          ? 'bg-blue-500 text-gray-900'
+                          : 'border border-gray-300 hover:bg-white'
                       }`}
                     >
                       {page}
@@ -193,7 +193,7 @@ export default function GroupsPage() {
                 <button
                   onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                   disabled={currentPage === totalPages}
-                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Next
                 </button>

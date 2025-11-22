@@ -237,7 +237,7 @@ export default function EditShopPostPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-gray-600">Loading...</div>
       </div>
     );
@@ -245,21 +245,21 @@ export default function EditShopPostPage() {
 
   if (!post) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-red-600">Post not found</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-white py-8">
       <div className="max-w-4xl mx-auto px-4">
-        <div className="bg-white rounded-lg shadow-md p-6">
+        <div className="bg-grey-200 rounded-lg shadow-md p-6">
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-3xl font-bold text-gray-900">Edit {post.type === 'post' ? 'Post' : 'Page'}</h1>
             <button
               onClick={handleDelete}
-              className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+              className="px-4 py-2 bg-blue-500 text-gray-900 rounded-md hover:bg-blue-700 transition-colors"
             >
               Delete
             </button>
@@ -341,7 +341,7 @@ export default function EditShopPostPage() {
             )}
 
             {/* Post Info */}
-            <div className="bg-gray-50 p-4 rounded-md">
+            <div className="bg-white p-4 rounded-md">
               <div className="text-sm text-gray-600 space-y-1">
                 <p>Views: {post.view_count}</p>
                 <p>Created: {new Date(post.created_at).toLocaleDateString()}</p>
@@ -354,14 +354,14 @@ export default function EditShopPostPage() {
               <button
                 type="submit"
                 disabled={saving}
-                className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                className="px-6 py-2 bg-blue-500 text-gray-900 rounded-md hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed transition-colors"
               >
                 {saving ? 'Saving...' : 'Save Changes'}
               </button>
               <button
                 type="button"
                 onClick={() => router.push(`/shops/${shopId}/posts`)}
-                className="px-6 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors"
+                className="px-6 py-2 bg-blue-500 text-gray-700 rounded-md hover:bg-blue-300 transition-colors"
               >
                 Cancel
               </button>

@@ -115,7 +115,7 @@ export default function ShopMessagesSection({ shopId, isOwner }: ShopMessagesSec
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
+    <div className="bg-gray-50 rounded-lg shadow-md p-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -188,7 +188,7 @@ export default function ShopMessagesSection({ shopId, isOwner }: ShopMessagesSec
       {messages.length === 0 ? (
         <div className="text-center py-12">
           <svg
-            className="w-16 h-16 mx-auto mb-4 text-gray-300"
+            className="w-16 h-16 mx-auto mb-4 text-gray-700"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -201,25 +201,25 @@ export default function ShopMessagesSection({ shopId, isOwner }: ShopMessagesSec
             />
           </svg>
           <p className="text-gray-500 font-medium mb-1">No messages yet</p>
-          <p className="text-gray-400 text-sm">Messages from customers will appear here</p>
+          <p className="text-gray-600 text-sm">Messages from customers will appear here</p>
         </div>
       ) : (
         <div className="space-y-3">
           {messages.map((msg) => (
             <div
               key={msg.id}
-              className="border border-gray-200 rounded-lg overflow-hidden hover:border-blue-300 transition-colors"
+              className="border border-gray-300 rounded-lg overflow-hidden hover:border-blue-300 transition-colors"
             >
               {/* Message Header */}
               <button
                 onClick={() =>
                   setExpandedMessageId(expandedMessageId === msg.id ? null : msg.id)
                 }
-                className="w-full p-4 bg-gray-50 hover:bg-gray-100 transition-colors flex items-start justify-between gap-4"
+                className="w-full p-4 bg-white hover:bg-gray-200 transition-colors flex items-start justify-between gap-4"
               >
                 {/* Sender Info */}
                 <div className="flex items-start gap-3 min-w-0 flex-1 text-left">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-gray-900 font-bold text-sm flex-shrink-0">
                     {msg.userName.charAt(0).toUpperCase()}
                   </div>
                   <div className="min-w-0 flex-1">
@@ -230,7 +230,7 @@ export default function ShopMessagesSection({ shopId, isOwner }: ShopMessagesSec
 
                 {/* Expand Icon */}
                 <svg
-                  className={`w-5 h-5 text-gray-400 flex-shrink-0 transition-transform ${
+                  className={`w-5 h-5 text-gray-600 flex-shrink-0 transition-transform ${
                     expandedMessageId === msg.id ? 'rotate-180' : ''
                   }`}
                   fill="none"
@@ -243,7 +243,7 @@ export default function ShopMessagesSection({ shopId, isOwner }: ShopMessagesSec
 
               {/* Message Content */}
               {expandedMessageId === msg.id && (
-                <div className="p-4 bg-white border-t border-gray-200 space-y-3">
+                <div className="p-4 bg-gray-50 border-t border-gray-300 space-y-3">
                   {/* Message Text */}
                   <div>
                     <p className="text-gray-700 whitespace-pre-wrap break-words leading-relaxed">
@@ -252,7 +252,7 @@ export default function ShopMessagesSection({ shopId, isOwner }: ShopMessagesSec
                   </div>
 
                   {/* Message Meta */}
-                  <div className="flex items-center justify-between pt-3 border-t border-gray-200 text-xs text-gray-600">
+                  <div className="flex items-center justify-between pt-3 border-t border-gray-300 text-xs text-gray-600">
                     <span>
                       {new Date(msg.timestamp).toLocaleString('en-US', {
                         year: 'numeric',
@@ -332,7 +332,7 @@ export default function ShopMessagesSection({ shopId, isOwner }: ShopMessagesSec
 
       {/* Footer Info */}
       {messages.length > 0 && (
-        <div className="mt-6 pt-4 border-t border-gray-200">
+        <div className="mt-6 pt-4 border-t border-gray-300">
           <p className="text-xs text-gray-600 text-center">
             Messages are stored in real-time. Refresh to see all messages sent while you were away.
           </p>

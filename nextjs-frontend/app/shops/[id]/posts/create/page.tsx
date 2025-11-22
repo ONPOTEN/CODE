@@ -167,9 +167,9 @@ export default function CreateShopPostPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-white py-8">
       <div className="max-w-4xl mx-auto px-4">
-        <div className="bg-white rounded-lg shadow-md p-6">
+        <div className="bg-grey-200 rounded-lg shadow-md p-6">
           <h1 className="text-3xl font-bold text-gray-900 mb-6">Create New Post/Page</h1>
 
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -302,14 +302,14 @@ export default function CreateShopPostPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                className="px-6 py-2 bg-blue-500 text-gray-900 rounded-md hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed transition-colors"
               >
                 {loading ? 'Creating...' : 'Create'}
               </button>
               <button
                 type="button"
                 onClick={() => router.push(`/shops/${shopId}/posts`)}
-                className="px-6 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors"
+                className="px-6 py-2 bg-blue-500 text-gray-700 rounded-md hover:bg-blue-300 transition-colors"
               >
                 Cancel
               </button>

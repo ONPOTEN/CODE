@@ -73,7 +73,7 @@ export function GroupCard({ group, onDeleted }: GroupCardProps) {
   return (
     <>
       <Link href={`/groups/${group.group_id}`}>
-        <article className="bg-white rounded-lg shadow-sm hover:shadow-lg transition-shadow border border-gray-200 overflow-visible hover:border-blue-300 cursor-pointer h-full flex flex-col relative z-10">
+        <article className="bg-gray-50 rounded-lg shadow-sm hover:shadow-lg transition-shadow border border-gray-300 overflow-visible hover:border-blue-300 cursor-pointer h-full flex flex-col relative z-10">
         {/* Cover Image with Menu Button */}
         {group.cover_image ? (
           <div className="relative h-40 bg-gray-200 overflow-visible">
@@ -89,7 +89,7 @@ export function GroupCard({ group, onDeleted }: GroupCardProps) {
                     placeholder.className =
                       'w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-300 to-blue-400';
                     placeholder.innerHTML = `
-                      <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg class="w-12 h-12 text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.856-1.487M15 10a3 3 0 11-6 0 3 3 0 016 0zM15 20H9m6 0h6" />
                       </svg>
                     `;
@@ -107,17 +107,17 @@ export function GroupCard({ group, onDeleted }: GroupCardProps) {
                     e.stopPropagation();
                     setShowMenu(!showMenu);
                   }}
-                  className="p-2 hover:bg-white/20 rounded-full transition-colors"
+                  className="p-2 hover:bg-gray-50/20 rounded-full transition-colors"
                   title="Group options"
                 >
-                  <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <svg className="w-5 h-5 text-gray-900" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M10.5 1.5H9.5V3.5H10.5V1.5ZM10.5 8.5H9.5V10.5H10.5V8.5ZM10.5 15.5H9.5V17.5H10.5V15.5Z" />
                   </svg>
                 </button>
 
                 {/* Dropdown Menu */}
                 {showMenu && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-50 py-1">
+                  <div className="absolute right-0 mt-2 w-48 bg-gray-50 rounded-lg shadow-xl border border-gray-300 z-50 py-1">
                     <button
                       onClick={(e) => {
                         e.preventDefault();
@@ -178,7 +178,7 @@ export function GroupCard({ group, onDeleted }: GroupCardProps) {
           </div>
         ) : (
           <div className="relative h-40 bg-gradient-to-br from-blue-400 to-blue-500 flex items-center justify-center">
-            <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-12 h-12 text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.856-1.487M15 10a3 3 0 11-6 0 3 3 0 016 0zM15 20H9m6 0h6" />
             </svg>
             {/* Three Dot Menu - Only show for group admin */}
@@ -190,17 +190,17 @@ export function GroupCard({ group, onDeleted }: GroupCardProps) {
                     e.stopPropagation();
                     setShowMenu(!showMenu);
                   }}
-                  className="p-2 hover:bg-white/20 rounded-full transition-colors"
+                  className="p-2 hover:bg-gray-50/20 rounded-full transition-colors"
                   title="Group options"
                 >
-                  <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <svg className="w-5 h-5 text-gray-900" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M10.5 1.5H9.5V3.5H10.5V1.5ZM10.5 8.5H9.5V10.5H10.5V8.5ZM10.5 15.5H9.5V17.5H10.5V15.5Z" />
                   </svg>
                 </button>
 
                 {/* Dropdown Menu */}
                 {showMenu && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-50 py-1">
+                  <div className="absolute right-0 mt-2 w-48 bg-gray-50 rounded-lg shadow-xl border border-gray-300 z-50 py-1">
                     <button
                       onClick={(e) => {
                         e.preventDefault();

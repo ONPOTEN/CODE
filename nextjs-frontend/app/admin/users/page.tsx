@@ -150,7 +150,7 @@ export default function AdminUsersPage() {
             <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
             <Link
               href="/profile"
-              className="inline-flex items-center px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors"
+              className="inline-flex items-center px-4 py-2 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-lg font-medium transition-colors"
             >
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -163,19 +163,19 @@ export default function AdminUsersPage() {
 
         {/* Success/Error Messages */}
         {success && (
-          <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4">
+          <div className="mb-6 bg-grey-200 border border-green-200 rounded-lg p-4">
             <p className="text-green-800 font-medium">{success}</p>
           </div>
         )}
 
         {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="mb-6 bg-grey-200 border border-red-200 rounded-lg p-4">
             <p className="text-red-800 font-medium">{error}</p>
           </div>
         )}
 
         {/* Filters */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
+        <div className="bg-grey-200 rounded-lg shadow p-6 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Search */}
             <div className="md:col-span-2">
@@ -193,7 +193,7 @@ export default function AdminUsersPage() {
                 />
                 <button
                   onClick={handleSearch}
-                  className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+                  className="px-6 py-2 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-lg font-medium transition-colors"
                 >
                   Search
                 </button>
@@ -225,10 +225,10 @@ export default function AdminUsersPage() {
         </div>
 
         {/* Users Table */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="bg-grey-200 rounded-lg shadow overflow-hidden">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+              <thead className="bg-white">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     User
@@ -244,7 +244,7 @@ export default function AdminUsersPage() {
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-grey-200 divide-y divide-gray-200">
                 {isLoading ? (
                   <tr>
                     <td colSpan={4} className="px-6 py-8 text-center">
@@ -261,11 +261,11 @@ export default function AdminUsersPage() {
                   </tr>
                 ) : (
                   users.map((user) => (
-                    <tr key={user.id} className="hover:bg-gray-50">
+                    <tr key={user.id} className="hover:bg-white">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <div className="flex-shrink-0 h-10 w-10">
-                            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold">
+                            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-gray-900 font-semibold">
                               {user.name?.charAt(0).toUpperCase() || user.username?.charAt(0).toUpperCase() || 'U'}
                             </div>
                           </div>
@@ -304,7 +304,7 @@ export default function AdminUsersPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         {user.id === currentUser?.id ? (
-                          <span className="text-gray-400">
+                          <span className="text-gray-600">
                             (You)
                           </span>
                         ) : editingUserId === user.id ? (
@@ -342,7 +342,7 @@ export default function AdminUsersPage() {
 
           {/* Pagination */}
           {!isLoading && totalPages > 1 && (
-            <div className="bg-gray-50 px-6 py-4 flex items-center justify-between border-t border-gray-200">
+            <div className="bg-white px-6 py-4 flex items-center justify-between border-t border-gray-300">
               <div className="text-sm text-gray-700">
                 Showing <span className="font-medium">{(currentPage - 1) * perPage + 1}</span> to{' '}
                 <span className="font-medium">{Math.min(currentPage * perPage, total)}</span> of{' '}
@@ -352,14 +352,14 @@ export default function AdminUsersPage() {
                 <button
                   onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-grey-200 hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Previous
                 </button>
                 <button
                   onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                   disabled={currentPage === totalPages}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-grey-200 hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Next
                 </button>
@@ -369,7 +369,7 @@ export default function AdminUsersPage() {
         </div>
 
         {/* Info Box */}
-        <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div className="mt-6 bg-grey-200 border border-blue-200 rounded-lg p-4">
           <h3 className="text-blue-900 font-semibold mb-2">Security Notes</h3>
           <ul className="text-blue-800 text-sm space-y-1">
             <li>• You cannot change your own role to prevent accidental lockout</li>

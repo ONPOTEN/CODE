@@ -149,16 +149,16 @@ export default function ShopChatRoom({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full h-[600px] flex flex-col">
+      <div className="bg-gray-50 rounded-lg shadow-xl max-w-2xl w-full h-[600px] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200">
+        <div className="flex items-center justify-between p-4 border-b border-gray-300">
           <div>
             <h2 className="text-lg font-bold text-gray-900">Chat with {isOwner ? 'Customer' : shopName}</h2>
             <p className="text-xs text-gray-600">Room: {roomName}</p>
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-gray-600 hover:text-gray-600 transition-colors"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -177,11 +177,11 @@ export default function ShopChatRoom({
         )}
 
         {/* Messages Container */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-white">
           {messages.length === 0 ? (
             <div className="flex items-center justify-center h-full text-center">
               <div>
-                <svg className="w-12 h-12 mx-auto mb-2 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-12 h-12 mx-auto mb-2 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -190,7 +190,7 @@ export default function ShopChatRoom({
                   />
                 </svg>
                 <p className="text-gray-500 font-medium">No messages yet</p>
-                <p className="text-xs text-gray-400">Start a conversation</p>
+                <p className="text-xs text-gray-600">Start a conversation</p>
               </div>
             </div>
           ) : (
@@ -203,8 +203,8 @@ export default function ShopChatRoom({
                   <div
                     className={`max-w-xs px-4 py-2 rounded-lg ${
                       msg.isOwn
-                        ? 'bg-blue-600 text-white rounded-br-none'
-                        : 'bg-white text-gray-900 border border-gray-200 rounded-bl-none'
+                        ? 'bg-blue-600 text-gray-900 rounded-br-none'
+                        : 'bg-gray-50 text-gray-900 border border-gray-300 rounded-bl-none'
                     }`}
                   >
                     {!msg.isOwn && (
@@ -226,7 +226,7 @@ export default function ShopChatRoom({
         </div>
 
         {/* Input Form */}
-        <form onSubmit={handleSendMessage} className="p-4 border-t border-gray-200 bg-white">
+        <form onSubmit={handleSendMessage} className="p-4 border-t border-gray-300 bg-gray-50">
           <div className="flex gap-2">
             <input
               type="text"
@@ -239,7 +239,7 @@ export default function ShopChatRoom({
             <button
               type="submit"
               disabled={loading || !inputMessage.trim() || !isConnected}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors flex items-center gap-2"
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-gray-900 font-medium rounded-lg transition-colors flex items-center gap-2"
             >
               {loading ? (
                 <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">

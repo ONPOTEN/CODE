@@ -41,7 +41,7 @@ export default function IncomingCallNotification({
         className={`
           relative pointer-events-auto
           max-w-md w-full mx-4 rounded-2xl
-          bg-white shadow-2xl overflow-hidden
+          bg-gray-50 shadow-2xl overflow-hidden
           transform transition-all duration-300
           ${animate ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}
         `}
@@ -57,7 +57,7 @@ export default function IncomingCallNotification({
               <div className="absolute inset-0 bg-blue-100 rounded-full animate-ping opacity-75" />
               <div className="relative w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center">
                 <svg
-                  className="w-8 h-8 text-white"
+                  className="w-8 h-8 text-gray-900"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -88,7 +88,7 @@ export default function IncomingCallNotification({
           <div className="flex gap-4">
             <button
               onClick={onReject}
-              className="flex-1 px-4 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
+              className="flex-1 px-4 py-3 bg-red-600 hover:bg-red-700 text-gray-900 font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
             >
               <svg
                 className="w-5 h-5"
@@ -102,7 +102,7 @@ export default function IncomingCallNotification({
             </button>
             <button
               onClick={onAccept}
-              className="flex-1 px-4 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
+              className="flex-1 px-4 py-3 bg-green-600 hover:bg-green-700 text-gray-900 font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
             >
               <svg
                 className="w-5 h-5"

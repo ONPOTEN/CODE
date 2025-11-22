@@ -269,12 +269,12 @@ export default function ShopMessagesDetailPage() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
           <p className="text-gray-600 mb-4">Please log in to view messages</p>
           <Link
             href="/login"
-            className="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+            className="inline-flex items-center px-6 py-3 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-lg font-medium transition-colors"
           >
             Go to Login
           </Link>
@@ -285,7 +285,7 @@ export default function ShopMessagesDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading messages...</p>
@@ -296,12 +296,12 @@ export default function ShopMessagesDetailPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-600 mb-4">{error}</p>
           <Link
             href="/shop-messages"
-            className="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+            className="inline-flex items-center px-6 py-3 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-lg font-medium transition-colors"
           >
             Back to Messages
           </Link>
@@ -311,7 +311,7 @@ export default function ShopMessagesDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-white py-8">
       <div className="max-w-4xl mx-auto px-4">
         {/* Header */}
         <div className="mb-8">
@@ -358,9 +358,9 @@ export default function ShopMessagesDetailPage() {
 
         {/* Messages List */}
         {messages.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-sm p-12 text-center">
+          <div className="bg-grey-200 rounded-lg shadow-sm p-12 text-center">
             <svg
-              className="w-16 h-16 mx-auto mb-4 text-gray-300"
+              className="w-16 h-16 mx-auto mb-4 text-gray-700"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -373,7 +373,7 @@ export default function ShopMessagesDetailPage() {
               />
             </svg>
             <p className="text-gray-500 font-medium mb-2">No messages</p>
-            <p className="text-gray-400 text-sm">
+            <p className="text-gray-600 text-sm">
               There are no messages for this shop yet
             </p>
           </div>
@@ -382,7 +382,7 @@ export default function ShopMessagesDetailPage() {
             {messages.map((msg) => (
               <div
                 key={msg.id}
-                className={`bg-white rounded-lg shadow-sm p-6 border-l-4 ${
+                className={`bg-grey-200 rounded-lg shadow-sm p-6 border-l-4 ${
                   msg.is_read ? 'border-gray-300' : 'border-blue-500'
                 }`}
               >
@@ -394,17 +394,17 @@ export default function ShopMessagesDetailPage() {
                         {msg.sender?.display_name || msg.sender?.name || `Customer #${msg.sender_id}`}
                       </h3>
                       {!msg.is_read && (
-                        <span className="inline-flex items-center px-2 py-1 text-xs font-bold text-white bg-blue-500 rounded">
+                        <span className="inline-flex items-center px-2 py-1 text-xs font-bold text-gray-900 bg-grey-2000 rounded">
                           New
                         </span>
                       )}
                       <span
                         className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded ${
                           msg.status === 'read'
-                            ? 'bg-green-100 text-green-800'
+                            ? 'bg-blue-500 text-green-800'
                             : msg.status === 'delivered'
-                            ? 'bg-blue-100 text-blue-800'
-                            : 'bg-gray-100 text-gray-800'
+                            ? 'bg-blue-500 text-blue-800'
+                            : 'bg-blue-500 text-gray-800'
                         }`}
                       >
                         {msg.status.charAt(0).toUpperCase() + msg.status.slice(1)}
@@ -422,7 +422,7 @@ export default function ShopMessagesDetailPage() {
                   {!msg.is_read && (
                     <button
                       onClick={() => handleMarkAsRead(msg.id)}
-                      className="ml-4 px-3 py-1 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
+                      className="ml-4 px-3 py-1 text-xs bg-blue-500 hover:bg-blue-700 text-gray-900 rounded transition-colors"
                     >
                       Mark as Read
                     </button>
@@ -430,7 +430,7 @@ export default function ShopMessagesDetailPage() {
                 </div>
 
                 {/* Message Content */}
-                <div className="bg-gray-50 rounded-lg p-4 mb-3">
+                <div className="bg-white rounded-lg p-4 mb-3">
                   <p className="text-gray-800 text-sm whitespace-pre-wrap break-words">
                     {msg.message}
                   </p>
@@ -446,7 +446,7 @@ export default function ShopMessagesDetailPage() {
                   </div>
                   <button
                     onClick={() => handleReply(msg)}
-                    className="ml-4 px-4 py-2 text-sm bg-green-600 hover:bg-green-700 text-white rounded transition-colors flex items-center gap-2"
+                    className="ml-4 px-4 py-2 text-sm bg-blue-500 hover:bg-blue-700 text-gray-900 rounded transition-colors flex items-center gap-2"
                   >
                     <svg
                       className="w-4 h-4"
@@ -475,7 +475,7 @@ export default function ShopMessagesDetailPage() {
             <button
               onClick={() => setPage(Math.max(1, page - 1))}
               disabled={page === 1}
-              className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 py-2 bg-grey-200 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Previous
             </button>
@@ -487,8 +487,8 @@ export default function ShopMessagesDetailPage() {
                   onClick={() => setPage(p)}
                   className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                     page === p
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                      ? 'bg-blue-500 text-gray-900'
+                      : 'bg-grey-200 border border-gray-300 text-gray-700 hover:bg-white'
                   }`}
                 >
                   {p}
@@ -499,7 +499,7 @@ export default function ShopMessagesDetailPage() {
             <button
               onClick={() => setPage(Math.min(totalPages, page + 1))}
               disabled={page === totalPages}
-              className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 py-2 bg-grey-200 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Next
             </button>

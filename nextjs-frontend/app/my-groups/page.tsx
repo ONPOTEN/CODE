@@ -88,9 +88,9 @@ export default function MyGroupsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200">
+      <div className="bg-grey-200 border-b border-gray-300">
         <div className="max-w-6xl mx-auto px-4 py-8">
           <div className="flex items-center justify-between mb-6">
             <div>
@@ -103,20 +103,20 @@ export default function MyGroupsPage() {
             </div>
             <Link
               href="/groups/create"
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors"
+              className="px-4 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-700 font-medium transition-colors"
             >
               Create Group
             </Link>
           </div>
 
           {selectedGroups.length > 0 && (
-            <div className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="flex items-center justify-between bg-grey-200 border border-blue-200 rounded-lg p-4">
               <span className="text-sm font-medium text-blue-700">
                 {selectedGroups.length} group(s) selected
               </span>
               <button
                 onClick={handleDeleteSelected}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium transition-colors text-sm"
+                className="px-4 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-700 font-medium transition-colors text-sm"
               >
                 Delete Selected
               </button>
@@ -128,7 +128,7 @@ export default function MyGroupsPage() {
       {/* Content */}
       <div className="max-w-6xl mx-auto px-4 py-8">
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+          <div className="mb-6 p-4 bg-grey-200 border border-red-200 rounded-lg text-red-700">
             {error}
           </div>
         )}
@@ -140,7 +140,7 @@ export default function MyGroupsPage() {
         ) : groupsList.length === 0 ? (
           <div className="text-center py-12">
             <svg
-              className="w-16 h-16 mx-auto mb-4 text-gray-400"
+              className="w-16 h-16 mx-auto mb-4 text-gray-600"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -155,7 +155,7 @@ export default function MyGroupsPage() {
             <p className="text-gray-500 text-lg">You don't have any groups yet</p>
             <Link
               href="/groups/create"
-              className="mt-4 inline-block px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors"
+              className="mt-4 inline-block px-6 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-700 font-medium transition-colors"
             >
               Create Your First Group
             </Link>
@@ -190,7 +190,7 @@ export default function MyGroupsPage() {
                   <button
                     onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
-                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors"
+                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors"
                   >
                     ← Previous
                   </button>
@@ -202,7 +202,7 @@ export default function MyGroupsPage() {
                       <>
                         <button
                           onClick={() => setCurrentPage(1)}
-                          className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                          className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-white transition-colors"
                         >
                           1
                         </button>
@@ -225,8 +225,8 @@ export default function MyGroupsPage() {
                           onClick={() => setCurrentPage(page)}
                           className={`px-3 py-2 rounded-lg font-medium transition-colors ${
                             currentPage === page
-                              ? 'bg-blue-600 text-white'
-                              : 'border border-gray-300 hover:bg-gray-50'
+                              ? 'bg-blue-500 text-gray-900'
+                              : 'border border-gray-300 hover:bg-white'
                           }`}
                         >
                           {page}
@@ -239,7 +239,7 @@ export default function MyGroupsPage() {
                         {currentPage < totalPages - 3 && <span className="px-2 py-2 text-gray-500">...</span>}
                         <button
                           onClick={() => setCurrentPage(totalPages)}
-                          className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                          className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-white transition-colors"
                         >
                           {totalPages}
                         </button>
@@ -250,7 +250,7 @@ export default function MyGroupsPage() {
                   <button
                     onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                     disabled={currentPage === totalPages}
-                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors"
+                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors"
                   >
                     Next →
                   </button>

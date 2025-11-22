@@ -120,7 +120,7 @@ export default function ShopMessageInbox({
       {/* Message Badge Button */}
       <button
         onClick={handleOpenChat}
-        className="relative inline-flex items-center px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors h-fit whitespace-nowrap"
+        className="relative inline-flex items-center px-4 py-2 bg-purple-600 hover:bg-purple-700 text-gray-900 rounded-lg font-medium transition-colors h-fit whitespace-nowrap"
       >
         <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
@@ -132,7 +132,7 @@ export default function ShopMessageInbox({
         </svg>
         Messages
         {hasUnread && (
-          <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">
+          <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-gray-900 transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">
             {messages.filter((m) => m.unread).length}
           </span>
         )}

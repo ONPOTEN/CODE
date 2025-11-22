@@ -105,16 +105,16 @@ export default function ShopMessageModal({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+      <div className="bg-gray-50 rounded-lg shadow-xl max-w-md w-full">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+        <div className="flex items-center justify-between p-6 border-b border-gray-300">
           <div>
             <h2 className="text-xl font-bold text-gray-900">Message Shop</h2>
             <p className="text-sm text-gray-600">{shopName}</p>
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-gray-600 hover:text-gray-600 transition-colors"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -171,7 +171,7 @@ export default function ShopMessageModal({
           <button
             type="submit"
             disabled={loading || success || !message.trim()}
-            className="w-full px-4 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+            className="w-full px-4 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-gray-900 font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
           >
             {loading ? (
               <>
@@ -202,7 +202,7 @@ export default function ShopMessageModal({
         </form>
 
         {/* Footer Note */}
-        <div className="px-6 py-3 bg-blue-50 border-t border-gray-200 rounded-b-lg">
+        <div className="px-6 py-3 bg-blue-50 border-t border-gray-300 rounded-b-lg">
           <p className="text-xs text-blue-700">
             💡 Your message will be delivered to the shop via Socket.IO real-time messaging.
           </p>

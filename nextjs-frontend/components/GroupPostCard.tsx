@@ -153,7 +153,7 @@ export default function GroupPostCard({
   );
 
   return (
-    <article className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1 flex flex-col h-full">
+    <article className="bg-gray-50 rounded-lg shadow-md border border-gray-300 overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1 flex flex-col h-full">
       {/* Featured Image with Overlay */}
       <div className="relative h-48 bg-gray-300 overflow-hidden flex-shrink-0">
         {post.featured_image ? (
@@ -170,7 +170,7 @@ export default function GroupPostCard({
           </>
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-400 to-gray-500">
-            <svg className="w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-12 h-12 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -186,13 +186,13 @@ export default function GroupPostCard({
           {post.post_status && (
             <div>
               {post.post_status === 'pending' && (
-                <span className="inline-block px-2 py-1 bg-yellow-500 text-white text-xs font-bold rounded-full">⏳ Pending</span>
+                <span className="inline-block px-2 py-1 bg-yellow-500 text-gray-900 text-xs font-bold rounded-full">⏳ Pending</span>
               )}
               {post.post_status === 'trash' && (
-                <span className="inline-block px-2 py-1 bg-red-500 text-white text-xs font-bold rounded-full">🚫 Rejected</span>
+                <span className="inline-block px-2 py-1 bg-red-500 text-gray-900 text-xs font-bold rounded-full">🚫 Rejected</span>
               )}
               {post.post_status === 'publish' && (
-                <span className="inline-block px-2 py-1 bg-green-500 text-white text-xs font-bold rounded-full">✓ Published</span>
+                <span className="inline-block px-2 py-1 bg-green-500 text-gray-900 text-xs font-bold rounded-full">✓ Published</span>
               )}
             </div>
           )}
@@ -205,23 +205,23 @@ export default function GroupPostCard({
                   e.stopPropagation();
                   setShowMenu(!showMenu);
                 }}
-                className="p-2 hover:bg-white/20 rounded-full transition-colors"
+                className="p-2 hover:bg-gray-50/20 rounded-full transition-colors"
                 title="Post options"
               >
-                <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                <svg className="w-5 h-5 text-gray-900" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M10.5 1.5H9.5V3.5H10.5V1.5ZM10.5 8.5H9.5V10.5H10.5V8.5ZM10.5 15.5H9.5V17.5H10.5V15.5Z" />
                 </svg>
               </button>
 
               {/* Dropdown Menu */}
               {showMenu && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-20 py-1">
+                <div className="absolute right-0 mt-2 w-48 bg-gray-50 rounded-lg shadow-xl border border-gray-300 z-20 py-1">
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       handleEditPost();
                     }}
-                    className="w-full text-left px-4 py-2 hover:bg-gray-50 transition-colors flex items-center gap-2 text-gray-700 font-medium"
+                    className="w-full text-left px-4 py-2 hover:bg-white transition-colors flex items-center gap-2 text-gray-700 font-medium"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -252,7 +252,7 @@ export default function GroupPostCard({
       <div className="p-6">
         {/* Author Info */}
         {post.author && (
-          <div className="flex items-center gap-3 mb-4 pb-4 border-b border-gray-200">
+          <div className="flex items-center gap-3 mb-4 pb-4 border-b border-gray-300">
             {post.author.avatar_url ? (
               <img
                 src={post.author.avatar_url}
@@ -297,7 +297,7 @@ export default function GroupPostCard({
         )}
 
         {/* Engagement Stats */}
-        <div className="flex gap-6 pt-4 border-t border-gray-200 text-sm text-gray-600">
+        <div className="flex gap-6 pt-4 border-t border-gray-300 text-sm text-gray-600">
           <button
             onClick={handleLike}
             disabled={isLiking}
@@ -365,14 +365,14 @@ export default function GroupPostCard({
             <button
               onClick={handleApprovePost}
               disabled={isModeratingApprove || isModeratingReject}
-              className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+              className="flex-1 px-4 py-2 bg-green-600 text-gray-900 rounded-lg hover:bg-green-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
             >
               {isModeratingApprove ? 'Approving...' : '✓ Approve Post'}
             </button>
             <button
               onClick={handleRejectPost}
               disabled={isModeratingApprove || isModeratingReject}
-              className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+              className="flex-1 px-4 py-2 bg-red-600 text-gray-900 rounded-lg hover:bg-red-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
             >
               {isModeratingReject ? 'Rejecting...' : '✗ Reject Post'}
             </button>
@@ -383,7 +383,7 @@ export default function GroupPostCard({
         <div className="mt-4">
           <Link
             href={`/group-posts/${post.id}`}
-            className="inline-block px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors text-sm"
+            className="inline-block px-4 py-2 bg-blue-600 text-gray-900 rounded-lg hover:bg-blue-700 font-medium transition-colors text-sm"
           >
             Read More
           </Link>

@@ -57,7 +57,7 @@ export function ShopSearch() {
   };
 
   return (
-    <section className="container py-12 bg-white">
+    <section className="container py-12 bg-gray-50">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
@@ -68,9 +68,9 @@ export function ShopSearch() {
         {/* Search Bar */}
         <div className="mb-8">
           <div className="relative">
-            <div className="flex items-center bg-gray-50 rounded-lg border border-gray-200 overflow-hidden hover:border-blue-300 transition-colors">
+            <div className="flex items-center bg-white rounded-lg border border-gray-300 overflow-hidden hover:border-blue-300 transition-colors">
               <svg
-                className="w-5 h-5 text-gray-400 ml-4 flex-shrink-0"
+                className="w-5 h-5 text-gray-600 ml-4 flex-shrink-0"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -92,7 +92,7 @@ export function ShopSearch() {
               {searchTerm && (
                 <button
                   onClick={handleClear}
-                  className="pr-4 text-gray-400 hover:text-gray-600 transition-colors"
+                  className="pr-4 text-gray-600 hover:text-gray-600 transition-colors"
                   aria-label="Clear search"
                 >
                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -136,7 +136,7 @@ export function ShopSearch() {
             ) : results.length === 0 ? (
               <div className="text-center py-12">
                 <svg
-                  className="w-16 h-16 mx-auto mb-4 text-gray-400"
+                  className="w-16 h-16 mx-auto mb-4 text-gray-600"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -151,7 +151,7 @@ export function ShopSearch() {
                 <p className="text-gray-500 mb-4">No shops found matching your search</p>
                 <Link
                   href="/shops"
-                  className="inline-block px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors"
+                  className="inline-block px-6 py-2 bg-blue-600 text-gray-900 rounded-lg hover:bg-blue-700 font-medium transition-colors"
                 >
                   Browse All Shops
                 </Link>
@@ -169,7 +169,7 @@ export function ShopSearch() {
                 <div className="text-center">
                   <Link
                     href={`/shops?search=${encodeURIComponent(searchTerm)}`}
-                    className="inline-block px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors"
+                    className="inline-block px-6 py-2 bg-blue-600 text-gray-900 rounded-lg hover:bg-blue-700 font-medium transition-colors"
                   >
                     View All Results
                   </Link>
@@ -187,7 +187,7 @@ export function ShopSearch() {
             </p>
             <Link
               href="/shops"
-              className="inline-block px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors"
+              className="inline-block px-6 py-2 bg-blue-600 text-gray-900 rounded-lg hover:bg-blue-700 font-medium transition-colors"
             >
               Explore All Shops
             </Link>

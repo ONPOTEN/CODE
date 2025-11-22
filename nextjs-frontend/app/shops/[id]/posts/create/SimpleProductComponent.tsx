@@ -67,7 +67,7 @@ export const SimpleProductComponent: React.FC<SimpleProductComponentProps> = ({
   };
 
   return (
-    <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 space-y-4">
+    <div className="bg-grey-200 border border-blue-200 rounded-lg p-6 space-y-4">
       <h3 className="text-lg font-semibold text-blue-900 flex items-center gap-2">
         🛍️ Simple Product Fields
       </h3>
@@ -179,14 +179,14 @@ export const SimpleProductComponent: React.FC<SimpleProductComponentProps> = ({
               <button
                 type="button"
                 onClick={removeMainImage}
-                className="absolute top-2 right-2 p-2 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors"
+                className="absolute top-2 right-2 p-2 bg-blue-500 text-gray-900 rounded-full hover:bg-blue-700 transition-colors"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
-            <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-blue-300 rounded-lg cursor-pointer bg-blue-50 hover:bg-blue-100 transition-colors">
+            <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-blue-300 rounded-lg cursor-pointer bg-grey-200 hover:bg-blue-500 transition-colors">
               <div className="flex flex-col items-center justify-center pt-2 pb-2">
                 <svg className="w-6 h-6 text-blue-600 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
@@ -197,7 +197,7 @@ export const SimpleProductComponent: React.FC<SimpleProductComponentProps> = ({
             </label>
           </div>
         ) : (
-          <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-blue-300 rounded-lg cursor-pointer bg-blue-50 hover:bg-blue-100 transition-colors">
+          <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-blue-300 rounded-lg cursor-pointer bg-grey-200 hover:bg-blue-500 transition-colors">
             <div className="flex flex-col items-center justify-center pt-5 pb-6">
               <svg className="w-8 h-8 text-blue-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
@@ -228,7 +228,7 @@ export const SimpleProductComponent: React.FC<SimpleProductComponentProps> = ({
                   <button
                     type="button"
                     onClick={() => removeOtherImage(index)}
-                    className="absolute top-1 right-1 p-1 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors"
+                    className="absolute top-1 right-1 p-1 bg-blue-500 text-gray-900 rounded-full hover:bg-blue-700 transition-colors"
                   >
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -239,7 +239,7 @@ export const SimpleProductComponent: React.FC<SimpleProductComponentProps> = ({
             </div>
           </div>
         )}
-        <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-blue-300 rounded-lg cursor-pointer bg-blue-50 hover:bg-blue-100 transition-colors">
+        <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-blue-300 rounded-lg cursor-pointer bg-grey-200 hover:bg-blue-500 transition-colors">
           <div className="flex flex-col items-center justify-center pt-2 pb-2">
             <svg className="w-6 h-6 text-blue-600 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />

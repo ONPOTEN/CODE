@@ -103,7 +103,7 @@ export const VariantProductsList: React.FC<VariantProductsListProps> = ({ shopId
 
   if (loading) {
     return (
-      <div className="bg-purple-50 border border-purple-200 rounded-lg p-8 text-center">
+      <div className="bg-grey-200 border border-purple-200 rounded-lg p-8 text-center">
         <p className="text-purple-900">Loading variant products...</p>
       </div>
     );
@@ -111,12 +111,12 @@ export const VariantProductsList: React.FC<VariantProductsListProps> = ({ shopId
 
   if (error) {
     return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-8 text-center">
+      <div className="bg-grey-200 border border-red-200 rounded-lg p-8 text-center">
         <p className="text-red-900 font-medium">Error loading variant products</p>
         <p className="text-red-700 text-sm mt-2">{error}</p>
         <button
           onClick={fetchVariantProducts}
-          className="mt-4 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+          className="mt-4 px-4 py-2 bg-blue-500 text-gray-900 rounded-md hover:bg-blue-700 transition-colors"
         >
           Retry
         </button>
@@ -125,7 +125,7 @@ export const VariantProductsList: React.FC<VariantProductsListProps> = ({ shopId
   }
 
   return (
-    <div className="bg-purple-50 border border-purple-200 rounded-lg p-6 space-y-6">
+    <div className="bg-grey-200 border border-purple-200 rounded-lg p-6 space-y-6">
       <div>
         <h3 className="text-lg font-semibold text-purple-900 flex items-center gap-2 mb-4">
           🎨 Variant Products (Biến thể)
@@ -136,7 +136,7 @@ export const VariantProductsList: React.FC<VariantProductsListProps> = ({ shopId
       </div>
 
       {/* Search and Filters */}
-      <div className="bg-white rounded-lg p-4 border border-purple-300 space-y-3">
+      <div className="bg-grey-200 rounded-lg p-4 border border-purple-300 space-y-3">
         <input
           type="text"
           placeholder="Search variant products..."
@@ -160,7 +160,7 @@ export const VariantProductsList: React.FC<VariantProductsListProps> = ({ shopId
       </div>
 
       {/* Products Count */}
-      <div className="bg-purple-100 border border-purple-300 rounded p-3">
+      <div className="bg-blue-500 border border-purple-300 rounded p-3">
         <p className="text-sm text-purple-900">
           📊 Found {filteredProducts.length} variant product{filteredProducts.length !== 1 ? 's' : ''}
         </p>
@@ -168,7 +168,7 @@ export const VariantProductsList: React.FC<VariantProductsListProps> = ({ shopId
 
       {/* Products List */}
       {filteredProducts.length === 0 ? (
-        <div className="bg-white rounded-lg p-8 text-center border border-purple-300">
+        <div className="bg-grey-200 rounded-lg p-8 text-center border border-purple-300">
           <p className="text-gray-500 text-lg">
             {products.length === 0 ? 'No variant products yet' : 'No products match your filters'}
           </p>
@@ -186,7 +186,7 @@ export const VariantProductsList: React.FC<VariantProductsListProps> = ({ shopId
           {filteredProducts.map((product) => (
             <div
               key={product.id}
-              className="bg-white rounded-lg border border-purple-300 p-4 hover:shadow-lg transition-shadow"
+              className="bg-grey-200 rounded-lg border border-purple-300 p-4 hover:shadow-lg transition-shadow"
             >
               {/* Product Image - Priority: main_image > featured_images[0] */}
               {((product as any).main_image || (product.featured_images && product.featured_images.length > 0)) && (
@@ -216,7 +216,7 @@ export const VariantProductsList: React.FC<VariantProductsListProps> = ({ shopId
                   <span
                     className={`px-2 py-1 text-xs font-medium rounded-full ${
                       product.status === 'published'
-                        ? 'bg-green-100 text-green-800'
+                        ? 'bg-blue-500 text-green-800'
                         : 'bg-yellow-100 text-yellow-800'
                     }`}
                   >
@@ -224,13 +224,13 @@ export const VariantProductsList: React.FC<VariantProductsListProps> = ({ shopId
                   </span>
 
                   {/* Type Badge */}
-                  <span className="px-2 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-800">
+                  <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-500 text-purple-800">
                     {product.type}
                   </span>
                 </div>
 
                 {/* Meta Info */}
-                <div className="text-xs text-gray-500 pt-2 border-t border-gray-200 mb-3">
+                <div className="text-xs text-gray-500 pt-2 border-t border-gray-300 mb-3">
                   <p>Views: {product.view_count}</p>
                   <p>Created: {new Date(product.created_at).toLocaleDateString()}</p>
                   {product.author && <p>By: {product.author.name || product.author.username}</p>}
@@ -242,15 +242,15 @@ export const VariantProductsList: React.FC<VariantProductsListProps> = ({ shopId
                     onClick={() => handleAddToCart(product)}
                     className={`block w-full px-4 py-2 rounded-md font-medium text-center transition-colors ${
                       addedToCartId === product.id
-                        ? 'bg-green-600 text-white'
-                        : 'bg-green-500 hover:bg-green-600 text-white'
+                        ? 'bg-blue-500 text-gray-900'
+                        : 'bg-grey-2000 hover:bg-blue-500 text-gray-900'
                     }`}
                   >
                     {addedToCartId === product.id ? '✓ Added to Cart' : 'Add to Cart'}
                   </button>
                   <Link
                     href={`/shops/${shopId}/posts/${product.id}`}
-                    className="block w-full px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-md font-medium text-center transition-colors"
+                    className="block w-full px-4 py-2 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-md font-medium text-center transition-colors"
                   >
                     View Details
                   </Link>

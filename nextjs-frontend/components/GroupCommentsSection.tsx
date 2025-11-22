@@ -71,13 +71,13 @@ function GroupCommentItem({
 
   return (
     <div
-      className={`flex gap-3 py-3 border-b border-gray-200 last:border-b-0 ${
-        level > 0 ? 'ml-8 bg-gray-50 rounded p-3' : ''
+      className={`flex gap-3 py-3 border-b border-gray-300 last:border-b-0 ${
+        level > 0 ? 'ml-8 bg-white rounded p-3' : ''
       }`}
     >
       {/* Avatar */}
       <div className="flex-shrink-0">
-        <div className="w-8 h-8 bg-blue-400 rounded-full flex items-center justify-center text-white text-sm font-bold">
+        <div className="w-8 h-8 bg-blue-400 rounded-full flex items-center justify-center text-gray-900 text-sm font-bold">
           {comment.author?.name?.charAt(0).toUpperCase() || 'U'}
         </div>
       </div>
@@ -121,7 +121,7 @@ function GroupCommentItem({
               <button
                 onClick={handleSaveEdit}
                 disabled={isSaving || !editContent.trim()}
-                className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 disabled:opacity-50"
+                className="px-3 py-1 bg-blue-500 text-gray-900 rounded text-sm hover:bg-blue-600 disabled:opacity-50"
               >
                 {isSaving ? 'Saving...' : 'Save'}
               </button>
@@ -219,15 +219,15 @@ export function GroupCommentsSection({ postId, currentUserId, className = '' }: 
   const isLoading = commentLoading.get(postId) || false;
 
   return (
-    <div className={`bg-white rounded-lg border border-gray-200 p-6 ${className}`}>
+    <div className={`bg-gray-50 rounded-lg border border-gray-300 p-6 ${className}`}>
       <h2 className="text-xl font-bold text-gray-900 mb-6">Comments ({postComments.length})</h2>
 
       {/* Comment Form */}
       {authUser ? (
-        <form onSubmit={handleSubmitComment} className="mb-8 pb-8 border-b border-gray-200">
+        <form onSubmit={handleSubmitComment} className="mb-8 pb-8 border-b border-gray-300">
           <div className="flex gap-4">
             <div className="flex-shrink-0">
-              <div className="w-10 h-10 bg-blue-400 rounded-full flex items-center justify-center text-white font-bold">
+              <div className="w-10 h-10 bg-blue-400 rounded-full flex items-center justify-center text-gray-900 font-bold">
                 {authUser.display_name?.charAt(0).toUpperCase() || authUser.username?.charAt(0).toUpperCase() || 'U'}
               </div>
             </div>
@@ -255,7 +255,7 @@ export function GroupCommentsSection({ postId, currentUserId, className = '' }: 
                 <button
                   type="submit"
                   disabled={isSubmitting || !newComment.trim()}
-                  className="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="px-4 py-2 text-sm font-medium bg-blue-600 text-gray-900 rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   {isSubmitting ? 'Posting...' : 'Post Comment'}
                 </button>
@@ -264,7 +264,7 @@ export function GroupCommentsSection({ postId, currentUserId, className = '' }: 
           </div>
         </form>
       ) : (
-        <div className="mb-8 pb-8 border-b border-gray-200 p-4 bg-gray-50 rounded-lg text-center">
+        <div className="mb-8 pb-8 border-b border-gray-300 p-4 bg-white rounded-lg text-center">
           <p className="text-gray-600 mb-3">
             Please <Link href="/login" className="text-blue-600 hover:underline font-medium">log in</Link> to comment
           </p>

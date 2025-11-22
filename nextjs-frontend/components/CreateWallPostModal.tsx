@@ -148,16 +148,16 @@ export function CreateWallPostModal({
       />
 
       {/* Modal */}
-      <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl mx-4 bg-white rounded-lg shadow-xl z-50 max-h-[95vh] overflow-y-auto">
+      <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl mx-4 bg-gray-50 rounded-lg shadow-xl z-50 max-h-[95vh] overflow-y-auto">
         {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-center justify-between">
+        <div className="sticky top-0 bg-gray-50 border-b border-gray-300 p-6 flex items-center justify-between">
           <h2 className="text-2xl font-bold text-gray-900">
             Create Post on {wallUserName}'s Wall
           </h2>
           <button
             onClick={onClose}
             disabled={loading}
-            className="text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
+            className="text-gray-600 hover:text-gray-600 transition-colors disabled:opacity-50"
             aria-label="Close modal"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -176,7 +176,7 @@ export function CreateWallPostModal({
           {/* User Context Info */}
           {currentUser && (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center gap-3">
-              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold">
+              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-gray-900 font-bold">
                 {currentUser.name?.charAt(0).toUpperCase() || currentUser.username?.charAt(0).toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
@@ -282,7 +282,7 @@ export function CreateWallPostModal({
                 }`}
               >
                 <svg
-                  className="w-12 h-12 mx-auto mb-2 text-gray-400"
+                  className="w-12 h-12 mx-auto mb-2 text-gray-600"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -330,7 +330,7 @@ export function CreateWallPostModal({
                       type="button"
                       onClick={() => removeImage(index)}
                       disabled={loading}
-                      className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50"
+                      className="absolute top-1 right-1 bg-red-600 text-gray-900 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50"
                       title="Remove image"
                     >
                       <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -349,18 +349,18 @@ export function CreateWallPostModal({
         </form>
 
         {/* Footer */}
-        <div className="sticky bottom-0 bg-white border-t border-gray-200 p-6 flex gap-3">
+        <div className="sticky bottom-0 bg-gray-50 border-t border-gray-300 p-6 flex gap-3">
           <button
             onClick={onClose}
             disabled={loading}
-            className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Cancel
           </button>
           <button
             onClick={handleSubmit}
             disabled={loading || !title.trim() || !content.trim()}
-            className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="flex-1 px-4 py-2 bg-blue-600 text-gray-900 rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {loading ? (
               <>

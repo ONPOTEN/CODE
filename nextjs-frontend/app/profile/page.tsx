@@ -91,12 +91,12 @@ export default function ProfilePage() {
       <div className="max-w-2xl mx-auto">
         <h1 className="text-3xl font-bold mb-8">Profile</h1>
 
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
+        <div className="bg-grey-200 rounded-lg shadow p-6 mb-6">
           <h2 className="text-xl font-semibold mb-4">User Information</h2>
 
           {/* Avatar Display */}
-          <div className="flex items-center gap-4 mb-6 pb-6 border-b border-gray-200">
-            <div className="w-24 h-24 rounded-full overflow-hidden bg-gray-200 border-2 border-gray-300">
+          <div className="flex items-center gap-4 mb-6 pb-6 border-b border-gray-300">
+            <div className="w-24 h-24 rounded-full overflow-hidden bg-blue-500 border-2 border-gray-300">
               {user.avatar ? (
                 <img
                   src={user.avatar}
@@ -104,7 +104,7 @@ export default function ProfilePage() {
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600 text-white text-3xl font-bold">
+                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600 text-gray-900 text-3xl font-bold">
                   {user.display_name?.charAt(0).toUpperCase() || 'U'}
                 </div>
               )}
@@ -130,7 +130,7 @@ export default function ProfilePage() {
               <span className="font-medium text-gray-700">Email:</span>
               <span className="ml-2 text-gray-900">{user.email}</span>
               {user.email_public !== undefined && (
-                <span className={`ml-2 text-xs px-2 py-0.5 rounded ${user.email_public ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'}`}>
+                <span className={`ml-2 text-xs px-2 py-0.5 rounded ${user.email_public ? 'bg-blue-500 text-green-800' : 'bg-blue-500 text-orange-800'}`}>
                   {user.email_public ? 'Public' : 'Private'}
                 </span>
               )}
@@ -145,7 +145,7 @@ export default function ProfilePage() {
               <span className="font-medium text-gray-700">Hobby:</span>
               <span className="ml-2 text-gray-900">{user.hobby || 'Not specified'}</span>
               {user.hobby_public !== undefined && (
-                <span className={`ml-2 text-xs px-2 py-0.5 rounded ${user.hobby_public ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'}`}>
+                <span className={`ml-2 text-xs px-2 py-0.5 rounded ${user.hobby_public ? 'bg-blue-500 text-green-800' : 'bg-blue-500 text-orange-800'}`}>
                   {user.hobby_public ? 'Public' : 'Private'}
                 </span>
               )}
@@ -155,7 +155,7 @@ export default function ProfilePage() {
               <span className="font-medium text-gray-700">Company:</span>
               <span className="ml-2 text-gray-900">{user.company || 'Not specified'}</span>
               {user.company_public !== undefined && (
-                <span className={`ml-2 text-xs px-2 py-0.5 rounded ${user.company_public ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'}`}>
+                <span className={`ml-2 text-xs px-2 py-0.5 rounded ${user.company_public ? 'bg-blue-500 text-green-800' : 'bg-blue-500 text-orange-800'}`}>
                   {user.company_public ? 'Public' : 'Private'}
                 </span>
               )}
@@ -165,7 +165,7 @@ export default function ProfilePage() {
               <span className="font-medium text-gray-700">Location:</span>
               <span className="ml-2 text-gray-900">{user.location || 'Not specified'}</span>
               {user.location_public !== undefined && (
-                <span className={`ml-2 text-xs px-2 py-0.5 rounded ${user.location_public ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'}`}>
+                <span className={`ml-2 text-xs px-2 py-0.5 rounded ${user.location_public ? 'bg-blue-500 text-green-800' : 'bg-blue-500 text-orange-800'}`}>
                   {user.location_public ? 'Public' : 'Private'}
                 </span>
               )}
@@ -175,7 +175,7 @@ export default function ProfilePage() {
               <span className="font-medium text-gray-700">Phone:</span>
               <span className="ml-2 text-gray-900">{user.phone || 'Not specified'}</span>
               {user.phone_public !== undefined && (
-                <span className={`ml-2 text-xs px-2 py-0.5 rounded ${user.phone_public ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'}`}>
+                <span className={`ml-2 text-xs px-2 py-0.5 rounded ${user.phone_public ? 'bg-blue-500 text-green-800' : 'bg-blue-500 text-orange-800'}`}>
                   {user.phone_public ? 'Public' : 'Private'}
                 </span>
               )}
@@ -209,7 +209,7 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+        <div className="bg-grey-200 border border-green-200 rounded-lg p-4 mb-6">
           <p className="text-green-800 font-medium">
             ✓ Successfully authenticated with Laravel API
           </p>
@@ -218,50 +218,50 @@ export default function ProfilePage() {
           </p>
         </div>
 
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+        <div className="bg-grey-200 border border-blue-200 rounded-lg p-4 mb-6">
           <h3 className="text-blue-900 font-semibold mb-3">Actions</h3>
           <div className="flex flex-wrap gap-3">
             <Link
               href="/profile/edit"
-              className="inline-block bg-orange-600 hover:bg-orange-700 text-white font-medium py-2 px-6 rounded transition-colors"
+              className="inline-block bg-blue-500 hover:bg-blue-700 text-gray-900 font-medium py-2 px-6 rounded transition-colors"
             >
               Edit Profile
             </Link>
             <Link
               href="/my-posts"
-              className="inline-block bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-6 rounded transition-colors"
+              className="inline-block bg-blue-500 hover:bg-blue-700 text-gray-900 font-medium py-2 px-6 rounded transition-colors"
             >
               My Posts
             </Link>
             <Link
               href="/posts/create"
-              className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded transition-colors"
+              className="inline-block bg-blue-500 hover:bg-blue-700 text-gray-900 font-medium py-2 px-6 rounded transition-colors"
             >
               Create New Post
             </Link>
             <Link
               href="/friends"
-              className="inline-block bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-6 rounded transition-colors"
+              className="inline-block bg-blue-500 hover:bg-blue-700 text-gray-900 font-medium py-2 px-6 rounded transition-colors"
             >
               My Friends
             </Link>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
+        <div className="bg-grey-200 rounded-lg shadow p-6 mb-6">
           <h3 className="text-lg font-semibold mb-4">Search Users</h3>
           <UserSearchAutocomplete placeholder="Search for other users..." />
         </div>
 
         {/* Pending Friend Requests */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
+        <div className="bg-grey-200 rounded-lg shadow p-6 mb-6">
           <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
             <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
             </svg>
             Friend Requests
             {pendingRequests.length > 0 && (
-              <span className="inline-flex items-center justify-center w-6 h-6 text-xs font-bold text-white bg-red-600 rounded-full">
+              <span className="inline-flex items-center justify-center w-6 h-6 text-xs font-bold text-gray-900 bg-blue-500 rounded-full">
                 {pendingRequests.length}
               </span>
             )}
@@ -276,12 +276,12 @@ export default function ProfilePage() {
               {pendingRequests.map((prequest) => (
                 <div
                   key={prequest.id}
-                  className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="flex items-center justify-between p-4 border border-gray-300 rounded-lg hover:bg-white transition-colors"
                 >
                   <div className="flex items-center gap-3 flex-1">
                     {/* Avatar */}
                     <Link href={`/users/${prequest.sender_id}`}>
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold cursor-pointer hover:scale-105 transition-transform">
+                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-gray-900 font-semibold cursor-pointer hover:scale-105 transition-transform">
                         {prequest.sender?.name?.charAt(0).toUpperCase() || 'U'}
                       </div>
                     </Link>
@@ -294,7 +294,7 @@ export default function ProfilePage() {
                         </p>
                       </Link>
                       <p className="text-sm text-gray-500">@{prequest.sender?.username}</p>
-                      <p className="text-xs text-gray-400 mt-1">
+                      <p className="text-xs text-gray-600 mt-1">
                         {new Date(prequest.created_at).toLocaleDateString('en-US', {
                           month: 'short',
                           day: 'numeric',
@@ -309,7 +309,7 @@ export default function ProfilePage() {
                     <button
                       onClick={() => handleAcceptRequest(prequest.id, prequest.sender_id)}
                       disabled={actionLoading === prequest.sender_id}
-                      className="flex items-center gap-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex items-center gap-1 px-4 py-2 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -319,7 +319,7 @@ export default function ProfilePage() {
                     <button
                       onClick={() => handleRejectRequest(prequest.id, prequest.sender_id)}
                       disabled={actionLoading === prequest.sender_id}
-                      className="flex items-center gap-1 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex items-center gap-1 px-4 py-2 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -332,7 +332,7 @@ export default function ProfilePage() {
             </div>
           ) : (
             <div className="text-center py-8 text-gray-500">
-              <svg className="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-16 h-16 mx-auto mb-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg>
               <p className="text-lg font-medium">No pending friend requests</p>
@@ -343,7 +343,7 @@ export default function ProfilePage() {
 
         <button
           onClick={handleLogout}
-          className="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-6 rounded transition-colors"
+          className="bg-blue-500 hover:bg-blue-700 text-gray-900 font-medium py-2 px-6 rounded transition-colors"
         >
           Logout
         </button>

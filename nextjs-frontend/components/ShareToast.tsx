@@ -21,7 +21,7 @@ export function ShareToast({ message, duration = 3000, isVisible, onClose }: Sha
 
   return (
     <div className="fixed bottom-4 right-4 z-50 animate-in fade-in slide-in-from-bottom-4 duration-300">
-      <div className="bg-green-500 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-2">
+      <div className="bg-green-500 text-gray-900 px-4 py-3 rounded-lg shadow-lg flex items-center gap-2">
         <span className="text-xl">✓</span>
         <span>{message}</span>
       </div>

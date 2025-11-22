@@ -105,13 +105,13 @@ export default function UserSearchAutocomplete({ placeholder = 'Search users...'
       </div>
 
       {isOpen && results.length > 0 && (
-        <div className="absolute z-50 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-lg max-h-96 overflow-y-auto">
+        <div className="absolute z-50 w-full mt-2 bg-gray-50 border border-gray-300 rounded-lg shadow-lg max-h-96 overflow-y-auto">
           {results.map((user, index) => (
             <button
               key={user.id}
               onClick={() => handleSelectUser(user)}
               onMouseEnter={() => setSelectedIndex(index)}
-              className={`w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors ${
+              className={`w-full px-4 py-3 text-left hover:bg-white transition-colors ${
                 index === selectedIndex ? 'bg-blue-50' : ''
               } ${index === 0 ? 'rounded-t-lg' : ''} ${
                 index === results.length - 1 ? 'rounded-b-lg' : 'border-b border-gray-100'
@@ -119,7 +119,7 @@ export default function UserSearchAutocomplete({ placeholder = 'Search users...'
             >
               <div className="flex items-center space-x-3">
                 <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                  <span className="text-white font-semibold text-sm">
+                  <span className="text-gray-900 font-semibold text-sm">
                     {user.name?.charAt(0).toUpperCase() || user.username?.charAt(0).toUpperCase()}
                   </span>
                 </div>
@@ -134,7 +134,7 @@ export default function UserSearchAutocomplete({ placeholder = 'Search users...'
       )}
 
       {isOpen && query.length >= 2 && !loading && results.length === 0 && (
-        <div className="absolute z-50 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-lg p-4">
+        <div className="absolute z-50 w-full mt-2 bg-gray-50 border border-gray-300 rounded-lg shadow-lg p-4">
           <p className="text-sm text-gray-500 text-center">No users found</p>
         </div>
       )}

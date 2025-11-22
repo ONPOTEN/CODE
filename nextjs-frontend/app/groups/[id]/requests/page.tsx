@@ -117,12 +117,12 @@ export default function GroupJoinRequestsPage() {
 
   if (error && !group) {
     return (
-      <div className="min-h-screen bg-gray-50 px-4 py-8">
+      <div className="min-h-screen bg-white px-4 py-8">
         <div className="max-w-4xl mx-auto">
-          <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 mb-4">
+          <div className="p-4 bg-grey-200 border border-red-200 rounded-lg text-red-700 mb-4">
             {error}
           </div>
-          <Link href="/groups" className="inline-block px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+          <Link href="/groups" className="inline-block px-4 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-700">
             Back to Groups
           </Link>
         </div>
@@ -132,10 +132,10 @@ export default function GroupJoinRequestsPage() {
 
   if (!group) {
     return (
-      <div className="min-h-screen bg-gray-50 px-4 py-8">
+      <div className="min-h-screen bg-white px-4 py-8">
         <div className="max-w-4xl mx-auto text-center py-12">
           <p className="text-gray-500 text-lg">Group not found</p>
-          <Link href="/groups" className="mt-4 inline-block px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+          <Link href="/groups" className="mt-4 inline-block px-4 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-700">
             Back to Groups
           </Link>
         </div>
@@ -144,9 +144,9 @@ export default function GroupJoinRequestsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200">
+      <div className="bg-grey-200 border-b border-gray-300">
         <div className="max-w-4xl mx-auto px-4 py-6">
           <div className="flex items-center justify-between mb-4">
             <div>
@@ -157,7 +157,7 @@ export default function GroupJoinRequestsPage() {
                 >
                   🏠 Home
                 </Link>
-                <span className="text-gray-400">/</span>
+                <span className="text-gray-600">/</span>
                 <Link
                   href={`/groups/${group.group_id}`}
                   className="text-blue-600 hover:text-blue-700 font-medium"
@@ -176,7 +176,7 @@ export default function GroupJoinRequestsPage() {
       <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Success Message */}
         {successMessage && (
-          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg text-green-700 flex items-center gap-3">
+          <div className="mb-6 p-4 bg-grey-200 border border-green-200 rounded-lg text-green-700 flex items-center gap-3">
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
             </svg>
@@ -186,7 +186,7 @@ export default function GroupJoinRequestsPage() {
 
         {/* Error Message */}
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+          <div className="mb-6 p-4 bg-grey-200 border border-red-200 rounded-lg text-red-700">
             {error}
           </div>
         )}
@@ -197,9 +197,9 @@ export default function GroupJoinRequestsPage() {
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
           </div>
         ) : requests.length === 0 ? (
-          <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
+          <div className="text-center py-12 bg-grey-200 rounded-lg border border-gray-300">
             <svg
-              className="w-16 h-16 mx-auto mb-4 text-gray-400"
+              className="w-16 h-16 mx-auto mb-4 text-gray-600"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -211,7 +211,7 @@ export default function GroupJoinRequestsPage() {
         ) : (
           <div className="space-y-4">
             {requests.map((request) => (
-              <div key={request.id} className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow">
+              <div key={request.id} className="bg-grey-200 rounded-lg border border-gray-300 p-6 hover:shadow-md transition-shadow">
                 <div className="flex items-center justify-between">
                   {/* User Info */}
                   <div className="flex items-center gap-4 flex-1">
@@ -225,7 +225,7 @@ export default function GroupJoinRequestsPage() {
                         }}
                       />
                     ) : (
-                      <div className="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center">
+                      <div className="w-12 h-12 rounded-full bg-blue-300 flex items-center justify-center">
                         <svg className="w-6 h-6 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
                         </svg>
@@ -244,14 +244,14 @@ export default function GroupJoinRequestsPage() {
                     <button
                       onClick={() => handleAccept(request.user_id, request.user.name)}
                       disabled={processingId !== null}
-                      className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-6 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {processingId === request.user_id ? 'Accepting...' : 'Accept'}
                     </button>
                     <button
                       onClick={() => handleReject(request.user_id, request.user.name)}
                       disabled={processingId !== null}
-                      className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-6 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {processingId === request.user_id ? 'Rejecting...' : 'Reject'}
                     </button>

@@ -70,13 +70,13 @@ function CommentItem({
 
   return (
     <div
-      className={`flex gap-3 py-3 border-b border-gray-200 last:border-b-0 ${
-        level > 0 ? 'ml-8 bg-gray-50 rounded p-3' : ''
+      className={`flex gap-3 py-3 border-b border-gray-300 last:border-b-0 ${
+        level > 0 ? 'ml-8 bg-white rounded p-3' : ''
       }`}
     >
       {/* Avatar */}
       <div className="flex-shrink-0">
-        <div className="w-8 h-8 bg-blue-400 rounded-full flex items-center justify-center text-white text-sm font-bold">
+        <div className="w-8 h-8 bg-blue-400 rounded-full flex items-center justify-center text-gray-900 text-sm font-bold">
           {comment.author?.name?.charAt(0).toUpperCase() || 'U'}
         </div>
       </div>
@@ -120,7 +120,7 @@ function CommentItem({
               <button
                 onClick={handleSaveEdit}
                 disabled={isSaving || !editContent.trim()}
-                className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 disabled:opacity-50"
+                className="px-3 py-1 bg-blue-500 text-gray-900 rounded text-sm hover:bg-blue-600 disabled:opacity-50"
               >
                 {isSaving ? 'Saving...' : 'Save'}
               </button>
@@ -257,7 +257,7 @@ export function CommentsSection({
           <button
             onClick={handlePostComment}
             disabled={isPosting || !commentText.trim()}
-            className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 font-medium text-sm"
+            className="px-6 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-600 disabled:opacity-50 font-medium text-sm"
           >
             {isPosting ? 'Posting...' : 'Post Comment'}
           </button>
@@ -267,7 +267,7 @@ export function CommentsSection({
           <p className="text-blue-700 text-sm mb-3">Sign in to comment on this post</p>
           <button
             onClick={() => router.push('/login')}
-            className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-medium text-sm"
+            className="px-6 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-600 font-medium text-sm"
           >
             Login to Comment
           </button>

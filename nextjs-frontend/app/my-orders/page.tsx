@@ -66,15 +66,15 @@ export default function MyOrdersPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'completed':
-        return 'bg-green-100 text-green-800';
+        return 'bg-blue-500 text-green-800';
       case 'processing':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-blue-500 text-blue-800';
       case 'pending':
         return 'bg-yellow-100 text-yellow-800';
       case 'cancelled':
-        return 'bg-red-100 text-red-800';
+        return 'bg-blue-500 text-red-800';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-blue-500 text-gray-800';
     }
   };
 
@@ -113,7 +113,7 @@ export default function MyOrdersPage() {
         </div>
 
         {/* Filter */}
-        <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
+        <div className="bg-grey-200 rounded-lg shadow-sm p-4 mb-6">
           <div>
             <label htmlFor="filterStatus" className="block text-sm font-medium text-gray-700 mb-2">
               Filter by Status
@@ -134,26 +134,26 @@ export default function MyOrdersPage() {
         </div>
 
         {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
+          <div className="bg-blue-500 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
             {error}
           </div>
         )}
 
         {ordersList.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-sm p-8 text-center">
+          <div className="bg-grey-200 rounded-lg shadow-sm p-8 text-center">
             <p className="text-gray-600 mb-4">You haven't placed any orders yet.</p>
             <Link
               href="/san-pham"
-              className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded transition-colors"
+              className="inline-block bg-blue-500 hover:bg-blue-700 text-gray-900 font-medium py-2 px-6 rounded transition-colors"
             >
               Start Shopping
             </Link>
           </div>
         ) : (
-          <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+          <div className="bg-grey-200 rounded-lg shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+                <thead className="bg-white">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Order Number
@@ -175,9 +175,9 @@ export default function MyOrdersPage() {
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-grey-200 divide-y divide-gray-200">
                   {ordersList.map((order) => (
-                    <tr key={order.id} className="hover:bg-gray-50">
+                    <tr key={order.id} className="hover:bg-white">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">{order.order_number}</div>
                       </td>

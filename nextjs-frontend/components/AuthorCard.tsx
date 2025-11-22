@@ -42,7 +42,7 @@ export function AuthorCard({ author, createdAt, compact = false, showAvatar = fa
           <img
             src={author.avatar}
             alt={authorName}
-            className="w-10 h-10 rounded-full object-cover border border-gray-200"
+            className="w-10 h-10 rounded-full object-cover border border-gray-300"
           />
         )}
         <div className="flex-1 min-w-0">
@@ -60,13 +60,13 @@ export function AuthorCard({ author, createdAt, compact = false, showAvatar = fa
   }
 
   return (
-    <div className="flex items-start gap-4 mb-4 pb-4 border-b border-gray-200">
+    <div className="flex items-start gap-4 mb-4 pb-4 border-b border-gray-300">
       {showAvatar && author.avatar && (
         <Link href={`/users/${author.id}`} className="flex-shrink-0">
           <img
             src={author.avatar}
             alt={authorName}
-            className="w-12 h-12 rounded-full object-cover border border-gray-200 hover:border-blue-400 transition-colors"
+            className="w-12 h-12 rounded-full object-cover border border-gray-300 hover:border-blue-400 transition-colors"
           />
         </Link>
       )}

@@ -91,15 +91,15 @@ export function ShareToWallModal({
       />
 
       {/* Modal */}
-      <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-lg mx-4 bg-white rounded-lg shadow-xl z-50 max-h-[90vh] overflow-y-auto">
+      <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-lg mx-4 bg-gray-50 rounded-lg shadow-xl z-50 max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-center justify-between">
+        <div className="sticky top-0 bg-gray-50 border-b border-gray-300 p-6 flex items-center justify-between">
           <h2 className="text-2xl font-bold text-gray-900">
             Post on {wallUserName}'s Wall
           </h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-gray-600 hover:text-gray-600 transition-colors"
             aria-label="Close modal"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -139,7 +139,7 @@ export function ShareToWallModal({
             </div>
           ) : userPosts.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
-              <svg className="w-12 h-12 mx-auto mb-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-12 h-12 mx-auto mb-3 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -161,7 +161,7 @@ export function ShareToWallModal({
                   className={`flex items-start gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all ${
                     selectedPostId === post.id
                       ? 'border-blue-500 bg-blue-50'
-                      : 'border-gray-200 hover:border-gray-300'
+                      : 'border-gray-300 hover:border-gray-300'
                   }`}
                 >
                   <input
@@ -194,10 +194,10 @@ export function ShareToWallModal({
         </div>
 
         {/* Footer */}
-        <div className="sticky bottom-0 bg-white border-t border-gray-200 p-6 flex gap-3">
+        <div className="sticky bottom-0 bg-gray-50 border-t border-gray-300 p-6 flex gap-3">
           <button
             onClick={onClose}
-            className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors"
+            className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-white font-medium transition-colors"
             disabled={sharing}
           >
             Cancel
@@ -205,7 +205,7 @@ export function ShareToWallModal({
           <button
             onClick={handleShare}
             disabled={sharing || !selectedPostId || userPosts.length === 0}
-            className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="flex-1 px-4 py-2 bg-blue-600 text-gray-900 rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {sharing ? (
               <>

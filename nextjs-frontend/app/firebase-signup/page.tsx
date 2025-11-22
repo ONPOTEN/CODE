@@ -52,7 +52,7 @@ export default function FirebaseSignupPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-white py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         {/* Header */}
         <div>
@@ -69,7 +69,7 @@ export default function FirebaseSignupPage() {
 
         {/* Error Message */}
         {error && (
-          <div className="rounded-md bg-red-50 p-4">
+          <div className="rounded-md bg-grey-200 p-4">
             <div className="text-sm font-medium text-red-800">{error}</div>
           </div>
         )}
@@ -135,7 +135,7 @@ export default function FirebaseSignupPage() {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
+                className="absolute right-3 top-2.5 text-gray-600 hover:text-gray-600"
                 disabled={isLoading}
               >
                 {showPassword ? '👁️' : '👁️‍🗨️'}
@@ -167,7 +167,7 @@ export default function FirebaseSignupPage() {
               <button
                 type="button"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
+                className="absolute right-3 top-2.5 text-gray-600 hover:text-gray-600"
                 disabled={isLoading}
               >
                 {showConfirmPassword ? '👁️' : '👁️‍🗨️'}
@@ -182,7 +182,7 @@ export default function FirebaseSignupPage() {
           <button
             type="submit"
             disabled={isLoading || !passwordMatch}
-            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-gray-900 bg-blue-500 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLoading ? 'Creating account...' : 'Create account'}
           </button>

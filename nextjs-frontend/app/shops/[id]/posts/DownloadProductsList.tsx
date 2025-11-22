@@ -101,7 +101,7 @@ export const DownloadProductsList: React.FC<DownloadProductsListProps> = ({ shop
 
   if (loading) {
     return (
-      <div className="bg-green-50 border border-green-200 rounded-lg p-8 text-center">
+      <div className="bg-grey-200 border border-green-200 rounded-lg p-8 text-center">
         <p className="text-green-900">Loading download products...</p>
       </div>
     );
@@ -109,12 +109,12 @@ export const DownloadProductsList: React.FC<DownloadProductsListProps> = ({ shop
 
   if (error) {
     return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-8 text-center">
+      <div className="bg-grey-200 border border-red-200 rounded-lg p-8 text-center">
         <p className="text-red-900 font-medium">Error loading download products</p>
         <p className="text-red-700 text-sm mt-2">{error}</p>
         <button
           onClick={fetchDownloadProducts}
-          className="mt-4 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+          className="mt-4 px-4 py-2 bg-blue-500 text-gray-900 rounded-md hover:bg-blue-700 transition-colors"
         >
           Retry
         </button>
@@ -123,7 +123,7 @@ export const DownloadProductsList: React.FC<DownloadProductsListProps> = ({ shop
   }
 
   return (
-    <div className="bg-green-50 border border-green-200 rounded-lg p-6 space-y-6">
+    <div className="bg-grey-200 border border-green-200 rounded-lg p-6 space-y-6">
       <div>
         <h3 className="text-lg font-semibold text-green-900 flex items-center gap-2 mb-4">
           📥 Download Products (Tải xuống)
@@ -134,7 +134,7 @@ export const DownloadProductsList: React.FC<DownloadProductsListProps> = ({ shop
       </div>
 
       {/* Search and Filters */}
-      <div className="bg-white rounded-lg p-4 border border-green-300 space-y-3">
+      <div className="bg-grey-200 rounded-lg p-4 border border-green-300 space-y-3">
         <input
           type="text"
           placeholder="Search download products..."
@@ -158,7 +158,7 @@ export const DownloadProductsList: React.FC<DownloadProductsListProps> = ({ shop
       </div>
 
       {/* Products Count */}
-      <div className="bg-green-100 border border-green-300 rounded p-3">
+      <div className="bg-blue-500 border border-green-300 rounded p-3">
         <p className="text-sm text-green-900">
           📊 Found {filteredProducts.length} download product{filteredProducts.length !== 1 ? 's' : ''}
         </p>
@@ -166,7 +166,7 @@ export const DownloadProductsList: React.FC<DownloadProductsListProps> = ({ shop
 
       {/* Products List */}
       {filteredProducts.length === 0 ? (
-        <div className="bg-white rounded-lg p-8 text-center border border-green-300">
+        <div className="bg-grey-200 rounded-lg p-8 text-center border border-green-300">
           <p className="text-gray-500 text-lg">
             {products.length === 0 ? 'No download products yet' : 'No products match your filters'}
           </p>
@@ -184,7 +184,7 @@ export const DownloadProductsList: React.FC<DownloadProductsListProps> = ({ shop
           {filteredProducts.map((product) => (
             <div
               key={product.id}
-              className="bg-white rounded-lg border border-green-300 p-4 hover:shadow-lg transition-shadow"
+              className="bg-grey-200 rounded-lg border border-green-300 p-4 hover:shadow-lg transition-shadow"
             >
               {/* Product Image - Priority: main_image > featured_images[0] */}
               {((product as any).main_image || (product.featured_images && product.featured_images.length > 0)) && (
@@ -232,7 +232,7 @@ export const DownloadProductsList: React.FC<DownloadProductsListProps> = ({ shop
                   <span
                     className={`px-2 py-1 text-xs font-medium rounded-full ${
                       product.status === 'published'
-                        ? 'bg-green-100 text-green-800'
+                        ? 'bg-blue-500 text-green-800'
                         : 'bg-yellow-100 text-yellow-800'
                     }`}
                   >
@@ -240,13 +240,13 @@ export const DownloadProductsList: React.FC<DownloadProductsListProps> = ({ shop
                   </span>
 
                   {/* Type Badge */}
-                  <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+                  <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-500 text-green-800">
                     {product.type}
                   </span>
                 </div>
 
                 {/* Meta Info */}
-                <div className="text-xs text-gray-500 pt-2 border-t border-gray-200 mb-3">
+                <div className="text-xs text-gray-500 pt-2 border-t border-gray-300 mb-3">
                   <p>Views: {product.view_count}</p>
                   <p>Created: {new Date(product.created_at).toLocaleDateString()}</p>
                   {product.author && <p>By: {product.author.name || product.author.username}</p>}
@@ -258,15 +258,15 @@ export const DownloadProductsList: React.FC<DownloadProductsListProps> = ({ shop
                     onClick={() => handleAddToCart(product)}
                     className={`block w-full px-4 py-2 rounded-md font-medium text-center transition-colors ${
                       addedToCartId === product.id
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-blue-500 hover:bg-blue-600 text-white'
+                        ? 'bg-blue-500 text-gray-900'
+                        : 'bg-grey-2000 hover:bg-blue-500 text-gray-900'
                     }`}
                   >
                     {addedToCartId === product.id ? '✓ Added to Cart' : 'Add to Cart'}
                   </button>
                   <Link
                     href={`/shops/${shopId}/posts/${product.id}`}
-                    className="block w-full px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md font-medium text-center transition-colors"
+                    className="block w-full px-4 py-2 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-md font-medium text-center transition-colors"
                   >
                     View Details
                   </Link>

@@ -26,8 +26,8 @@ export default function VideoCallButton({
         transition-all duration-200
         ${
           isCallActive
-            ? 'bg-red-600 hover:bg-red-700 text-white animate-pulse'
-            : 'bg-blue-600 hover:bg-blue-700 text-white'
+            ? 'bg-red-600 hover:bg-red-700 text-gray-900 animate-pulse'
+            : 'bg-blue-600 hover:bg-blue-700 text-gray-900'
         }
       `}
       title={`Start video call with ${conversation.other_user.name}`}

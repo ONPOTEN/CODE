@@ -151,10 +151,10 @@ export default function ShopMessagesPage() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
           <svg
-            className="w-16 h-16 mx-auto mb-4 text-gray-400"
+            className="w-16 h-16 mx-auto mb-4 text-gray-600"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -174,7 +174,7 @@ export default function ShopMessagesPage() {
           </p>
           <Link
             href="/login"
-            className="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+            className="inline-flex items-center px-6 py-3 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-lg font-medium transition-colors"
           >
             Go to Login
           </Link>
@@ -185,7 +185,7 @@ export default function ShopMessagesPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading your shop messages...</p>
@@ -196,7 +196,7 @@ export default function ShopMessagesPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
           <svg
             className="w-16 h-16 mx-auto mb-4 text-red-500"
@@ -215,7 +215,7 @@ export default function ShopMessagesPage() {
           <p className="text-gray-600 mb-6">{error}</p>
           <button
             onClick={fetchMessageStats}
-            className="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+            className="inline-flex items-center px-6 py-3 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-lg font-medium transition-colors"
           >
             Try Again
           </button>
@@ -225,7 +225,7 @@ export default function ShopMessagesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-white py-8">
       <div className="max-w-6xl mx-auto px-4">
         {/* Header */}
         <div className="mb-8">
@@ -275,9 +275,9 @@ export default function ShopMessagesPage() {
 
         {/* Messages Grid */}
         {messageStats.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-sm p-12 text-center">
+          <div className="bg-grey-200 rounded-lg shadow-sm p-12 text-center">
             <svg
-              className="w-16 h-16 mx-auto mb-4 text-gray-300"
+              className="w-16 h-16 mx-auto mb-4 text-gray-700"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -292,12 +292,12 @@ export default function ShopMessagesPage() {
             <p className="text-gray-500 font-medium mb-2">
               No messages yet
             </p>
-            <p className="text-gray-400 text-sm mb-6">
+            <p className="text-gray-600 text-sm mb-6">
               When customers send messages to your shops, they will appear here
             </p>
             <Link
               href="/my-shops"
-              className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+              className="inline-flex items-center px-4 py-2 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-lg font-medium transition-colors"
             >
               <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -311,13 +311,13 @@ export default function ShopMessagesPage() {
               <Link
                 key={stat.shopId}
                 href={`/shop-messages/${stat.shopId}`}
-                className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden"
+                className="bg-grey-200 rounded-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden"
               >
                 <div className="p-6">
                   {/* Unread Badge */}
                   {stat.unreadCount > 0 && (
                     <div className="absolute top-4 right-4">
-                      <span className="inline-flex items-center justify-center px-3 py-1 text-sm font-bold text-white bg-red-500 rounded-full">
+                      <span className="inline-flex items-center justify-center px-3 py-1 text-sm font-bold text-gray-900 bg-grey-2000 rounded-full">
                         {stat.unreadCount} New
                       </span>
                     </div>
@@ -364,7 +364,7 @@ export default function ShopMessagesPage() {
 
                     {/* Last Message */}
                     {stat.lastMessage && (
-                      <div className="pt-2 border-t border-gray-200 mt-2">
+                      <div className="pt-2 border-t border-gray-300 mt-2">
                         <p className="text-xs text-gray-500 font-medium">Latest Message</p>
                         <p className="text-xs text-gray-700 italic mt-1 line-clamp-2">
                           "{stat.lastMessage}"
@@ -373,7 +373,7 @@ export default function ShopMessagesPage() {
                           from {stat.lastMessageSender}
                         </p>
                         {stat.lastMessageTime && (
-                          <p className="text-xs text-gray-400 mt-0.5">
+                          <p className="text-xs text-gray-600 mt-0.5">
                             {new Date(stat.lastMessageTime).toLocaleDateString()} at{' '}
                             {new Date(stat.lastMessageTime).toLocaleTimeString([], {
                               hour: '2-digit',
@@ -386,7 +386,7 @@ export default function ShopMessagesPage() {
                   </div>
 
                   {/* CTA Button */}
-                  <button className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2">
+                  <button className="w-full px-4 py-2 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-lg font-medium transition-colors flex items-center justify-center gap-2">
                     <svg
                       className="w-5 h-5"
                       fill="none"

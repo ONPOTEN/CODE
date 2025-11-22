@@ -205,7 +205,7 @@ export default function UserProfilePage() {
     return (
       <div className="container mx-auto px-4 py-12">
         <div className="max-w-4xl mx-auto">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+          <div className="bg-grey-200 border border-red-200 rounded-lg p-6">
             <h2 className="text-xl font-semibold text-red-900 mb-2">Error</h2>
             <p className="text-red-700">{error || 'User not found'}</p>
             <Link
@@ -252,11 +252,11 @@ export default function UserProfilePage() {
         </div>
 
         {/* User Profile Card */}
-        <div className="bg-white rounded-lg shadow-lg p-8 border border-gray-200 mb-8">
+        <div className="bg-grey-200 rounded-lg shadow-lg p-8 border border-gray-300 mb-8">
           {/* Profile Header */}
-          <div className="flex items-start gap-6 mb-6 pb-6 border-b border-gray-200">
+          <div className="flex items-start gap-6 mb-6 pb-6 border-b border-gray-300">
             {/* Avatar */}
-            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-3xl font-bold">
+            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-gray-900 text-3xl font-bold">
               {user.name?.charAt(0).toUpperCase() || user.username?.charAt(0).toUpperCase()}
             </div>
 
@@ -277,7 +277,7 @@ export default function UserProfilePage() {
                       <button
                         onClick={handleUnfriend}
                         disabled={friendActionLoading}
-                        className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7a4 4 0 11-8 0 4 4 0 018 0zM9 14a6 6 0 00-6 6v1h12v-1a6 6 0 00-6-6zM21 12h-6" />
@@ -290,7 +290,7 @@ export default function UserProfilePage() {
                         <button
                           onClick={handleAcceptFriendRequest}
                           disabled={friendActionLoading}
-                          className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -300,7 +300,7 @@ export default function UserProfilePage() {
                         <button
                           onClick={handleRejectFriendRequest}
                           disabled={friendActionLoading}
-                          className="flex items-center gap-2 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -312,7 +312,7 @@ export default function UserProfilePage() {
                       // Friend request already sent - show pending button
                       <button
                         disabled
-                        className="flex items-center gap-2 px-4 py-2 bg-gray-400 text-white rounded-lg font-medium cursor-not-allowed"
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-400 text-gray-900 rounded-lg font-medium cursor-not-allowed"
                       >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -324,7 +324,7 @@ export default function UserProfilePage() {
                       <button
                         onClick={handleSendFriendRequest}
                         disabled={friendActionLoading}
-                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
@@ -336,7 +336,7 @@ export default function UserProfilePage() {
                     <button
                       onClick={() => setShowShareModal(true)}
                       disabled={friendActionLoading}
-                      className="flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
@@ -347,7 +347,7 @@ export default function UserProfilePage() {
                     <button
                       onClick={() => setShowCreateModal(true)}
                       disabled={friendActionLoading}
-                      className="flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -360,7 +360,7 @@ export default function UserProfilePage() {
 
               {/* Friendship Status Badge */}
               {!isOwnProfile && user.is_friend && (
-                <div className="mt-3 inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
+                <div className="mt-3 inline-flex items-center gap-1 px-3 py-1 bg-blue-500 text-green-800 rounded-full text-sm font-medium">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
@@ -375,7 +375,7 @@ export default function UserProfilePage() {
             <h2 className="text-xl font-semibold text-gray-900 mb-4">Profile Information</h2>
 
             <div className="grid md:grid-cols-2 gap-4">
-              <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="bg-white p-4 rounded-lg">
                 <div className="flex items-center gap-2 mb-2">
                   <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -385,7 +385,7 @@ export default function UserProfilePage() {
                 <p className="text-gray-900 ml-7">{user.username}</p>
               </div>
 
-              <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="bg-white p-4 rounded-lg">
                 <div className="flex items-center gap-2 mb-2">
                   <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
@@ -395,7 +395,7 @@ export default function UserProfilePage() {
                 <p className="text-gray-900 ml-7">{user.email}</p>
               </div>
 
-              <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="bg-white p-4 rounded-lg">
                 <div className="flex items-center gap-2 mb-2">
                   <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -411,7 +411,7 @@ export default function UserProfilePage() {
                 </p>
               </div>
 
-              <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="bg-white p-4 rounded-lg">
                 <div className="flex items-center gap-2 mb-2">
                   <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
@@ -425,7 +425,7 @@ export default function UserProfilePage() {
         </div>
 
         {/* User Wall Posts Section */}
-        <div className="bg-white rounded-lg shadow-lg p-8 border border-gray-200">
+        <div className="bg-grey-200 rounded-lg shadow-lg p-8 border border-gray-300">
           <h2 className="text-2xl font-bold text-gray-900 mb-2 flex items-center gap-2">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -446,7 +446,7 @@ export default function UserProfilePage() {
             </div>
           ) : (
             <div className="text-center py-12 text-gray-500">
-              <svg className="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-16 h-16 mx-auto mb-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
               <p className="text-lg">No posts on wall</p>

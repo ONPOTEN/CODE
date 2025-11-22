@@ -219,7 +219,7 @@ export default function FirebasePhonePasswordSetupPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-white py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         {/* Header */}
         <div>
@@ -235,8 +235,8 @@ export default function FirebasePhonePasswordSetupPage() {
         <div className="flex justify-center gap-2">
           <div className={`px-4 py-2 rounded-full text-sm font-medium ${
             step === 'setup'
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-200 text-gray-800'
+              ? 'bg-blue-500 text-gray-900'
+              : 'bg-blue-500 text-gray-800'
           }`}>
             Setup Password
           </div>
@@ -244,7 +244,7 @@ export default function FirebasePhonePasswordSetupPage() {
 
         {/* Error Message */}
         {errorMessage && (
-          <div className="rounded-md bg-red-50 border border-red-200 p-4">
+          <div className="rounded-md bg-grey-200 border border-red-200 p-4">
             <p className="text-red-800 font-medium text-sm">{errorMessage}</p>
           </div>
         )}
@@ -327,7 +327,7 @@ export default function FirebasePhonePasswordSetupPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full mt-6 py-2 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+              className="w-full mt-6 py-2 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-gray-900 bg-blue-500 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed transition-colors"
             >
               {isLoading ? 'Setting up...' : 'Complete Setup'}
             </button>

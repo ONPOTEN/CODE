@@ -247,7 +247,7 @@ export default function EditShopPage() {
           <h1 className="text-3xl font-bold text-gray-900">Edit Shop</h1>
           <Link
             href="/shops"
-            className="inline-flex items-center px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors"
+            className="inline-flex items-center px-4 py-2 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-lg font-medium transition-colors"
           >
             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -258,13 +258,13 @@ export default function EditShopPage() {
 
         {/* Error message */}
         {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="mb-6 bg-grey-200 border border-red-200 rounded-lg p-4">
             <p className="text-red-800 font-medium">{error}</p>
           </div>
         )}
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow p-6">
+        <form onSubmit={handleSubmit} className="bg-grey-200 rounded-lg shadow p-6">
           <div className="space-y-6">
             {/* Basic Information */}
             <div>
@@ -349,7 +349,7 @@ export default function EditShopPage() {
                       className="hidden"
                     />
                     <label htmlFor="logo" className="cursor-pointer">
-                      <svg className="w-12 h-12 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-12 h-12 mx-auto mb-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0l5.172 5.172m-9-9l1.414-1.414a2 2 0 012.828 0L19 12m-5-5l1.414-1.414a2 2 0 012.828 0L21 8" />
                       </svg>
                       <p className="text-sm text-gray-600">Click to upload logo</p>
@@ -363,7 +363,7 @@ export default function EditShopPage() {
                         <button
                           type="button"
                           onClick={removeLogo}
-                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600"
+                          className="absolute -top-2 -right-2 bg-grey-2000 text-gray-900 rounded-full w-6 h-6 flex items-center justify-center hover:bg-blue-500"
                         >
                           ×
                         </button>
@@ -386,7 +386,7 @@ export default function EditShopPage() {
                       className="hidden"
                     />
                     <label htmlFor="banner" className="cursor-pointer">
-                      <svg className="w-12 h-12 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-12 h-12 mx-auto mb-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0l5.172 5.172m-9-9l1.414-1.414a2 2 0 012.828 0L19 12m-5-5l1.414-1.414a2 2 0 012.828 0L21 8" />
                       </svg>
                       <p className="text-sm text-gray-600">Click to upload banner</p>
@@ -400,7 +400,7 @@ export default function EditShopPage() {
                         <button
                           type="button"
                           onClick={removeBanner}
-                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600"
+                          className="absolute -top-2 -right-2 bg-grey-2000 text-gray-900 rounded-full w-6 h-6 flex items-center justify-center hover:bg-blue-500"
                         >
                           ×
                         </button>
@@ -435,7 +435,7 @@ export default function EditShopPage() {
                       className="hidden"
                     />
                     <label htmlFor="image-0" className="cursor-pointer">
-                      <svg className="w-12 h-12 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-12 h-12 mx-auto mb-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0l5.172 5.172m-9-9l1.414-1.414a2 2 0 012.828 0L19 12m-5-5l1.414-1.414a2 2 0 012.828 0L21 8" />
                       </svg>
                       <p className="text-sm text-gray-600">Nhấp để tải lên</p>
@@ -449,7 +449,7 @@ export default function EditShopPage() {
                         <button
                           type="button"
                           onClick={() => removeImage(0)}
-                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600"
+                          className="absolute -top-2 -right-2 bg-grey-2000 text-gray-900 rounded-full w-6 h-6 flex items-center justify-center hover:bg-blue-500"
                         >
                           ×
                         </button>
@@ -472,7 +472,7 @@ export default function EditShopPage() {
                       className="hidden"
                     />
                     <label htmlFor="image-1" className="cursor-pointer">
-                      <svg className="w-12 h-12 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-12 h-12 mx-auto mb-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0l5.172 5.172m-9-9l1.414-1.414a2 2 0 012.828 0L19 12m-5-5l1.414-1.414a2 2 0 012.828 0L21 8" />
                       </svg>
                       <p className="text-sm text-gray-600">Nhấp để tải lên</p>
@@ -486,7 +486,7 @@ export default function EditShopPage() {
                         <button
                           type="button"
                           onClick={() => removeImage(1)}
-                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600"
+                          className="absolute -top-2 -right-2 bg-grey-2000 text-gray-900 rounded-full w-6 h-6 flex items-center justify-center hover:bg-blue-500"
                         >
                           ×
                         </button>
@@ -509,7 +509,7 @@ export default function EditShopPage() {
                       className="hidden"
                     />
                     <label htmlFor="image-2" className="cursor-pointer">
-                      <svg className="w-12 h-12 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-12 h-12 mx-auto mb-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0l5.172 5.172m-9-9l1.414-1.414a2 2 0 012.828 0L19 12m-5-5l1.414-1.414a2 2 0 012.828 0L21 8" />
                       </svg>
                       <p className="text-sm text-gray-600">Nhấp để tải lên</p>
@@ -523,7 +523,7 @@ export default function EditShopPage() {
                         <button
                           type="button"
                           onClick={() => removeImage(2)}
-                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600"
+                          className="absolute -top-2 -right-2 bg-grey-2000 text-gray-900 rounded-full w-6 h-6 flex items-center justify-center hover:bg-blue-500"
                         >
                           ×
                         </button>
@@ -546,7 +546,7 @@ export default function EditShopPage() {
                       className="hidden"
                     />
                     <label htmlFor="image-3" className="cursor-pointer">
-                      <svg className="w-12 h-12 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-12 h-12 mx-auto mb-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0l5.172 5.172m-9-9l1.414-1.414a2 2 0 012.828 0L19 12m-5-5l1.414-1.414a2 2 0 012.828 0L21 8" />
                       </svg>
                       <p className="text-sm text-gray-600">Nhấp để tải lên</p>
@@ -560,7 +560,7 @@ export default function EditShopPage() {
                         <button
                           type="button"
                           onClick={() => removeImage(3)}
-                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600"
+                          className="absolute -top-2 -right-2 bg-grey-2000 text-gray-900 rounded-full w-6 h-6 flex items-center justify-center hover:bg-blue-500"
                         >
                           ×
                         </button>
@@ -583,7 +583,7 @@ export default function EditShopPage() {
                       className="hidden"
                     />
                     <label htmlFor="image-4" className="cursor-pointer">
-                      <svg className="w-12 h-12 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-12 h-12 mx-auto mb-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0l5.172 5.172m-9-9l1.414-1.414a2 2 0 012.828 0L19 12m-5-5l1.414-1.414a2 2 0 012.828 0L21 8" />
                       </svg>
                       <p className="text-sm text-gray-600">Nhấp để tải lên</p>
@@ -597,7 +597,7 @@ export default function EditShopPage() {
                         <button
                           type="button"
                           onClick={() => removeImage(4)}
-                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600"
+                          className="absolute -top-2 -right-2 bg-grey-2000 text-gray-900 rounded-full w-6 h-6 flex items-center justify-center hover:bg-blue-500"
                         >
                           ×
                         </button>
@@ -758,13 +758,13 @@ export default function EditShopPage() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 bg-blue-500 hover:bg-blue-700 text-gray-900 font-medium py-3 px-6 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {submitting ? 'Updating...' : 'Update Shop'}
               </button>
               <Link
                 href="/shops"
-                className="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+                className="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-white transition-colors"
               >
                 Cancel
               </Link>

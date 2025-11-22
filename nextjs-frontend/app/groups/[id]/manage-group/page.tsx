@@ -121,7 +121,7 @@ export default function ManageGroupPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex justify-center items-center bg-gray-50">
+      <div className="min-h-screen flex justify-center items-center bg-white">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
@@ -129,12 +129,12 @@ export default function ManageGroupPage() {
 
   if (error && !group) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-white">
         <div className="max-w-4xl mx-auto px-4 py-8">
           <Link href="/my-groups" className="text-blue-600 hover:text-blue-700 font-medium">
             ← Back to My Groups
           </Link>
-          <div className="mt-8 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+          <div className="mt-8 p-4 bg-grey-200 border border-red-200 rounded-lg text-red-700">
             {error}
           </div>
         </div>
@@ -144,10 +144,10 @@ export default function ManageGroupPage() {
 
   if (!group) {
     return (
-      <div className="min-h-screen bg-gray-50 px-4 py-8">
+      <div className="min-h-screen bg-white px-4 py-8">
         <div className="max-w-4xl mx-auto text-center py-12">
           <p className="text-gray-500 text-lg">Group not found</p>
-          <Link href="/my-groups" className="mt-4 inline-block px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+          <Link href="/my-groups" className="mt-4 inline-block px-4 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-700">
             Back to My Groups
           </Link>
         </div>
@@ -156,7 +156,7 @@ export default function ManageGroupPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
@@ -168,19 +168,19 @@ export default function ManageGroupPage() {
         </div>
 
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+          <div className="mb-6 p-4 bg-grey-200 border border-red-200 rounded-lg text-red-700">
             {error}
           </div>
         )}
 
         {/* Main Tabs - Posts vs Users */}
-        <div className="bg-white rounded-lg shadow mb-8 border border-gray-200">
-          <div className="flex border-b border-gray-200">
+        <div className="bg-grey-200 rounded-lg shadow mb-8 border border-gray-300">
+          <div className="flex border-b border-gray-300">
             <button
               onClick={() => setActiveTab('posts')}
               className={`flex-1 px-6 py-4 font-medium transition-colors ${
                 activeTab === 'posts'
-                  ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
+                  ? 'text-blue-600 border-b-2 border-blue-600 bg-grey-200'
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
@@ -196,7 +196,7 @@ export default function ManageGroupPage() {
               onClick={() => setActiveTab('users')}
               className={`flex-1 px-6 py-4 font-medium transition-colors ${
                 activeTab === 'users'
-                  ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
+                  ? 'text-blue-600 border-b-2 border-blue-600 bg-grey-200'
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
@@ -213,7 +213,7 @@ export default function ManageGroupPage() {
           {activeTab === 'posts' && (
             <div>
               {/* Posts Subtabs */}
-              <div className="flex border-b border-gray-200 bg-gray-50">
+              <div className="flex border-b border-gray-300 bg-white">
                 <button
                   onClick={() => setPostsSubTab('pending')}
                   className={`flex-1 px-6 py-4 font-medium transition-colors ${
@@ -254,7 +254,7 @@ export default function ManageGroupPage() {
                   ) : (
                     <div className="space-y-4">
                       {pendingPosts.map((post) => (
-                        <div key={post.id} className="border border-amber-200 bg-amber-50 rounded-lg p-4">
+                        <div key={post.id} className="border border-amber-200 bg-blue-500 rounded-lg p-4">
                           <div className="flex gap-4">
                             {/* Post Author Avatar */}
                             {post.author?.avatar && (
@@ -281,14 +281,14 @@ export default function ManageGroupPage() {
                               <button
                                 onClick={() => handleApprovePost(post.id)}
                                 disabled={approvingId === post.id}
-                                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                                className="px-4 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                               >
                                 {approvingId === post.id ? 'Approving...' : 'Approve'}
                               </button>
                               <button
                                 onClick={() => handleRejectPost(post.id)}
                                 disabled={rejectingId === post.id}
-                                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                                className="px-4 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                               >
                                 {rejectingId === post.id ? 'Rejecting...' : 'Reject'}
                               </button>
@@ -309,7 +309,7 @@ export default function ManageGroupPage() {
                   ) : (
                     <div className="space-y-4">
                       {approvedPosts.map((post) => (
-                        <div key={post.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                        <div key={post.id} className="border border-gray-300 rounded-lg p-4 hover:bg-white transition-colors">
                           <div className="flex gap-4">
                             {/* Post Author Avatar */}
                             {post.author?.avatar && (
@@ -335,14 +335,14 @@ export default function ManageGroupPage() {
                             <div className="flex gap-2 flex-shrink-0">
                               <button
                                 onClick={() => router.push(`/groups/${groupId}/posts/${post.id}/edit`)}
-                                className="px-4 py-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 font-medium transition-colors whitespace-nowrap"
+                                className="px-4 py-2 bg-blue-500 text-blue-600 rounded-lg hover:bg-blue-500 font-medium transition-colors whitespace-nowrap"
                               >
                                 Edit
                               </button>
                               <button
                                 onClick={() => handleDeletePost(post.id)}
                                 disabled={deletingId === post.id}
-                                className="px-4 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                                className="px-4 py-2 bg-blue-500 text-red-600 rounded-lg hover:bg-blue-500 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                               >
                                 {deletingId === post.id ? 'Deleting...' : 'Delete'}
                               </button>
@@ -361,7 +361,7 @@ export default function ManageGroupPage() {
           {activeTab === 'users' && (
             <div className="p-6">
               <div className="text-center text-gray-500 py-8">
-                <svg className="w-12 h-12 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-12 h-12 mx-auto mb-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                 </svg>
                 <p className="text-lg font-medium text-gray-700 mb-2">User Management Coming Soon</p>

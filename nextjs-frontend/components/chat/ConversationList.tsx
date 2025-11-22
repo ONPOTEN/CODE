@@ -28,7 +28,7 @@ export default function ConversationList({
         <button
           key={conversation.id}
           onClick={() => onSelectConversation(conversation.id)}
-          className={`w-full p-4 text-left hover:bg-gray-50 transition-colors ${
+          className={`w-full p-4 text-left hover:bg-white transition-colors ${
             selectedConversationId === conversation.id ? 'bg-blue-50' : ''
           }`}
         >
@@ -58,7 +58,7 @@ export default function ConversationList({
               {conversation.last_message.message}
             </p>
           ) : (
-            <p className="text-sm text-gray-400 italic">
+            <p className="text-sm text-gray-600 italic">
               {conversation.room_name && conversation.room_name.includes('-shop') ? (
                 'No messages yet'
               ) : (
@@ -69,7 +69,7 @@ export default function ConversationList({
 
           {conversation.unread_count > 0 && (
             <div className="mt-2">
-              <span className="inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-blue-600 rounded-full">
+              <span className="inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-gray-900 bg-blue-600 rounded-full">
                 {conversation.unread_count}
               </span>
             </div>

@@ -144,16 +144,16 @@ export default function VideoChatModal({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-96 overflow-hidden">
+      <div className="bg-gray-50 rounded-xl shadow-2xl max-w-2xl w-full max-h-96 overflow-hidden">
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 flex items-center justify-between">
+        <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-gray-900 p-4 flex items-center justify-between">
           <div>
             <h2 className="text-xl font-bold">{conversation.other_user.name}</h2>
             <p className="text-sm text-blue-100">{conversation.other_user.email}</p>
           </div>
           <button
             onClick={handleCloseModal}
-            className="text-white hover:bg-blue-800 rounded-full p-2 transition-colors"
+            className="text-gray-900 hover:bg-blue-800 rounded-full p-2 transition-colors"
           >
             <svg
               className="w-6 h-6"
@@ -174,7 +174,7 @@ export default function VideoChatModal({
         {/* Video Container */}
         <div className="bg-black p-4 space-y-4">
           {/* Status Bar */}
-          <div className="flex justify-center items-center gap-4 text-white">
+          <div className="flex justify-center items-center gap-4 text-gray-900">
             <div className={`px-3 py-1 rounded-full text-sm font-semibold ${
               callActive ? 'bg-green-600' :
               connectionStatus === 'connected' ? 'bg-blue-600' :
@@ -201,7 +201,7 @@ export default function VideoChatModal({
                 playsInline
                 className="w-full h-full object-cover"
               />
-              <div className="absolute bottom-2 left-2 bg-black bg-opacity-60 text-white text-xs px-2 py-1 rounded">
+              <div className="absolute bottom-2 left-2 bg-black bg-opacity-60 text-gray-900 text-xs px-2 py-1 rounded">
                 You
               </div>
             </div>
@@ -216,7 +216,7 @@ export default function VideoChatModal({
                     playsInline
                     className="w-full h-full object-cover"
                   />
-                  <div className="absolute bottom-2 left-2 bg-black bg-opacity-60 text-white text-xs px-2 py-1 rounded">
+                  <div className="absolute bottom-2 left-2 bg-black bg-opacity-60 text-gray-900 text-xs px-2 py-1 rounded">
                     {conversation.other_user.name}
                   </div>
                 </>
@@ -225,14 +225,14 @@ export default function VideoChatModal({
                   {callActive ? (
                     <div className="text-center">
                       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-3" />
-                      <p className="text-gray-400 text-sm">Waiting for video...</p>
+                      <p className="text-gray-600 text-sm">Waiting for video...</p>
                     </div>
                   ) : (
                     <div className="text-center">
                       <svg className="w-16 h-16 text-gray-600 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                       </svg>
-                      <p className="text-gray-400 text-sm">
+                      <p className="text-gray-600 text-sm">
                         {connectionStatus === 'connected' ? 'Ready to call' : 'Connecting...'}
                       </p>
                     </div>
@@ -247,7 +247,7 @@ export default function VideoChatModal({
             {!callActive && remoteSocketId && connectionStatus === 'connected' && (
               <button
                 onClick={handleStartCall}
-                className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-full flex items-center gap-2 transition-all"
+                className="bg-green-600 hover:bg-green-700 text-gray-900 font-bold py-2 px-6 rounded-full flex items-center gap-2 transition-all"
               >
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z" />
@@ -259,7 +259,7 @@ export default function VideoChatModal({
             {callActive && (
               <button
                 onClick={handleEndCall}
-                className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-full flex items-center gap-2 transition-all"
+                className="bg-red-600 hover:bg-red-700 text-gray-900 font-bold py-2 px-6 rounded-full flex items-center gap-2 transition-all"
               >
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M16.72 5.71L19.71 8.7c.39.39.39 1.02 0 1.41l-2.34 2.34c-.39.39-.39 1.02 0 1.41l2.34 2.34c.39.39.39 1.02 0 1.41l-2.99 2.99c-.39.39-1.02.39-1.41 0l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-2.34 2.34c-.39.39-1.02.39-1.41 0l-2.99-2.99c-.39-.39-.39-1.02 0-1.41l2.34-2.34c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-.39-1.02 0-1.41l2.99-2.99c.39-.39 1.02-.39 1.41 0l2.34 2.34c.39.39 1.02.39 1.41 0l2.34-2.34c.39-.39 1.02-.39 1.41 0z" />
@@ -270,7 +270,7 @@ export default function VideoChatModal({
 
             <button
               onClick={handleCloseModal}
-              className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-6 rounded-full transition-all"
+              className="bg-gray-600 hover:bg-gray-700 text-gray-900 font-bold py-2 px-6 rounded-full transition-all"
             >
               Close
             </button>

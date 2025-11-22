@@ -85,7 +85,7 @@ export default function AvatarCropper({ imageSrc, onCropComplete, onCancel }: Av
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full">
+      <div className="bg-gray-50 rounded-lg shadow-xl max-w-2xl w-full">
         <div className="p-6">
           <h2 className="text-2xl font-bold mb-4">Crop Your Avatar</h2>
 
@@ -126,14 +126,14 @@ export default function AvatarCropper({ imageSrc, onCropComplete, onCancel }: Av
             <button
               onClick={onCancel}
               disabled={isProcessing}
-              className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Cancel
             </button>
             <button
               onClick={handleCropAndUpload}
               disabled={isProcessing || !croppedAreaPixels}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 py-2 bg-blue-600 text-gray-900 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isProcessing ? 'Processing...' : 'Crop & Upload'}
             </button>

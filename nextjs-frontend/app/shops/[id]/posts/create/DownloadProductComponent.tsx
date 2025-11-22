@@ -135,7 +135,7 @@ export const DownloadProductComponent: React.FC<DownloadProductComponentProps> =
   };
 
   return (
-    <div className="bg-green-50 border border-green-200 rounded-lg p-6 space-y-6">
+    <div className="bg-grey-200 border border-green-200 rounded-lg p-6 space-y-6">
       <h3 className="text-lg font-semibold text-green-900 flex items-center gap-2">
         📥 Download Product Fields
       </h3>
@@ -251,14 +251,14 @@ export const DownloadProductComponent: React.FC<DownloadProductComponentProps> =
               <button
                 type="button"
                 onClick={removeMainImage}
-                className="absolute top-2 right-2 p-2 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors"
+                className="absolute top-2 right-2 p-2 bg-blue-500 text-gray-900 rounded-full hover:bg-blue-700 transition-colors"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
-            <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-green-300 rounded-lg cursor-pointer bg-green-50 hover:bg-green-100 transition-colors">
+            <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-green-300 rounded-lg cursor-pointer bg-grey-200 hover:bg-blue-500 transition-colors">
               <div className="flex flex-col items-center justify-center pt-2 pb-2">
                 <svg className="w-6 h-6 text-green-600 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
@@ -269,7 +269,7 @@ export const DownloadProductComponent: React.FC<DownloadProductComponentProps> =
             </label>
           </div>
         ) : (
-          <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-green-300 rounded-lg cursor-pointer bg-green-50 hover:bg-green-100 transition-colors">
+          <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-green-300 rounded-lg cursor-pointer bg-grey-200 hover:bg-blue-500 transition-colors">
             <div className="flex flex-col items-center justify-center pt-5 pb-6">
               <svg className="w-8 h-8 text-green-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
@@ -300,7 +300,7 @@ export const DownloadProductComponent: React.FC<DownloadProductComponentProps> =
                   <button
                     type="button"
                     onClick={() => removeOtherImage(index)}
-                    className="absolute top-1 right-1 p-1 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors"
+                    className="absolute top-1 right-1 p-1 bg-blue-500 text-gray-900 rounded-full hover:bg-blue-700 transition-colors"
                   >
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -311,7 +311,7 @@ export const DownloadProductComponent: React.FC<DownloadProductComponentProps> =
             </div>
           </div>
         )}
-        <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-green-300 rounded-lg cursor-pointer bg-green-50 hover:bg-green-100 transition-colors">
+        <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-green-300 rounded-lg cursor-pointer bg-grey-200 hover:bg-blue-500 transition-colors">
           <div className="flex flex-col items-center justify-center pt-2 pb-2">
             <svg className="w-6 h-6 text-green-600 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
@@ -323,7 +323,7 @@ export const DownloadProductComponent: React.FC<DownloadProductComponentProps> =
       </div>
 
       {/* Download File Section */}
-      <div className="border border-green-300 rounded-lg p-4 bg-white">
+      <div className="border border-green-300 rounded-lg p-4 bg-grey-200">
         <h4 className="font-medium text-gray-900 mb-4">📁 Downloadable File</h4>
 
         {/* File Upload Input */}
@@ -367,7 +367,7 @@ export const DownloadProductComponent: React.FC<DownloadProductComponentProps> =
         {/* File Display */}
         {downloadFile && (
           <div className="space-y-3">
-            <div className="flex items-start justify-between bg-green-50 p-4 rounded border border-green-200">
+            <div className="flex items-start justify-between bg-grey-200 p-4 rounded border border-green-200">
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-2">
                   <svg
@@ -388,7 +388,7 @@ export const DownloadProductComponent: React.FC<DownloadProductComponentProps> =
               <button
                 type="button"
                 onClick={removeDownloadFile}
-                className="ml-2 px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition-colors flex-shrink-0"
+                className="ml-2 px-3 py-1 bg-blue-500 text-gray-900 text-sm rounded hover:bg-blue-700 transition-colors flex-shrink-0"
               >
                 Remove
               </button>
@@ -397,7 +397,7 @@ export const DownloadProductComponent: React.FC<DownloadProductComponentProps> =
               <button
                 type="button"
                 onClick={() => (document.querySelector('input[type="file"]') as HTMLInputElement)?.click()}
-                className="w-full px-4 py-2 text-green-600 border border-green-300 rounded-md hover:bg-green-50 transition-colors font-medium"
+                className="w-full px-4 py-2 text-green-600 border border-green-300 rounded-md hover:bg-grey-200 transition-colors font-medium"
               >
                 Replace File
               </button>
@@ -411,7 +411,7 @@ export const DownloadProductComponent: React.FC<DownloadProductComponentProps> =
       </div>
 
       {/* External Links Section */}
-      <div className="border border-green-300 rounded-lg p-4 bg-white">
+      <div className="border border-green-300 rounded-lg p-4 bg-grey-200">
         <h4 className="font-medium text-gray-900 mb-4">External Links</h4>
 
         {/* Add Link Form */}
@@ -433,7 +433,7 @@ export const DownloadProductComponent: React.FC<DownloadProductComponentProps> =
           <button
             type="button"
             onClick={addLinkFile}
-            className="w-full px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+            className="w-full px-4 py-2 bg-blue-500 text-gray-900 rounded-md hover:bg-blue-700 transition-colors"
           >
             + Add External Link
           </button>
@@ -443,7 +443,7 @@ export const DownloadProductComponent: React.FC<DownloadProductComponentProps> =
         {linkFiles.length > 0 && (
           <div className="space-y-2">
             {linkFiles.map((link, index) => (
-              <div key={index} className="flex items-center justify-between bg-green-50 p-3 rounded border border-green-200">
+              <div key={index} className="flex items-center justify-between bg-grey-200 p-3 rounded border border-green-200">
                 <div className="flex-1">
                   <p className="font-medium text-gray-900">{link.title}</p>
                   <p className="text-xs text-gray-500">{link.url}</p>
@@ -451,7 +451,7 @@ export const DownloadProductComponent: React.FC<DownloadProductComponentProps> =
                 <button
                   type="button"
                   onClick={() => removeLinkFile(index)}
-                  className="ml-2 px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition-colors"
+                  className="ml-2 px-3 py-1 bg-blue-500 text-gray-900 text-sm rounded hover:bg-blue-700 transition-colors"
                 >
                   Remove
                 </button>
@@ -466,7 +466,7 @@ export const DownloadProductComponent: React.FC<DownloadProductComponentProps> =
       </div>
 
       {/* Summary */}
-      <div className="bg-green-100 border border-green-300 rounded p-3">
+      <div className="bg-blue-500 border border-green-300 rounded p-3">
         <p className="text-sm text-green-900">
           📊 Summary: {downloadFile ? `1 file (${downloadFile.size})` : '0 files'} + {linkFiles.length} link(s)
         </p>

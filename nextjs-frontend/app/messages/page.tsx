@@ -283,10 +283,10 @@ export default function MessagesPage() {
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-6">Messages</h1>
 
-      <div className="bg-white rounded-lg shadow-lg overflow-hidden" style={{ height: 'calc(100vh - 200px)' }}>
+      <div className="bg-grey-200 rounded-lg shadow-lg overflow-hidden" style={{ height: 'calc(100vh - 200px)' }}>
         <div className="flex h-full">
           {/* Conversations List */}
-          <div className="w-1/3 border-r border-gray-200 overflow-y-auto">
+          <div className="w-1/3 border-r border-gray-300 overflow-y-auto">
             <ConversationList
               conversations={conversations}
               selectedConversationId={selectedConversationId}
@@ -299,7 +299,7 @@ export default function MessagesPage() {
             {selectedConversation ? (
               <>
                 {isSelectedShopRoom && (
-                  <div className="px-6 py-3 bg-blue-50 border-b border-blue-200">
+                  <div className="px-6 py-3 bg-grey-200 border-b border-blue-200">
                     <p className="text-sm text-blue-800">
                       🏪 <strong>Shop Message Thread</strong> - Room: {selectedConversation.room_name}
                     </p>

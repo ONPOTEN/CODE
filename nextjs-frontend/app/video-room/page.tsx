@@ -90,7 +90,7 @@ export default function VideoRoom() {
         {/* Video Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           {/* Local Video */}
-          <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+          <div className="bg-grey-200 rounded-lg shadow-lg overflow-hidden">
             <div className="relative bg-black aspect-video">
               <video
                 ref={localVideoRef}
@@ -99,14 +99,14 @@ export default function VideoRoom() {
                 playsInline
                 className="w-full h-full object-cover"
               />
-              <div className="absolute top-4 left-4 bg-black bg-opacity-50 text-white px-3 py-1 rounded-full text-sm">
+              <div className="absolute top-4 left-4 bg-black bg-opacity-50 text-gray-900 px-3 py-1 rounded-full text-sm">
                 You ({user?.email?.split('@')[0]})
               </div>
             </div>
           </div>
 
           {/* Remote Video */}
-          <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+          <div className="bg-grey-200 rounded-lg shadow-lg overflow-hidden">
             {remoteStream ? (
               <div className="relative bg-black aspect-video">
                 <video
@@ -115,14 +115,14 @@ export default function VideoRoom() {
                   playsInline
                   className="w-full h-full object-cover"
                 />
-                <div className="absolute top-4 left-4 bg-black bg-opacity-50 text-white px-3 py-1 rounded-full text-sm">
+                <div className="absolute top-4 left-4 bg-black bg-opacity-50 text-gray-900 px-3 py-1 rounded-full text-sm">
                   {remoteUser?.email?.split('@')[0] || 'Remote User'}
                 </div>
               </div>
             ) : (
-              <div className="aspect-video bg-gray-900 flex items-center justify-center">
+              <div className="aspect-video bg-blue-900 flex items-center justify-center">
                 <div className="text-center">
-                  <div className="text-gray-400 mb-4">
+                  <div className="text-gray-600 mb-4">
                     {connectionStatus === 'waiting' ? (
                       <>
                         <p className="text-lg">Waiting for remote user...</p>
@@ -143,7 +143,7 @@ export default function VideoRoom() {
           {!callActive && remoteSocketId && (
             <button
               onClick={initiateCall}
-              className="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition"
+              className="bg-grey-2000 hover:bg-blue-500 text-gray-900 font-bold py-3 px-8 rounded-lg shadow-lg transition"
             >
               Start Call
             </button>
@@ -152,7 +152,7 @@ export default function VideoRoom() {
           {callActive && (
             <button
               onClick={endCall}
-              className="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition"
+              className="bg-grey-2000 hover:bg-blue-500 text-gray-900 font-bold py-3 px-8 rounded-lg shadow-lg transition"
             >
               End Call
             </button>
@@ -160,14 +160,14 @@ export default function VideoRoom() {
 
           <button
             onClick={() => router.push('/')}
-            className="bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition"
+            className="bg-white0 hover:bg-blue-500 text-gray-900 font-bold py-3 px-8 rounded-lg shadow-lg transition"
           >
             Exit Room
           </button>
         </div>
 
         {/* Info Box */}
-        <div className="mt-8 bg-white rounded-lg shadow-lg p-6 text-gray-700">
+        <div className="mt-8 bg-grey-200 rounded-lg shadow-lg p-6 text-gray-700">
           <h2 className="text-lg font-semibold mb-3">Room Information</h2>
           <ul className="space-y-2 text-sm">
             <li>
