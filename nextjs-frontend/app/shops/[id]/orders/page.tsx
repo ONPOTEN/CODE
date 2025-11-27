@@ -47,19 +47,23 @@ export default function ShopOrdersPage() {
         setError(null);
 
         // Fetch shop details
-        const shopInfo = await shops.getById(shopId);
+        const shopResponse = await shops.getById(shopId);
+        // Handle both direct object and wrapped response
+        const shopInfo = (shopResponse as any)?.data || shopResponse;
         setShop(shopInfo);
 
         // Check if user owns this shop
-        if (shopInfo.user_id !== user?.id) {
+        if (shopInfo?.user_id !== user?.id) {
           setError('You do not have permission to view this shop\'s orders');
           return;
         }
 
         // Fetch orders for this shop
-        const ordersData = await apiRequest<any>(
-          `/orders?shop_id=${shopId}&per_page=100&status=${filterStatus || ''}`
-        );
+        let orderUrl = `/orders?shop_id=${shopId}&per_page=100`;
+        if (filterStatus) {
+          orderUrl += `&status=${filterStatus}`;
+        }
+        const ordersData = await apiRequest<any>(orderUrl);
         setOrders(ordersData.data || ordersData);
       } catch (err) {
         let errorMsg = 'Failed to fetch shop orders';
@@ -148,9 +152,11 @@ export default function ShopOrdersPage() {
       }
 
       // Refresh orders
-      const ordersData = await apiRequest<any>(
-        `/orders?shop_id=${shopId}&per_page=100&status=${filterStatus || ''}`
-      );
+      let orderUrl = `/orders?shop_id=${shopId}&per_page=100`;
+      if (filterStatus) {
+        orderUrl += `&status=${filterStatus}`;
+      }
+      const ordersData = await apiRequest<any>(orderUrl);
       setOrders(ordersData.data || ordersData);
       setSelectedOrders(new Set());
       alert('Orders updated successfully');

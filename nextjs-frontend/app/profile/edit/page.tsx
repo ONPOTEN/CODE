@@ -535,109 +535,117 @@ export default function EditProfilePage() {
                 />
               </div>
 
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                  Email Address
-                </label>
-                <input
-                  type="email"
-                  id="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                  required
-                />
-                <div className="mt-2 flex items-center">
-                  <input
-                    type="checkbox"
-                    id="emailPublic"
-                    checked={emailPublic}
-                    onChange={(e) => setEmailPublic(e.target.checked)}
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                  />
-                  <label htmlFor="emailPublic" className="ml-2 text-sm text-gray-600">
-                    Make email public (visible to non-friends)
+              {emailPublic && (
+                <div>
+                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                    Email Address
                   </label>
+                  <input
+                    type="email"
+                    id="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                    required
+                  />
+                  <div className="mt-2 flex items-center">
+                    <input
+                      type="checkbox"
+                      id="emailPublic"
+                      checked={emailPublic}
+                      onChange={(e) => setEmailPublic(e.target.checked)}
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <label htmlFor="emailPublic" className="ml-2 text-sm text-gray-600">
+                      Make email public (visible to non-friends)
+                    </label>
+                  </div>
                 </div>
-              </div>
+              )}
 
-              <div>
-                <label htmlFor="hobby" className="block text-sm font-medium text-gray-700 mb-1">
-                  Hobby
-                </label>
-                <input
-                  type="text"
-                  id="hobby"
-                  value={hobby}
-                  onChange={(e) => setHobby(e.target.value)}
-                  placeholder="What do you like to do?"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                />
-                <div className="mt-2 flex items-center">
-                  <input
-                    type="checkbox"
-                    id="hobbyPublic"
-                    checked={hobbyPublic}
-                    onChange={(e) => setHobbyPublic(e.target.checked)}
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                  />
-                  <label htmlFor="hobbyPublic" className="ml-2 text-sm text-gray-600">
-                    Make hobby public (visible to non-friends)
+              {hobbyPublic && (
+                <div>
+                  <label htmlFor="hobby" className="block text-sm font-medium text-gray-700 mb-1">
+                    Hobby
                   </label>
+                  <input
+                    type="text"
+                    id="hobby"
+                    value={hobby}
+                    onChange={(e) => setHobby(e.target.value)}
+                    placeholder="What do you like to do?"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  />
+                  <div className="mt-2 flex items-center">
+                    <input
+                      type="checkbox"
+                      id="hobbyPublic"
+                      checked={hobbyPublic}
+                      onChange={(e) => setHobbyPublic(e.target.checked)}
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <label htmlFor="hobbyPublic" className="ml-2 text-sm text-gray-600">
+                      Make hobby public (visible to non-friends)
+                    </label>
+                  </div>
                 </div>
-              </div>
+              )}
 
-              <div>
-                <label htmlFor="company" className="block text-sm font-medium text-gray-700 mb-1">
-                  Company
-                </label>
-                <input
-                  type="text"
-                  id="company"
-                  value={company}
-                  onChange={(e) => setCompany(e.target.value)}
-                  placeholder="Where do you work?"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                />
-                <div className="mt-2 flex items-center">
-                  <input
-                    type="checkbox"
-                    id="companyPublic"
-                    checked={companyPublic}
-                    onChange={(e) => setCompanyPublic(e.target.checked)}
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                  />
-                  <label htmlFor="companyPublic" className="ml-2 text-sm text-gray-600">
-                    Make company public (visible to non-friends)
+              {companyPublic && (
+                <div>
+                  <label htmlFor="company" className="block text-sm font-medium text-gray-700 mb-1">
+                    Company
                   </label>
+                  <input
+                    type="text"
+                    id="company"
+                    value={company}
+                    onChange={(e) => setCompany(e.target.value)}
+                    placeholder="Where do you work?"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  />
+                  <div className="mt-2 flex items-center">
+                    <input
+                      type="checkbox"
+                      id="companyPublic"
+                      checked={companyPublic}
+                      onChange={(e) => setCompanyPublic(e.target.checked)}
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <label htmlFor="companyPublic" className="ml-2 text-sm text-gray-600">
+                      Make company public (visible to non-friends)
+                    </label>
+                  </div>
                 </div>
-              </div>
+              )}
 
-              <div>
-                <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-1">
-                  Location
-                </label>
-                <input
-                  type="text"
-                  id="location"
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                  placeholder="Where are you based?"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                />
-                <div className="mt-2 flex items-center">
-                  <input
-                    type="checkbox"
-                    id="locationPublic"
-                    checked={locationPublic}
-                    onChange={(e) => setLocationPublic(e.target.checked)}
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                  />
-                  <label htmlFor="locationPublic" className="ml-2 text-sm text-gray-600">
-                    Make location public (visible to non-friends)
+              {locationPublic && (
+                <div>
+                  <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-1">
+                    Location
                   </label>
+                  <input
+                    type="text"
+                    id="location"
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    placeholder="Where are you based?"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  />
+                  <div className="mt-2 flex items-center">
+                    <input
+                      type="checkbox"
+                      id="locationPublic"
+                      checked={locationPublic}
+                      onChange={(e) => setLocationPublic(e.target.checked)}
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <label htmlFor="locationPublic" className="ml-2 text-sm text-gray-600">
+                      Make location public (visible to non-friends)
+                    </label>
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div>
                 <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">

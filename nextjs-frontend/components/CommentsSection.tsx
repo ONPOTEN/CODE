@@ -224,58 +224,13 @@ export function CommentsSection({
   const nestedComments = (parentId: number) => postComments.filter((c) => c.parent_id === parentId);
 
   return (
-    <div id={`comments-section-${postId}`} className={`space-y-4 ${className}`}>
-      <h3 className="text-lg font-semibold text-gray-900">
+    <div id={`comments-section-${postId}`} className={`flex flex-col h-full ${className}`}>
+      <h3 className="text-lg font-semibold text-gray-900 mb-4">
         Comments ({postComments.length})
       </h3>
 
-      {/* Comment Input */}
-      {isAuthenticated ? (
-        <div className="space-y-2">
-          {replyingTo !== null && (
-            <div className="flex items-center gap-2 p-2 bg-blue-50 rounded border border-blue-200">
-              <span className="text-sm text-blue-700">
-                Replying to comment #{replyingTo}
-              </span>
-              <button
-                onClick={() => setReplyingTo(null)}
-                className="text-sm text-blue-500 hover:text-blue-700 underline"
-              >
-                Cancel
-              </button>
-            </div>
-          )}
-
-          <textarea
-            value={commentText}
-            onChange={(e) => setCommentText(e.target.value)}
-            placeholder="Write a comment..."
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-            rows={3}
-          />
-
-          <button
-            onClick={handlePostComment}
-            disabled={isPosting || !commentText.trim()}
-            className="px-6 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-600 disabled:opacity-50 font-medium text-sm"
-          >
-            {isPosting ? 'Posting...' : 'Post Comment'}
-          </button>
-        </div>
-      ) : (
-        <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <p className="text-blue-700 text-sm mb-3">Sign in to comment on this post</p>
-          <button
-            onClick={() => router.push('/login')}
-            className="px-6 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-600 font-medium text-sm"
-          >
-            Login to Comment
-          </button>
-        </div>
-      )}
-
-      {/* Comments List */}
-      <div className="space-y-2">
+      {/* Comments List - Scrollable with bottom padding for fixed form */}
+      <div className="flex-1 overflow-y-auto space-y-2 pb-48">
         {isLoadingComments && postComments.length === 0 ? (
           <div className="text-center py-8">
             <div className="inline-block animate-spin">⏳</div>
@@ -315,20 +270,69 @@ export function CommentsSection({
             </div>
           ))
         )}
+
+        {/* Load More Button */}
+        {postComments.length > 0 && postComments.length % 15 === 0 && (
+          <button
+            onClick={() => {
+              setPage(page + 1);
+              fetchComments(postId, page + 1);
+            }}
+            disabled={isLoadingComments}
+            className="w-full py-2 text-blue-500 hover:text-blue-700 font-medium text-sm disabled:opacity-50"
+          >
+            {isLoadingComments ? 'Loading...' : 'Load More Comments'}
+          </button>
+        )}
       </div>
 
-      {/* Load More Button */}
-      {postComments.length > 0 && postComments.length % 15 === 0 && (
-        <button
-          onClick={() => {
-            setPage(page + 1);
-            fetchComments(postId, page + 1);
-          }}
-          disabled={isLoadingComments}
-          className="w-full py-2 text-blue-500 hover:text-blue-700 font-medium text-sm disabled:opacity-50"
-        >
-          {isLoadingComments ? 'Loading...' : 'Load More Comments'}
-        </button>
+      {/* Comment Input - Fixed at Bottom of Viewport */}
+      {isAuthenticated ? (
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-300 shadow-lg z-50 p-4 space-y-2">
+          {replyingTo !== null && (
+            <div className="flex items-center gap-2 p-2 bg-blue-50 rounded border border-blue-200">
+              <span className="text-sm text-blue-700">
+                Replying to comment #{replyingTo}
+              </span>
+              <button
+                onClick={() => setReplyingTo(null)}
+                className="text-sm text-blue-500 hover:text-blue-700 underline"
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+
+          <div className="max-w-7xl mx-auto">
+            <textarea
+              value={commentText}
+              onChange={(e) => setCommentText(e.target.value)}
+              placeholder="Write a comment..."
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              rows={3}
+            />
+
+            <button
+              onClick={handlePostComment}
+              disabled={isPosting || !commentText.trim()}
+              className="mt-2 px-6 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-600 disabled:opacity-50 font-medium text-sm"
+            >
+              {isPosting ? 'Posting...' : 'Post Comment'}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="fixed bottom-0 left-0 right-0 bg-blue-50 border-t border-blue-200 shadow-lg z-50 p-4">
+          <div className="max-w-7xl mx-auto">
+            <p className="text-blue-700 text-sm mb-3">Sign in to comment on this post</p>
+            <button
+              onClick={() => router.push('/login')}
+              className="px-6 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-600 font-medium text-sm"
+            >
+              Login to Comment
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

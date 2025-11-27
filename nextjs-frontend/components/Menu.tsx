@@ -14,7 +14,7 @@ export default function Menu() {
     <section className="py-12">
       <div className="bg-gray-50 border border-gray-300 rounded-lg shadow-sm p-8 max-w-4xl mx-auto">
         <h1 className="text-4xl font-bold text-gray-900 mb-4 text-center">
-          Welcome to Threads
+          Welcome to Centimet2
         </h1>
         <p className="text-gray-600 text-center mb-8 text-lg">
           A modern marketplace platform powered by Next.js and Laravel

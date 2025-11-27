@@ -73,11 +73,20 @@ export default function CreateGroupPostPage() {
 
       // Check if user is a member of the group
       try {
+        console.log('[CreatePost] Checking membership for group:', groupId);
         const membershipResponse = await groups.checkMembership(groupId);
+        console.log('[CreatePost] Membership check response:', membershipResponse);
         setIsMember(membershipResponse.is_member);
+
+        if (!membershipResponse.is_member) {
+          console.log('[CreatePost] User is NOT a member of the group');
+        } else {
+          console.log('[CreatePost] User IS a member of the group');
+        }
       } catch (membershipErr) {
         // If membership check fails, assume user is not a member
         console.error('Error checking membership:', membershipErr);
+        console.error('Error details:', (membershipErr as any)?.message || membershipErr);
         setIsMember(false);
       }
     } catch (err) {
@@ -253,11 +262,12 @@ export default function CreateGroupPostPage() {
   }
 
   if (!isMember) {
+    console.log('[CreatePost Render] Showing access denied screen. isMember:', isMember, 'group:', group?.group_name);
     return (
       <div className="min-h-screen bg-white">
         <div className="max-w-2xl mx-auto px-4 py-8">
           <Link href={`/groups/${groupId}`} className="text-blue-600 hover:text-blue-700 font-medium mb-8 inline-block">
-            ← Back to {group.group_name}
+            ← Back to {group?.group_name || 'Group'}
           </Link>
 
           <div className="bg-grey-200 rounded-lg shadow p-8 text-center border border-gray-300">
@@ -267,7 +277,7 @@ export default function CreateGroupPostPage() {
               </svg>
             </div>
             <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h1>
-            <p className="text-gray-600 mb-6">You must be a member of this group to create posts.</p>
+            <p className="text-gray-600 mb-6">You must be a member of this group to create posts. Join the group to get started!</p>
 
             <div className="flex gap-4 justify-center">
               <Link

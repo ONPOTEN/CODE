@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { EngagementButtons } from '@/components/EngagementButtons';
 import { AuthorCard } from '@/components/AuthorCard';
+import { ImageCarousel } from '@/components/ImageCarousel';
 
 export default function InfiniteScrollPosts() {
   const [postsList, setPostsList] = useState<Post[]>([]);
@@ -20,6 +21,28 @@ export default function InfiniteScrollPosts() {
   const menuRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
   const router = useRouter();
   const { user } = useAuth();
+
+  const getTruncatedContent = (content: string | undefined, wordLimit: number = 50): string => {
+    if (!content) return '';
+    const words = content.trim().split(/\s+/);
+    if (words.length > wordLimit) {
+      return words.slice(0, wordLimit).join(' ') + '...';
+    }
+    return content;
+  };
+
+  const getRelativeTime = (dateString: string): string => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const secondsAgo = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+    if (secondsAgo < 60) return 'just now';
+    if (secondsAgo < 3600) return `${Math.floor(secondsAgo / 60)}m ago`;
+    if (secondsAgo < 86400) return `${Math.floor(secondsAgo / 3600)}h ago`;
+    if (secondsAgo < 604800) return `${Math.floor(secondsAgo / 86400)}d ago`;
+    if (secondsAgo < 2592000) return `${Math.floor(secondsAgo / 604800)}w ago`;
+    return `${Math.floor(secondsAgo / 2592000)}mo ago`;
+  };
 
   const fetchPosts = useCallback(async (pageNum: number) => {
     if (loading) return;
@@ -97,7 +120,7 @@ export default function InfiniteScrollPosts() {
 
   const handleEditPost = (postId: number) => {
     setOpenMenuId(null);
-    router.push(`/posts/${postId}/edit`);
+    router.push(`/posts/edit/${postId}`);
   };
 
   const handleDeletePost = async (postId: number) => {
@@ -175,11 +198,11 @@ export default function InfiniteScrollPosts() {
 
   if (error && postsList.length === 0) {
     return (
-      <section className="container py-12">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-4xl mx-auto">
-          <h3 className="text-lg font-semibold text-red-900 mb-2">Error Loading Posts</h3>
-          <p className="text-red-700">{error}</p>
-          <p className="text-sm text-red-600 mt-2">
+      <section className="w-full px-2 md:px-4 py-6 md:py-12">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 md:p-6 max-w-4xl mx-auto">
+          <h3 className="text-base md:text-lg font-semibold text-red-900 mb-2">Error Loading Posts</h3>
+          <p className="text-sm md:text-base text-red-700">{error}</p>
+          <p className="text-xs md:text-sm text-red-600 mt-2">
             Make sure your Laravel API is running on http://localhost:8000
           </p>
         </div>
@@ -188,10 +211,9 @@ export default function InfiniteScrollPosts() {
   }
 
   return (
-    <section className="container py-12 bg-white">
-      <div className="max-w-4xl mx-auto">
-        <h2 className="text-3xl font-bold mb-8 text-center">Posts API</h2>
-
+    <section className="w-full px-2 md:px-4 py-6 md:py-12 bg-white">
+      <div className="w-full max-w-4xl mx-auto">
+        
         {postsList.length === 0 && !loading ? (
           <div className="text-center text-gray-600 py-12">
             <p className="text-lg">No posts available yet.</p>
@@ -206,201 +228,108 @@ export default function InfiniteScrollPosts() {
 
               return (
                 <article
-                  key={post.id}
-                  className="bg-gray-50 rounded-lg shadow-sm hover:shadow-md transition-shadow border border-gray-300"
-                >
-                  <div className="flex flex-col md:flex-row">
-                    {/* Featured Image or Placeholder */}
-                    <div className="md:w-1/3 h-48 md:h-auto relative bg-gray-200 overflow-hidden rounded-t-lg md:rounded-l-lg md:rounded-t-none">
-                      <Link href={`/posts/${post.id}`}>
-                        {featuredImageUrl ? (
-                          <img
-                            src={featuredImageUrl}
-                            alt={post.title}
-                            className="w-full h-full object-cover hover:opacity-90 transition-opacity"
-                            onError={(e) => {
-                              // Fallback if image fails to load
-                              e.currentTarget.style.display = 'none';
-                              if (e.currentTarget.parentElement) {
-                                const placeholder = document.createElement('div');
-                                placeholder.className = 'w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-300 to-gray-400';
-                                placeholder.innerHTML = `
-                                  <svg class="w-16 h-16 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                  </svg>
-                                `;
-                                e.currentTarget.parentElement.appendChild(placeholder);
-                              }
-                            }}
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-300 to-gray-400 hover:opacity-90 transition-opacity">
-                            <svg className="w-16 h-16 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                          </div>
-                        )}
-                      </Link>
-                    </div>
+  key={post.id}
+  className="w-full border-b border-gray-200 pb-4 pt-6 flex gap-2 md:gap-3 overflow-hidden"
+>
+  {/* Avatar */}
+  <div className="flex-shrink-0">
+    <Link href={`/users/${post.author?.id}`}>
+      <img
+        src={post.author?.avatar || post.author?.avatar_url || "/default-avatar.png"}
+        alt={post.author?.name}
+        className="w-10 h-10 rounded-full object-cover"
+      />
+    </Link>
+  </div>
 
-                    {/* Content */}
-                    <div className={`p-6 flex-1 ${!featuredImageUrl ? 'w-full' : ''}`}>
-                      {/* Title */}
-                      <div className="flex items-start justify-between mb-4">
-                        <h3 className="text-2xl font-semibold text-gray-900 hover:text-blue-600 transition-colors flex-1">
-                          <Link href={`/posts/${post.id}`}>{post.title}</Link>
-                        </h3>
-                        <div className="flex items-center gap-2 ml-2">
-                          <span className={`px-3 py-1 text-xs font-medium rounded-full whitespace-nowrap ${
-                            post.status === 'publish'
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-yellow-100 text-yellow-800'
-                          }`}>
-                            {post.status}
-                          </span>
+  {/* Right Area */}
+  <div className="flex-1 min-w-0 w-full">
+    {/* Top row: Name + menu */}
+    <div className="flex items-start justify-between gap-2">
+      <div className="min-w-0">
+        <Link href={`/users/${post.author?.id}`} className="font-semibold text-gray-900 text-sm md:text-base line-clamp-1">
+          {post.author?.name || post.author?.username}
+        </Link>
+        <span className="text-xs md:text-sm text-gray-500">
+          {getRelativeTime(post.created_at)}
+        </span>
+      </div>
 
-                          {/* Privacy indicator */}
-                          {post.visibility === 'private' && (
-                            <span className="px-3 py-1 text-xs font-medium rounded-full whitespace-nowrap bg-gray-100 text-gray-800 flex items-center gap-1">
-                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                              </svg>
-                              Private
-                            </span>
-                          )}
+      {/* Menu Button */}
+      <div className="relative flex-shrink-0" ref={(el) => { menuRefs.current[post.id] = el; }}>
+        <button
+          onClick={() => toggleMenu(post.id)}
+          className="p-1 hover:bg-gray-100 rounded-full"
+        >
+          <svg className="w-4 h-4 md:w-5 md:h-5 text-gray-600" fill="currentColor" viewBox="0 0 24 24">
+            <circle cx="12" cy="6" r="1.5" />
+            <circle cx="12" cy="12" r="1.5" />
+            <circle cx="12" cy="18" r="1.5" />
+          </svg>
+        </button>
 
-                          {/* 3-dot menu button */}
-                          <div className="relative" ref={(el) => { menuRefs.current[post.id] = el; }}>
-                            <button
-                              onClick={() => toggleMenu(post.id)}
-                              className="p-2 hover:bg-gray-200 rounded-full transition-colors"
-                              aria-label="Post options"
-                            >
-                              <svg className="w-5 h-5 text-gray-600" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" />
-                              </svg>
-                            </button>
+        {openMenuId === post.id && (
+          <div className="absolute right-0 mt-2 w-32 md:w-36 bg-white border border-gray-200 rounded-lg shadow-lg z-10 py-1">
+            <button
+              onClick={() => handleSavePost(post.id)}
+              className="w-full px-3 md:px-4 py-2 text-left text-xs md:text-sm text-gray-700 hover:bg-gray-100"
+            >
+              {savedPosts.has(post.id) ? "Unsave" : "Save"}
+            </button>
+            <button
+              onClick={() => handleToggleVisibility(post.id, post.visibility === "private" ? "public" : "private")}
+              className="w-full px-3 md:px-4 py-2 text-left text-xs md:text-sm text-gray-700 hover:bg-gray-100"
+            >
+              {post.visibility === "private" ? "Make public" : "Make private"}
+            </button>
+            <button
+              onClick={() => handleEditPost(post.id)}
+              className="w-full px-3 md:px-4 py-2 text-left text-xs md:text-sm text-gray-700 hover:bg-gray-100"
+            >
+              Edit
+            </button>
+            <button
+              onClick={() => handleDeletePost(post.id)}
+              className="w-full px-3 md:px-4 py-2 text-left text-xs md:text-sm text-red-600 hover:bg-red-50"
+            >
+              Delete
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
 
-                            {/* Dropdown menu */}
-                            {openMenuId === post.id && (
-                              <div className="absolute right-0 mt-2 w-48 bg-gray-50 rounded-lg shadow-lg border border-gray-300 py-1 z-10">
-                                <button
-                                  onClick={() => handleSavePost(post.id)}
-                                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-200 flex items-center gap-2"
-                                >
-                                  <svg className="w-4 h-4" fill={savedPosts.has(post.id) ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-                                  </svg>
-                                  {savedPosts.has(post.id) ? 'Unsave' : 'Save'}
-                                </button>
+    {/* Content */}
+    {post.content && (
+      <Link href={`/posts/${post.id}`}>
+        <p className="mt-2 text-base md:text-lg text-gray-800 whitespace-pre-line break-words hover:text-blue-600 cursor-pointer transition-colors">
+          {getTruncatedContent(post.content, 50)}
+        </p>
+      </Link>
+    )}
 
-                                {/* Privacy toggle */}
-                                <div className="border-t border-gray-300 my-1"></div>
-                                <button
-                                  onClick={() => handleToggleVisibility(post.id, post.visibility === 'private' ? 'public' : 'private')}
-                                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-200 flex items-center gap-2"
-                                >
-                                  {post.visibility === 'private' ? (
-                                    <>
-                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                      </svg>
-                                      Make Public
-                                    </>
-                                  ) : (
-                                    <>
-                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                                      </svg>
-                                      Make Private
-                                    </>
-                                  )}
-                                </button>
-                                <div className="border-t border-gray-300 my-1"></div>
+    {/* Images Carousel Slide */}
+    {post.images && post.images.length > 0 && (
+      <div className="w-full overflow-hidden">
+        <ImageCarousel images={post.images} postId={post.id} />
+      </div>
+    )}
 
-                                <button
-                                  onClick={() => handleEditPost(post.id)}
-                                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-200 flex items-center gap-2"
-                                >
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                  </svg>
-                                  Edit
-                                </button>
-                                <button
-                                  onClick={() => handleDeletePost(post.id)}
-                                  className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
-                                >
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                  </svg>
-                                  Delete
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
+    {/* Engagement buttons Threads style */}
+    <div className="flex gap-6 mt-3 text-gray-600">
+      <EngagementButtons
+        postId={post.id}
+        postTitle={post.title}
+        postSlug={post.slug}
+        postText={post.excerpt}
+        compact={true}
+        showLabels={false}
+      />
+    </div>
+  </div>
+</article>
 
-                      {/* Author Card */}
-                      {post.author && (
-                        <AuthorCard
-                          author={post.author}
-                          createdAt={post.created_at}
-                          compact={true}
-                          showAvatar={true}
-                        />
-                      )}
 
-                      {post.excerpt && (
-                        <p className="text-gray-700 mb-4 line-clamp-3">{post.excerpt}</p>
-                      )}
-
-                      {/* Engagement Buttons */}
-                      <div className="mb-4 py-4 border-t border-gray-100">
-                        <EngagementButtons
-                          postId={post.id}
-                          postTitle={post.title}
-                          postSlug={post.slug}
-                          postText={post.excerpt}
-                          showLabels={true}
-                          compact={true}
-                        />
-                      </div>
-
-                      <div className="flex items-center justify-between text-sm text-gray-500 pt-2 border-t border-gray-100">
-                        <div className="flex gap-4">
-                          <span className="flex items-center gap-1">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                            </svg>
-                            {post.type}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            {new Date(post.created_at).toLocaleDateString()}
-                          </span>
-                          {post.images && post.images.length > 1 && (
-                            <span className="flex items-center gap-1 text-blue-600">
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                              </svg>
-                              +{post.images.length - 1}
-                            </span>
-                          )}
-                        </div>
-                        <Link
-                          href={`/posts/${post.id}`}
-                          className="text-blue-600 hover:text-blue-700 font-medium hover:underline"
-                        >
-                          Read more →
-                        </Link>
-                      </div>
-                    </div>
-                  </div>
-                </article>
               );
             })}
           </div>

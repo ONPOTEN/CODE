@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
-import SearchBar from './SearchBar';
 import CartIcon from './CartIcon';
 import MoreMenu from './MoreMenu';
 
@@ -48,8 +47,6 @@ export default function Header() {
           </div>
         </div>
 
-        {/* Search Bar - Mobile */}
-        <SearchBar />
       </div>
     </header>
   );

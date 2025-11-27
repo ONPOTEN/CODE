@@ -126,50 +126,58 @@ export default function ProfilePage() {
               <span className="ml-2 text-gray-900">{user.username}</span>
             </div>
 
-            <div>
-              <span className="font-medium text-gray-700">Email:</span>
-              <span className="ml-2 text-gray-900">{user.email}</span>
-              {user.email_public !== undefined && (
-                <span className={`ml-2 text-xs px-2 py-0.5 rounded ${user.email_public ? 'bg-blue-500 text-green-800' : 'bg-blue-500 text-orange-800'}`}>
-                  {user.email_public ? 'Public' : 'Private'}
-                </span>
-              )}
-            </div>
+            {user.email_public && (
+              <div>
+                <span className="font-medium text-gray-700">Email:</span>
+                <span className="ml-2 text-gray-900">{user.email}</span>
+                {user.email_public !== undefined && (
+                  <span className={`ml-2 text-xs px-2 py-0.5 rounded ${user.email_public ? 'bg-blue-500 text-green-800' : 'bg-blue-500 text-orange-800'}`}>
+                    {user.email_public ? 'Public' : 'Private'}
+                  </span>
+                )}
+              </div>
+            )}
 
             <div>
               <span className="font-medium text-gray-700">User ID:</span>
               <span className="ml-2 text-gray-900">{user.id}</span>
             </div>
 
-            <div>
-              <span className="font-medium text-gray-700">Hobby:</span>
-              <span className="ml-2 text-gray-900">{user.hobby || 'Not specified'}</span>
-              {user.hobby_public !== undefined && (
-                <span className={`ml-2 text-xs px-2 py-0.5 rounded ${user.hobby_public ? 'bg-blue-500 text-green-800' : 'bg-blue-500 text-orange-800'}`}>
-                  {user.hobby_public ? 'Public' : 'Private'}
-                </span>
-              )}
-            </div>
+            {user.hobby_public && (
+              <div>
+                <span className="font-medium text-gray-700">Hobby:</span>
+                <span className="ml-2 text-gray-900">{user.hobby || 'Not specified'}</span>
+                {user.hobby_public !== undefined && (
+                  <span className={`ml-2 text-xs px-2 py-0.5 rounded ${user.hobby_public ? 'bg-blue-500 text-green-800' : 'bg-blue-500 text-orange-800'}`}>
+                    {user.hobby_public ? 'Public' : 'Private'}
+                  </span>
+                )}
+              </div>
+            )}
 
-            <div>
-              <span className="font-medium text-gray-700">Company:</span>
-              <span className="ml-2 text-gray-900">{user.company || 'Not specified'}</span>
-              {user.company_public !== undefined && (
-                <span className={`ml-2 text-xs px-2 py-0.5 rounded ${user.company_public ? 'bg-blue-500 text-green-800' : 'bg-blue-500 text-orange-800'}`}>
-                  {user.company_public ? 'Public' : 'Private'}
-                </span>
-              )}
-            </div>
+            {user.company_public && (
+              <div>
+                <span className="font-medium text-gray-700">Company:</span>
+                <span className="ml-2 text-gray-900">{user.company || 'Not specified'}</span>
+                {user.company_public !== undefined && (
+                  <span className={`ml-2 text-xs px-2 py-0.5 rounded ${user.company_public ? 'bg-blue-500 text-green-800' : 'bg-blue-500 text-orange-800'}`}>
+                    {user.company_public ? 'Public' : 'Private'}
+                  </span>
+                )}
+              </div>
+            )}
 
-            <div>
-              <span className="font-medium text-gray-700">Location:</span>
-              <span className="ml-2 text-gray-900">{user.location || 'Not specified'}</span>
-              {user.location_public !== undefined && (
-                <span className={`ml-2 text-xs px-2 py-0.5 rounded ${user.location_public ? 'bg-blue-500 text-green-800' : 'bg-blue-500 text-orange-800'}`}>
-                  {user.location_public ? 'Public' : 'Private'}
-                </span>
-              )}
-            </div>
+            {user.location_public && (
+              <div>
+                <span className="font-medium text-gray-700">Location:</span>
+                <span className="ml-2 text-gray-900">{user.location || 'Not specified'}</span>
+                {user.location_public !== undefined && (
+                  <span className={`ml-2 text-xs px-2 py-0.5 rounded ${user.location_public ? 'bg-blue-500 text-green-800' : 'bg-blue-500 text-orange-800'}`}>
+                    {user.location_public ? 'Public' : 'Private'}
+                  </span>
+                )}
+              </div>
+            )}
 
             <div>
               <span className="font-medium text-gray-700">Phone:</span>

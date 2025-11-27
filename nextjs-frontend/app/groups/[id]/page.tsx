@@ -5,8 +5,8 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { groups, users, friends, chat, Group, User, auth, ApiException } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
-import GroupPostForm from '@/components/GroupPostForm';
 import InfiniteScrollGroupPosts from '@/components/InfiniteScrollGroupPosts';
+import CreateGroupPostModal from '@/components/CreateGroupPostModal';
 
 export default function GroupWallPage() {
   const params = useParams();
@@ -36,6 +36,7 @@ export default function GroupWallPage() {
   const [isLoadingFriends, setIsLoadingFriends] = useState(false);
   const [selectedFriends, setSelectedFriends] = useState<Set<number>>(new Set());
   const [invitingFriends, setInvitingFriends] = useState(false);
+  const [isCreatePostOpen, setIsCreatePostOpen] = useState(false);
 
   useEffect(() => {
     fetchGroupDetails();
@@ -277,11 +278,24 @@ export default function GroupWallPage() {
           // Get or create conversation with the friend
           const conversation = await chat.getOrCreateConversation(friend.id);
 
-          // Create invitation message with group link
+          // Create invitation message with group link and action buttons
           const inviteMessage = `${currentUserName} wants you to join the "${group?.group_name}" group. Click here to join: ${inviteLink}`;
 
+          // Create invitation metadata for Accept/Reject buttons
+          const invitationData = {
+            type: 'group_invitation',
+            groupId: group?.group_id,
+            groupName: group?.group_name,
+            invitedBy: currentUserName,
+            inviteLink: inviteLink,
+            timestamp: new Date().toISOString()
+          };
+
+          // Add metadata to the message
+          const messageWithMetadata = `[INVITATION]${JSON.stringify(invitationData)}[/INVITATION]${inviteMessage}`;
+
           // Send the message
-          await chat.sendMessage(conversation.id, inviteMessage);
+          await chat.sendMessage(conversation.id, messageWithMetadata);
 
           successCount++;
         } catch (err) {
@@ -429,17 +443,20 @@ export default function GroupWallPage() {
                   <>
                     <button
                       onClick={() => {
-                        // Check if authenticated before navigating
+                        // Check if authenticated before opening modal
                         if (!auth.isAuthenticated()) {
                           router.push('/login');
                           return;
                         }
-                        // If authenticated, navigate to create post
-                        router.push(`/groups/${group.group_id}/create-post`);
+                        // If authenticated, open modal
+                        setIsCreatePostOpen(true);
                       }}
-                      className="inline-block px-6 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-700 font-medium transition-colors"
+                      className="inline-block px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
                     >
-                      Create Post
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      </svg>
+                      <span>Create Post</span>
                     </button>
                     <button
                       onClick={handleInviteFriend}
@@ -447,6 +464,7 @@ export default function GroupWallPage() {
                     >
                       Invite Friends
                     </button>
+                    
                   </>
                 )}
                 <Link
@@ -461,51 +479,29 @@ export default function GroupWallPage() {
                 >
                   Group Manager
                 </Link>
-                {isMember && (
-                  <button
-                    onClick={handleLeaveGroup}
-                    disabled={isJoiningOrLeaving}
-                    className="px-6 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isJoiningOrLeaving ? 'Leaving...' : 'Leave Group'}
-                  </button>
-                )}
               </>
             ) : isMember ? (
               // Regular member buttons
               <>
                 <button
                   onClick={() => {
-                    // Check if authenticated before navigating
+                    // Check if authenticated before opening modal
                     if (!auth.isAuthenticated()) {
                       router.push('/login');
                       return;
                     }
-                    // If authenticated, navigate to create post
-                    router.push(`/groups/${group.group_id}/create-post`);
+                    // If authenticated, open modal
+                    setIsCreatePostOpen(true);
                   }}
                   className="inline-block px-6 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-700 font-medium transition-colors"
                 >
-                  Create Post
+                  <span>Create Post</span>
                 </button>
                 <button
                   onClick={handleInviteFriend}
                   className="inline-block px-6 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-700 font-medium transition-colors"
                 >
                   Invite Friends
-                </button>
-                <Link
-                  href={`/groups/${group.group_id}/my-posts`}
-                  className="inline-block px-6 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-700 font-medium transition-colors"
-                >
-                  Manage Posts
-                </Link>
-                <button
-                  onClick={handleLeaveGroup}
-                  disabled={isJoiningOrLeaving}
-                  className="px-6 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isJoiningOrLeaving ? 'Leaving...' : 'Leave Group'}
                 </button>
               </>
             ) : membershipStatus === 'pending' ? (
@@ -529,6 +525,30 @@ export default function GroupWallPage() {
             );
           })()} {/* End of isGroupAdmin IIFE */}
         </div>
+
+        {/* Me, Message, and Images Links - Navigate to My Posts, Group Chat, and Group Images */}
+        {isMember && (
+          <div className="max-w-4xl mx-auto px-4 mt-8 flex gap-8">
+            <Link
+              href={`/groups/${groupId}/my-posts`}
+              className="inline-block pb-4 px-2 font-medium text-blue-600 border-b-2 border-blue-600 hover:text-blue-700 transition-colors"
+            >
+              Me
+            </Link>
+            <Link
+              href={`/groups/chat/${groupId}`}
+              className="inline-block pb-4 px-2 font-medium text-gray-600 border-b-2 border-transparent hover:text-gray-900 transition-colors"
+            >
+              Message
+            </Link>
+            <Link
+              href={`/groups/${groupId}/images`}
+              className="inline-block pb-4 px-2 font-medium text-gray-600 border-b-2 border-transparent hover:text-gray-900 transition-colors"
+            >
+              Images
+            </Link>
+          </div>
+        )}
       </div>
 
       {/* Posts Section */}
@@ -557,14 +577,8 @@ export default function GroupWallPage() {
                 </Link>
               </div>
             ) : isMember ? (
-              // User is authenticated and is a member - show post form
-              <GroupPostForm
-                groupId={parseInt(groupId)}
-                group={group}
-                onPostCreated={() => {
-                  // Refresh will happen automatically with infinite scroll
-                }}
-              />
+              // User is authenticated and is a member - button in header will open modal
+              null
             ) : (
               // User is authenticated but not a member - show join prompt
               <div className="bg-grey-200 border border-blue-200 rounded-lg p-6 mb-8 text-center">
@@ -873,6 +887,17 @@ export default function GroupWallPage() {
           </div>
         </div>
       )}
+
+      {/* Create Post Modal */}
+      <CreateGroupPostModal
+        isOpen={isCreatePostOpen}
+        onClose={() => setIsCreatePostOpen(false)}
+        groupId={parseInt(groupId)}
+        group={group || undefined}
+        onPostCreated={() => {
+          // Refresh will happen automatically with infinite scroll
+        }}
+      />
     </div>
   );
 }

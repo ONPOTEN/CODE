@@ -17,6 +17,7 @@ export default function MyPostsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [isLeavingGroup, setIsLeavingGroup] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -75,6 +76,20 @@ export default function MyPostsPage() {
     }
   };
 
+  const handleLeaveGroup = async () => {
+    if (!confirm('Are you sure you want to leave this group?')) return;
+
+    try {
+      setIsLeavingGroup(true);
+      await groups.leaveGroup(groupId);
+      router.push('/groups');
+    } catch (err) {
+      console.error('Error leaving group:', err);
+      setError('Failed to leave group');
+      setIsLeavingGroup(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex justify-center items-center bg-white">
@@ -116,9 +131,18 @@ export default function MyPostsPage() {
       <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
-          <Link href={`/groups/${groupId}`} className="text-blue-600 hover:text-blue-700 font-medium">
-            ← Back to {group.group_name}
-          </Link>
+          <div className="flex items-center justify-between mb-4">
+            <Link href={`/groups/${groupId}`} className="text-blue-600 hover:text-blue-700 font-medium">
+              ← Back to {group.group_name}
+            </Link>
+            <button
+              onClick={handleLeaveGroup}
+              disabled={isLeavingGroup}
+              className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isLeavingGroup ? 'Leaving...' : 'Leave Group'}
+            </button>
+          </div>
           <h1 className="text-3xl font-bold text-gray-900 mt-4">My Posts</h1>
           <p className="text-gray-600 mt-2">Manage your posts in this group</p>
         </div>

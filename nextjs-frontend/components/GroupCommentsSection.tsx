@@ -174,6 +174,7 @@ function GroupCommentItem({
 }
 
 export function GroupCommentsSection({ postId, currentUserId, className = '' }: GroupCommentsSectionProps) {
+  const router = useRouter();
   const { user: authUser } = useAuth();
   const { comments, commentLoading, addComment, fetchComments } = useGroupEngagement();
   const [newComment, setNewComment] = useState('');
@@ -219,76 +220,85 @@ export function GroupCommentsSection({ postId, currentUserId, className = '' }: 
   const isLoading = commentLoading.get(postId) || false;
 
   return (
-    <div className={`bg-gray-50 rounded-lg border border-gray-300 p-6 ${className}`}>
-      <h2 className="text-xl font-bold text-gray-900 mb-6">Comments ({postComments.length})</h2>
+    <div id={`group-comments-section-${postId}`} className={`flex flex-col h-full ${className}`}>
+      <h3 className="text-lg font-semibold text-gray-900 mb-4">
+        Comments ({postComments.length})
+      </h3>
 
-      {/* Comment Form */}
-      {authUser ? (
-        <form onSubmit={handleSubmitComment} className="mb-8 pb-8 border-b border-gray-300">
-          <div className="flex gap-4">
-            <div className="flex-shrink-0">
-              <div className="w-10 h-10 bg-blue-400 rounded-full flex items-center justify-center text-gray-900 font-bold">
-                {authUser.display_name?.charAt(0).toUpperCase() || authUser.username?.charAt(0).toUpperCase() || 'U'}
-              </div>
-            </div>
-
-            <div className="flex-1">
-              <textarea
-                value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
-                placeholder={replyingTo ? 'Write a reply...' : 'Share your thoughts...'}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                rows={3}
-                disabled={isSubmitting}
-              />
-              {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
-              <div className="mt-3 flex gap-2">
-                {replyingTo && (
-                  <button
-                    type="button"
-                    onClick={() => setReplyingTo(null)}
-                    className="px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
-                  >
-                    Cancel Reply
-                  </button>
-                )}
-                <button
-                  type="submit"
-                  disabled={isSubmitting || !newComment.trim()}
-                  className="px-4 py-2 text-sm font-medium bg-blue-600 text-gray-900 rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  {isSubmitting ? 'Posting...' : 'Post Comment'}
-                </button>
-              </div>
-            </div>
+      {/* Comments List - Scrollable with bottom padding for fixed form */}
+      <div className="flex-1 overflow-y-auto space-y-2 pb-48">
+        {isLoading ? (
+          <div className="text-center py-8">
+            <div className="inline-block animate-spin">⏳</div>
+            <p className="mt-2 text-gray-600">Loading comments...</p>
           </div>
-        </form>
-      ) : (
-        <div className="mb-8 pb-8 border-b border-gray-300 p-4 bg-white rounded-lg text-center">
-          <p className="text-gray-600 mb-3">
-            Please <Link href="/login" className="text-blue-600 hover:underline font-medium">log in</Link> to comment
-          </p>
-        </div>
-      )}
+        ) : postComments.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            <p>No comments yet. Be the first to comment!</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {postComments.map((comment) => (
+              <GroupCommentItem
+                key={comment.id}
+                comment={comment}
+                postId={postId}
+                currentUserId={currentUserId}
+                onReplyClick={setReplyingTo}
+              />
+            ))}
+          </div>
+        )}
+      </div>
 
-      {/* Comments List */}
-      {isLoading ? (
-        <div className="text-center py-8">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        </div>
-      ) : postComments.length === 0 ? (
-        <p className="text-center text-gray-500 py-8">No comments yet. Be the first to comment!</p>
-      ) : (
-        <div className="space-y-2">
-          {postComments.map((comment) => (
-            <GroupCommentItem
-              key={comment.id}
-              comment={comment}
-              postId={postId}
-              currentUserId={currentUserId}
-              onReplyClick={setReplyingTo}
+      {/* Comment Input - Fixed at Bottom of Viewport */}
+      {authUser ? (
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-300 shadow-lg z-50 p-4 space-y-2">
+          {replyingTo !== null && (
+            <div className="flex items-center gap-2 p-2 bg-blue-50 rounded border border-blue-200">
+              <span className="text-sm text-blue-700">
+                Replying to comment #{replyingTo}
+              </span>
+              <button
+                onClick={() => setReplyingTo(null)}
+                className="text-sm text-blue-500 hover:text-blue-700 underline"
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+
+          <div className="max-w-7xl mx-auto">
+            <textarea
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
+              placeholder={replyingTo ? 'Write a reply...' : 'Write a comment...'}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              rows={3}
+              disabled={isSubmitting}
             />
-          ))}
+            {error && <p className="text-sm text-red-600">{error}</p>}
+
+            <button
+              onClick={handleSubmitComment}
+              disabled={isSubmitting || !newComment.trim()}
+              className="mt-2 px-6 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-600 disabled:opacity-50 font-medium text-sm"
+            >
+              {isSubmitting ? 'Posting...' : 'Post Comment'}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="fixed bottom-0 left-0 right-0 bg-blue-50 border-t border-blue-200 shadow-lg z-50 p-4">
+          <div className="max-w-7xl mx-auto">
+            <p className="text-blue-700 text-sm mb-3">Sign in to comment on this post</p>
+            <button
+              onClick={() => router.push('/login')}
+              className="px-6 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-600 font-medium text-sm"
+            >
+              Login to Comment
+            </button>
+          </div>
         </div>
       )}
     </div>

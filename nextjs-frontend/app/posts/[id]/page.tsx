@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { posts, Post, ApiException } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
@@ -12,14 +12,18 @@ import { AuthorCard } from '@/components/AuthorCard';
 export default function ViewPostPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user } = useAuth();
   const [post, setPost] = useState<Post | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [touchStart, setTouchStart] = useState(0);
+  const [touchEnd, setTouchEnd] = useState(0);
 
   const postId = params.id as string;
+  const shouldScrollToComments = searchParams.get('scrollToComments') === 'true';
 
   useEffect(() => {
     async function fetchPost() {
@@ -73,6 +77,18 @@ export default function ViewPostPage() {
     }
   }, [postId]);
 
+  // Scroll to comments section when shouldScrollToComments is true
+  useEffect(() => {
+    if (shouldScrollToComments && post) {
+      setTimeout(() => {
+        const commentsElement = document.querySelector('[data-comments-section]');
+        if (commentsElement) {
+          commentsElement.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 100);
+    }
+  }, [shouldScrollToComments, post]);
+
   const handleDelete = async () => {
     if (!post) return;
 
@@ -97,9 +113,35 @@ export default function ViewPostPage() {
     }
   };
 
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    setTouchEnd(e.changedTouches[0].clientX);
+    handleSwipe(e);
+  };
+
+  const handleSwipe = (e: React.TouchEvent) => {
+    if (!post?.images || post.images.length <= 1) return;
+
+    const distance = touchStart - touchEnd;
+    const minSwipeDistance = 50; // Minimum distance to trigger swipe
+
+    if (Math.abs(distance) > minSwipeDistance) {
+      if (distance > 0) {
+        // Swiped left - show next image
+        setSelectedImageIndex((prev) => (prev === (post.images?.length || 1) - 1 ? 0 : prev + 1));
+      } else {
+        // Swiped right - show previous image
+        setSelectedImageIndex((prev) => (prev === 0 ? (post.images?.length || 1) - 1 : prev - 1));
+      }
+    }
+  };
+
   if (loading) {
     return (
-      <div className="container mx-auto px-4 py-12">
+      <div className="container mx-auto py-12">
         <div className="max-w-4xl mx-auto">
           <div className="flex justify-center items-center py-20">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -111,7 +153,7 @@ export default function ViewPostPage() {
   //console.log(post.images[1]);
   if (error || !post) {
     return (
-      <div className="container mx-auto px-4 py-12">
+      <div className="container mx-auto py-12">
         <div className="max-w-4xl mx-auto">
           <div className="bg-grey-200 border border-red-200 rounded-lg p-6">
             <h2 className="text-xl font-semibold text-red-900 mb-2">Error</h2>
@@ -131,7 +173,7 @@ export default function ViewPostPage() {
   const isOwner = user?.id === post.id; // You may need to adjust this based on your Post interface
 
   return (
-    <div className="container mx-auto px-4 py-12">
+    <div className="container mx-auto py-12">
       <div className="max-w-4xl mx-auto">
         {/* Back Button */}
         <Link
@@ -155,28 +197,13 @@ export default function ViewPostPage() {
         </Link>
 
         {/* Post Content */}
-        <article className="bg-grey-200 rounded-lg shadow-lg overflow-hidden border border-gray-300">
-          {/* Featured Image */}
-          {(post.featured_image || (post.images && post.images.length > 0)) && (
-            <div className="w-full h-96 bg-blue-500 relative">
-              <img
-                src={post.featured_image || (post.images && post.images.length > 0 ? post.images[0].url : '')}
-                alt={post.title}
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  e.currentTarget.style.display = 'none';
-                }}
-              />
-            </div>
-          )}
-
-          <div className="p-8">
+        <article className="bg-grey-200 rounded-lg shadow-lg overflow-hidden border border-gray-300 w-full">
+          <div className="w-full">
             {/* Header */}
-            <header className="mb-8 pb-6 border-b border-gray-300">
-              <div className="flex items-start justify-between mb-4">
-                <h1 className="text-4xl font-bold text-gray-900 flex-1">{post.title}</h1>
+            <header className="mb-8 pb-6">
+              <div className="flex flex-col md:flex-row items-start justify-between mb-4 gap-4">
                 <span
-                  className={`px-3 py-1 text-sm font-medium rounded-full whitespace-nowrap ml-4 ${
+                  className={`px-3 py-1 text-sm font-medium rounded-full whitespace-nowrap ml-0 md:ml-4 flex-shrink-0 ${
                     post.status === 'publish'
                       ? 'bg-blue-500 text-green-800'
                       : post.status === 'draft'
@@ -198,131 +225,59 @@ export default function ViewPostPage() {
                     showAvatar={false}
                   />
                 </div>
-              )}
-
-              {/* Post Metadata */}
-              <div className="space-y-3">
-                <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
-                  <span className="flex items-center gap-1">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
-                      />
-                    </svg>
-                    <span className="font-medium">Type:</span> {post.type}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                      />
-                    </svg>
-                    <span className="font-medium">Posted:</span>{' '}
-                    {new Date(post.created_at).toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </span>
-                </div>
-
-                {post.updated_at !== post.created_at && (
-                  <div className="flex items-center gap-1 text-sm text-gray-500">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                      />
-                    </svg>
-                    <span className="font-medium">Last Updated:</span>{' '}
-                    {new Date(post.updated_at).toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </div>
-                )}
-
-                {post.slug && (
-                  <div className="flex items-center gap-1 text-sm text-gray-500">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
-                      />
-                    </svg>
-                    <span className="font-medium">Slug:</span>{' '}
-                    <code className="bg-blue-500 px-2 py-0.5 rounded">{post.slug}</code>
-                  </div>
-                )}
-
-                <div className="flex items-center gap-1 text-sm text-gray-500">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"
-                    />
-                  </svg>
-                  <span className="font-medium">Post ID:</span> {post.id}
-                </div>
-              </div>
+              )}            
             </header>
 
-            {/* Excerpt */}
-            {post.excerpt && (
-              <div className="mb-8 p-4 bg-grey-200 border-l-4 border-blue-500 rounded">
-                <p className="text-sm font-semibold text-blue-900 mb-1">Summary</p>
-                <p className="text-lg text-gray-700 italic">{post.excerpt}</p>
-              </div>
-            )}
-
-            {/* Additional Images Gallery */}
+            {/* Additional Images Carousel */}
             {post.images && post.images.length > 0 && (
               <div className="mb-8">
-                <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                {/* Main Carousel */}
+                <div
+                  className="relative bg-gray-900 rounded-lg overflow-hidden mb-4 cursor-grab active:cursor-grabbing"
+                  onTouchStart={handleTouchStart}
+                  onTouchEnd={handleTouchEnd}
+                >
+                  <div className="aspect-video bg-black flex items-center justify-center">
+                    <img
+                      src={typeof post.images[selectedImageIndex] === 'string' ? post.images[selectedImageIndex] : post.images[selectedImageIndex]?.url || ''}
+                      alt={`${post.title} - Image ${selectedImageIndex + 1}`}
+                      className="w-full h-full object-contain"
+                      onError={(e) => {
+                        e.currentTarget.src = '';
+                        e.currentTarget.style.display = 'none';
+                      }}
                     />
-                  </svg>
-                  Image Gallery ({post.images.length})
-                </h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  </div>
+
+
+                  {/* Image Counter */}
+                  <div className="absolute bottom-4 right-4 bg-black bg-opacity-75 text-white px-3 py-1 rounded-full text-sm font-medium">
+                    {selectedImageIndex + 1} / {post.images?.length || 0}
+                  </div>
+                </div>
+
+                {/* Thumbnail Strip */}
+                <div className="flex gap-2 overflow-x-auto pb-2">
                   {post.images.map((image, index) => (
-                    <div
+                    <button
                       key={image.id || index}
-                      className="relative aspect-square bg-blue-500 rounded-lg overflow-hidden group cursor-pointer"
                       onClick={() => setSelectedImageIndex(index)}
+                      className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
+                        selectedImageIndex === index
+                          ? 'border-blue-500 opacity-100'
+                          : 'border-gray-300 opacity-60 hover:opacity-100'
+                      }`}
                     >
                       <img
                         src={typeof image === 'string' ? image : image.url || ''}
-                        alt={`${post.title} - Image ${index + 1}`}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                        alt={`${post.title} - Thumbnail ${index + 1}`}
+                        className="w-full h-full object-cover"
                         onError={(e) => {
                           e.currentTarget.src = '';
                           e.currentTarget.style.display = 'none';
                         }}
                       />
-                    </div>
+                    </button>
                   ))}
                 </div>
               </div>
@@ -340,37 +295,15 @@ export default function ViewPostPage() {
 
             {/* Content */}
             <div className="mb-8">
-              <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                  />
-                </svg>
-                Content
-              </h3>
               <div className="prose prose-lg max-w-none">
-                <div className="text-gray-800 whitespace-pre-wrap leading-relaxed bg-white p-6 rounded-lg border border-gray-300">
+                <div className="text-gray-800 whitespace-pre-wrap leading-relaxed bg-white rounded-lg border border-gray-300">
                   {post.content || 'No content available.'}
                 </div>
               </div>
             </div>
 
             {/* Engagement Buttons */}
-            <div className="mb-8 p-6 border-t border-gray-300">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M14 10h4.764a2 2 0 011.789 2.894l-3.646 7.23a2 2 0 01-1.789 1.106H2a2 2 0 01-2-2V8a2 2 0 012-2h1.657a2 2 0 011.414.586l2.828-2.829a2 2 0 112.828 2.829l-.36.36h5.663z"
-                  />
-                </svg>
-                Engagement
-              </h3>
+            <div className="mb-8 border-t border-gray-300">
               <EngagementButtons
                 postId={post.id}
                 postTitle={post.title}
@@ -382,13 +315,13 @@ export default function ViewPostPage() {
             </div>
 
             {/* Comments Section */}
-            <div className="mb-8 p-6 border-t border-gray-300">
+            <div className="mb-8 border-t border-gray-300 flex flex-col max-h-[600px]" data-comments-section>
               <CommentsSection postId={post.id} currentUserId={user?.id} className="mt-6" />
             </div>
 
             {/* Action Buttons */}
             {isOwner && (
-              <div className="flex gap-3 p-6 border-t border-gray-300">
+              <div className="flex gap-3 border-t border-gray-300">
                 <Link
                   href={`/posts/edit/${post.id}`}
                   className="px-6 py-2 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-lg font-medium transition-colors"
@@ -406,22 +339,6 @@ export default function ViewPostPage() {
             )}
           </div>
         </article>
-
-        {/* Related Actions */}
-        <div className="mt-8 flex gap-4 justify-center">
-          <Link
-            href="/posts/create"
-            className="px-6 py-3 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-lg font-medium transition-colors"
-          >
-            Create New Post
-          </Link>
-          <Link
-            href="/my-posts"
-            className="px-6 py-3 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-lg font-medium transition-colors"
-          >
-            View My Posts
-          </Link>
-        </div>
       </div>
     </div>
   );

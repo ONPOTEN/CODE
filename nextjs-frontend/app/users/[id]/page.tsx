@@ -256,9 +256,11 @@ export default function UserProfilePage() {
           {/* Profile Header */}
           <div className="flex items-start gap-6 mb-6 pb-6 border-b border-gray-300">
             {/* Avatar */}
-            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-gray-900 text-3xl font-bold">
-              {user.name?.charAt(0).toUpperCase() || user.username?.charAt(0).toUpperCase()}
-            </div>
+            <img
+              src={user.avatar || '/default-avatar.png'}
+              alt={user.name}
+              className="w-24 h-24 rounded-full object-cover border-2 border-gray-300"
+            />
 
             {/* User Info */}
             <div className="flex-1">
@@ -266,96 +268,7 @@ export default function UserProfilePage() {
                 <div>
                   <h1 className="text-3xl font-bold text-gray-900 mb-2">{user.name}</h1>
                   <p className="text-gray-600 text-lg mb-1">@{user.username}</p>
-                  <p className="text-gray-500 text-sm">User ID: {user.id}</p>
                 </div>
-
-                {/* Action Buttons */}
-                {!isOwnProfile && currentUser && (
-                  <div className="flex flex-col gap-3">
-                    {user.is_friend ? (
-                      // Already friends - show unfriend button
-                      <button
-                        onClick={handleUnfriend}
-                        disabled={friendActionLoading}
-                        className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7a4 4 0 11-8 0 4 4 0 018 0zM9 14a6 6 0 00-6 6v1h12v-1a6 6 0 00-6-6zM21 12h-6" />
-                        </svg>
-                        {friendActionLoading ? 'Processing...' : 'Unfriend'}
-                      </button>
-                    ) : user.friend_request_received ? (
-                      // Received friend request - show accept/reject buttons
-                      <div className="flex gap-2">
-                        <button
-                          onClick={handleAcceptFriendRequest}
-                          disabled={friendActionLoading}
-                          className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                          </svg>
-                          {friendActionLoading ? 'Processing...' : 'Accept'}
-                        </button>
-                        <button
-                          onClick={handleRejectFriendRequest}
-                          disabled={friendActionLoading}
-                          className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                          {friendActionLoading ? 'Processing...' : 'Reject'}
-                        </button>
-                      </div>
-                    ) : user.friend_request_sent ? (
-                      // Friend request already sent - show pending button
-                      <button
-                        disabled
-                        className="flex items-center gap-2 px-4 py-2 bg-blue-400 text-gray-900 rounded-lg font-medium cursor-not-allowed"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        Request Pending
-                      </button>
-                    ) : (
-                      // Not friends - show add friend button
-                      <button
-                        onClick={handleSendFriendRequest}
-                        disabled={friendActionLoading}
-                        className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                        </svg>
-                        {friendActionLoading ? 'Sending...' : 'Add Friend'}
-                      </button>
-                    )}
-                    {/* Post on Wall Button */}
-                    <button
-                      onClick={() => setShowShareModal(true)}
-                      disabled={friendActionLoading}
-                      className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                      </svg>
-                      Post on Wall
-                    </button>
-                    {/* Create New Post on Wall Button */}
-                    <button
-                      onClick={() => setShowCreateModal(true)}
-                      disabled={friendActionLoading}
-                      className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                      </svg>
-                      Create Post
-                    </button>
-                  </div>
-                )}
               </div>
 
               {/* Friendship Status Badge */}
@@ -370,55 +283,146 @@ export default function UserProfilePage() {
             </div>
           </div>
 
-          {/* User Details */}
-          <div className="space-y-4">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Profile Information</h2>
-
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="bg-white p-4 rounded-lg">
-                <div className="flex items-center gap-2 mb-2">
-                  <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                  <span className="font-medium text-gray-700">Username</span>
-                </div>
-                <p className="text-gray-900 ml-7">{user.username}</p>
-              </div>
-
-              <div className="bg-white p-4 rounded-lg">
-                <div className="flex items-center gap-2 mb-2">
-                  <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          {/* Action Buttons */}
+          {!isOwnProfile && currentUser && (
+            <div className="flex flex-col gap-6 w-full mb-8">
+              {/* First row: Add Friend, Message, Block buttons */}
+              <div className="flex gap-3">
+                {user.is_friend ? (
+                  // Already friends - show unfriend button
+                  <button
+                    onClick={handleUnfriend}
+                    disabled={friendActionLoading}
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-1"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7a4 4 0 11-8 0 4 4 0 018 0zM9 14a6 6 0 00-6 6v1h12v-1a6 6 0 00-6-6zM21 12h-6" />
+                    </svg>
+                    {friendActionLoading ? 'Processing...' : 'Unfriend'}
+                  </button>
+                ) : user.friend_request_received ? (
+                  // Received friend request - show accept/reject buttons
+                  <>
+                    <button
+                      onClick={handleAcceptFriendRequest}
+                      disabled={friendActionLoading}
+                      className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-1"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      {friendActionLoading ? 'Processing...' : 'Accept'}
+                    </button>
+                    <button
+                      onClick={handleRejectFriendRequest}
+                      disabled={friendActionLoading}
+                      className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-1"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                      {friendActionLoading ? 'Processing...' : 'Reject'}
+                    </button>
+                  </>
+                ) : user.friend_request_sent ? (
+                  // Friend request already sent - show pending button
+                  <button
+                    disabled
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-400 text-gray-900 rounded-lg font-medium cursor-not-allowed flex-1"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Request Pending
+                  </button>
+                ) : (
+                  // Not friends - show add friend button
+                  <button
+                    onClick={handleSendFriendRequest}
+                    disabled={friendActionLoading}
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-1"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                    </svg>
+                    {friendActionLoading ? 'Sending...' : 'Add Friend'}
+                  </button>
+                )}
+                {/* Message Button */}
+                <button
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-1"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                   </svg>
-                  <span className="font-medium text-gray-700">Email</span>
-                </div>
-                <p className="text-gray-900 ml-7">{user.email}</p>
+                  Message
+                </button>
+                {/* Block Button */}
+                <button
+                  className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-700 text-gray-900 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-1"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
+                  </svg>
+                  Block
+                </button>
               </div>
 
-              <div className="bg-white p-4 rounded-lg">
-                <div className="flex items-center gap-2 mb-2">
-                  <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              {/* Second row: Post on Wall and Create Post buttons */}
+              <div className="flex gap-3">
+                {/* Post on Wall Button */}
+                <button
+                  onClick={() => setShowShareModal(true)}
+                  disabled={friendActionLoading}
+                  className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-1"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                  </svg>
+                  Post on Wall
+                </button>
+                {/* Create New Post on Wall Button */}
+                <button
+                  onClick={() => setShowCreateModal(true)}
+                  disabled={friendActionLoading}
+                  className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-1"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Create Post
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* User Details */}
+          <div className="space-y-1">
+            <div className="grid md:grid-cols-2 gap-2">
+              <div className="bg-white p-3 rounded-lg">
+                <div className="flex items-center gap-2 mb-1">
+                  <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                  <span className="font-medium text-gray-700 text-sm">Email</span>
+                </div>
+                <p className="text-gray-900 ml-6 text-sm">{user.email}</p>
+              </div>
+
+              <div className="bg-white p-3 rounded-lg">
+                <div className="flex items-center gap-2 mb-1">
+                  <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
-                  <span className="font-medium text-gray-700">Member Since</span>
+                  <span className="font-medium text-gray-700 text-sm">Member Since</span>
                 </div>
-                <p className="text-gray-900 ml-7">
+                <p className="text-gray-900 ml-6 text-sm">
                   {new Date(user.created_at).toLocaleDateString('en-US', {
                     year: 'numeric',
                     month: 'long',
                     day: 'numeric',
                   })}
                 </p>
-              </div>
-
-              <div className="bg-white p-4 rounded-lg">
-                <div className="flex items-center gap-2 mb-2">
-                  <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
-                  </svg>
-                  <span className="font-medium text-gray-700">User ID</span>
-                </div>
-                <p className="text-gray-900 ml-7">{user.id}</p>
               </div>
             </div>
           </div>

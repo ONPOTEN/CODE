@@ -9,6 +9,7 @@ import { formatTime } from '@/lib/utils';
 import VideoCallButton from './VideoCallButton';
 import VideoChatModal from './VideoChatModal';
 import IncomingCallNotification from './IncomingCallNotification';
+import { GroupInvitationMessage } from '@/components/GroupInvitationMessage';
 
 interface ChatWindowProps {
   conversation: Conversation;
@@ -510,7 +511,17 @@ export default function ChatWindow({ conversation, onNewMessage }: ChatWindowPro
                     {message.sender.name}
                   </p>
                 )}
-                <p className="break-words">{message.message}</p>
+                {message.message.includes('[INVITATION]') ? (
+                  <GroupInvitationMessage
+                    messageContent={message.message}
+                    userId={user?.id}
+                    onActionComplete={() => {
+                      console.log('Invitation action completed');
+                    }}
+                  />
+                ) : (
+                  <p className="break-words">{message.message}</p>
+                )}
                 <div className="flex flex-col gap-1 mt-1">
                   {(message.host_room || message.remote_room) && (
                     <p

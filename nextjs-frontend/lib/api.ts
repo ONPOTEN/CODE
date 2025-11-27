@@ -468,11 +468,18 @@ export const posts = {
   },
 
   getById: async (id: number) => {
-    return apiRequest<Post>(`/posts/${id}`);
+    const response = await apiRequest<any>(`/posts/${id}`);
+    // Handle wrapped response format (data property)
+    console.log('[posts.getById] Raw response:', response);
+    const post = response.data || response;
+    console.log('[posts.getById] Extracted post:', post);
+    return post as Post;
   },
 
   getBySlug: async (slug: string) => {
-    return apiRequest<Post>(`/posts/slug/${slug}`);
+    const response = await apiRequest<any>(`/posts/slug/${slug}`);
+    const post = response.data || response;
+    return post as Post;
   },
 
   getByType: async (type: string, params?: { per_page?: number; page?: number }) => {
@@ -868,6 +875,68 @@ export const groups = {
   removeMember: async (groupId: number, userId: number): Promise<{ message: string }> => {
     return apiRequest(`/groups/${groupId}/members/${userId}`, {
       method: 'DELETE',
+    });
+  },
+
+  // Group Chat Messages
+  saveMessage: async (groupId: number, message: string, userId: number): Promise<{ data: any; message: string }> => {
+    console.log('[API] saveMessage called:', {
+      endpoint: `/groups/${groupId}/messages`,
+      method: 'POST',
+      groupId,
+      userId,
+      messageLength: message.length,
+      messagePreview: message.substring(0, 50),
+    });
+
+    try {
+      const response = await apiRequest(`/groups/${groupId}/messages`, {
+        method: 'POST',
+        body: JSON.stringify({
+          message,
+          user_id: userId,
+        }),
+      });
+
+      console.log('[API] saveMessage success:', {
+        groupId,
+        userId,
+        responseMessageId: response?.data?.id,
+        responseStatus: response?.message,
+      });
+
+      return response;
+    } catch (error: any) {
+      console.error('[API] saveMessage failed:', {
+        groupId,
+        userId,
+        errorMessage: error?.message,
+        errorStatus: error?.status,
+        errorResponse: error?.response,
+      });
+      throw error;
+    }
+  },
+
+  getMessages: async (groupId: number, params?: { per_page?: number; page?: number }): Promise<PaginatedResponse<any>> => {
+    const searchParams = new URLSearchParams();
+    if (params?.per_page) searchParams.append('per_page', params.per_page.toString());
+    if (params?.page) searchParams.append('page', params.page.toString());
+
+    const query = searchParams.toString() ? `?${searchParams}` : '';
+    return apiRequest<PaginatedResponse<any>>(`/groups/${groupId}/messages${query}`);
+  },
+
+  deleteMessage: async (groupId: number, messageId: number): Promise<{ message: string }> => {
+    return apiRequest(`/groups/${groupId}/messages/${messageId}`, {
+      method: 'DELETE',
+    });
+  },
+
+  updateMessage: async (groupId: number, messageId: number, message: string): Promise<{ data: any; message: string }> => {
+    return apiRequest(`/groups/${groupId}/messages/${messageId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ message }),
     });
   },
 };

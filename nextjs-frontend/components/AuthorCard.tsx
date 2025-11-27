@@ -1,6 +1,9 @@
 'use client';
 
 import Link from 'next/link';
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { friends, ApiException } from '@/lib/api';
 
 interface Author {
   id: number;
@@ -11,6 +14,8 @@ interface Author {
   location?: string;
   company?: string;
   role?: string;
+  is_friend?: boolean;
+  friend_request_sent?: boolean;
 }
 
 interface AuthorCardProps {
@@ -21,9 +26,33 @@ interface AuthorCardProps {
 }
 
 export function AuthorCard({ author, createdAt, compact = false, showAvatar = false }: AuthorCardProps) {
+  const { user: currentUser, isAuthenticated } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const [requestSent, setRequestSent] = useState(author?.friend_request_sent || false);
+  const [isFriend, setIsFriend] = useState(author?.is_friend || false);
+
   if (!author) {
     return null;
   }
+
+  // Fetch friendship status on mount or when author changes
+  useEffect(() => {
+    if (!isAuthenticated || !currentUser || currentUser.id === author.id) {
+      return;
+    }
+
+    const fetchFriendshipStatus = async () => {
+      try {
+        const status = await friends.getStatus(author.id);
+        setIsFriend(status.is_friend);
+        setRequestSent(status.friend_request_sent);
+      } catch (err) {
+        console.error('Failed to fetch friendship status:', err);
+      }
+    };
+
+    fetchFriendshipStatus();
+  }, [author.id, isAuthenticated, currentUser]);
 
   const authorName = author.display_name || author.username || author.user_nicename || 'Anonymous';
 
@@ -34,6 +63,38 @@ export function AuthorCard({ author, createdAt, compact = false, showAvatar = fa
       day: 'numeric',
     });
   };
+
+  const handleAddFriend = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!isAuthenticated || !currentUser) {
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await friends.sendRequest(author.id);
+      setRequestSent(true);
+    } catch (err) {
+      if (err instanceof ApiException) {
+        // Check if error is "already friends" - if so, hide the button
+        if (err.message.includes('already friends')) {
+          setRequestSent(true);
+        }
+        console.error('Failed to send friend request:', err.message);
+      } else {
+        console.error('Failed to send friend request:', err);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const shouldShowAddFriendButton =
+    isAuthenticated &&
+    currentUser &&
+    currentUser.id !== author.id &&
+    !isFriend &&
+    !requestSent;
 
   if (compact) {
     return (
@@ -46,13 +107,24 @@ export function AuthorCard({ author, createdAt, compact = false, showAvatar = fa
           />
         )}
         <div className="flex-1 min-w-0">
-          <Link
-            href={`/users/${author.id}`}
-            className="font-semibold text-gray-900 hover:text-blue-600 hover:underline transition-colors truncate block"
-            title={authorName}
-          >
-            {authorName}
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link
+              href={`/users/${author.id}`}
+              className="font-semibold text-gray-900 hover:text-blue-600 hover:underline transition-colors truncate"
+              title={authorName}
+            >
+              {authorName}
+            </Link>
+            {shouldShowAddFriendButton && (
+              <button
+                onClick={handleAddFriend}
+                disabled={isLoading}
+                className="flex-shrink-0 px-2 py-1 text-xs bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+              >
+                {isLoading ? '...' : 'Add Friend'}
+              </button>
+            )}
+          </div>
           <p className="text-xs text-gray-500">{formatDate(createdAt)}</p>
         </div>
       </div>
@@ -71,17 +143,23 @@ export function AuthorCard({ author, createdAt, compact = false, showAvatar = fa
         </Link>
       )}
       <div className="flex-1 min-w-0">
-        <Link
-          href={`/users/${author.id}`}
-          className="font-semibold text-gray-900 hover:text-blue-600 hover:underline transition-colors inline-block"
-        >
-          {authorName}
-        </Link>
-        {author.role && (
-          <span className="ml-2 text-xs font-medium px-2 py-1 bg-blue-100 text-blue-700 rounded-full">
-            {author.role}
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          <Link
+            href={`/users/${author.id}`}
+            className="font-semibold text-gray-900 hover:text-blue-600 hover:underline transition-colors"
+          >
+            {authorName}
+          </Link>
+          {shouldShowAddFriendButton && (
+            <button
+              onClick={handleAddFriend}
+              disabled={isLoading}
+              className="flex-shrink-0 px-3 py-1 text-sm bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+            >
+              {isLoading ? '...' : 'Add Friend'}
+            </button>
+          )}
+        </div>
         {(author.location || author.company) && (
           <p className="text-sm text-gray-600 mt-1">
             {author.location && <span>{author.location}</span>}

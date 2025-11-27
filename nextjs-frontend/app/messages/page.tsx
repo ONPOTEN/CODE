@@ -237,7 +237,7 @@ export default function MessagesPage() {
 
   const handleSelectConversation = (conversationId: number) => {
     console.log('[MessagesPage] handleSelectConversation called with ID:', conversationId);
-    setSelectedConversationId(conversationId);
+    router.push(`/messages/${conversationId}`);
   };
 
   const handleNewMessage = useCallback(() => {
@@ -261,14 +261,6 @@ export default function MessagesPage() {
     });
   }, [selectedConversationId]);
 
-  if (isLoading || loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-gray-600">Loading...</div>
-      </div>
-    );
-  }
-
   if (!isAuthenticated) {
     return null;
   }
@@ -280,43 +272,20 @@ export default function MessagesPage() {
   const isSelectedShopRoom = selectedConversation?.room_name && selectedConversation.room_name.includes('-shop');
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-6">Messages</h1>
+    <div className="container mx-auto px-4 py-8 bg-white">
+      {/* Header */}
+      <div className="px-6 py-4 border-b border-gray-200 bg-white">
+        <h1 className="text-2xl font-bold text-gray-900">Messages</h1>
+      </div>
 
-      <div className="bg-grey-200 rounded-lg shadow-lg overflow-hidden" style={{ height: 'calc(100vh - 200px)' }}>
-        <div className="flex h-full">
-          {/* Conversations List */}
-          <div className="w-1/3 border-r border-gray-300 overflow-y-auto">
-            <ConversationList
-              conversations={conversations}
-              selectedConversationId={selectedConversationId}
-              onSelectConversation={handleSelectConversation}
-            />
-          </div>
-
-          {/* Chat Window */}
-          <div className="w-2/3 flex flex-col">
-            {selectedConversation ? (
-              <>
-                {isSelectedShopRoom && (
-                  <div className="px-6 py-3 bg-grey-200 border-b border-blue-200">
-                    <p className="text-sm text-blue-800">
-                      🏪 <strong>Shop Message Thread</strong> - Room: {selectedConversation.room_name}
-                    </p>
-                  </div>
-                )}
-                <ChatWindow
-                  conversation={selectedConversation}
-                  onNewMessage={handleNewMessage}
-                />
-              </>
-            ) : (
-              <div className="flex items-center justify-center h-full text-gray-500">
-                Select a conversation to start messaging
-              </div>
-            )}
-          </div>
-        </div>
+      {/* Conversations List */}
+      <div className="flex-1 overflow-y-auto">
+        <ConversationList
+          conversations={conversations}
+          selectedConversationId={selectedConversationId}
+          onSelectConversation={handleSelectConversation}
+          isLoading={loading}
+        />
       </div>
     </div>
   );
