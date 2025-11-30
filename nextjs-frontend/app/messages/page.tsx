@@ -50,6 +50,40 @@ export default function MessagesPage() {
     }
   }, [searchParams]);
 
+  // Handle room parameter - find conversation by room name and redirect
+  useEffect(() => {
+    const roomName = searchParams.get('room');
+    const withUserId = searchParams.get('with');
+
+    if (roomName && conversations.length > 0) {
+      // Find conversation by room name
+      const conversation = conversations.find(c => c.room_name === roomName);
+      if (conversation) {
+        // Redirect to conversation page
+        router.push(`/messages/${conversation.id}`);
+      }
+    } else if (withUserId && isAuthenticated && !loading) {
+      // Create or get conversation with user and redirect
+      const createAndRedirect = async () => {
+        try {
+          const conversation = await chat.getOrCreateConversation(parseInt(withUserId, 10));
+          // Find the conversation in our list or use the ID from response
+          const existingConv = conversations.find(c => c.room_name === conversation.room_name);
+          if (existingConv) {
+            router.push(`/messages/${existingConv.id}`);
+          } else {
+            // Reload conversations and then redirect
+            await loadConversations();
+            router.push(`/messages?room=${conversation.room_name}`);
+          }
+        } catch (err) {
+          console.error('Error creating conversation:', err);
+        }
+      };
+      createAndRedirect();
+    }
+  }, [searchParams, conversations, isAuthenticated, loading, router]);
+
   // Listen for incoming messages and update conversation list
   useEffect(() => {
     const handleNewMessage = (message: any) => {

@@ -163,10 +163,10 @@ export default function GroupChatPage() {
       });
 
       console.log('[Chat Debug] Message history response received:', {
-        totalMessages: response.pagination?.total || response.data?.length,
-        perPage: response.pagination?.per_page,
-        currentPage: response.pagination?.current_page,
-        lastPage: response.pagination?.last_page,
+        totalMessages: response.meta?.total || response.data?.length,
+        perPage: response.meta?.per_page,
+        currentPage: response.meta?.current_page,
+        lastPage: response.meta?.last_page,
         dataCount: response.data?.length,
       });
 

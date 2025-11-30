@@ -5,7 +5,7 @@
  * Features: Real-time updates, nested replies, edit/delete functionality
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEngagement } from '@/contexts/EngagementContext';
@@ -76,9 +76,17 @@ function CommentItem({
     >
       {/* Avatar */}
       <div className="flex-shrink-0">
-        <div className="w-8 h-8 bg-blue-400 rounded-full flex items-center justify-center text-gray-900 text-sm font-bold">
-          {comment.author?.name?.charAt(0).toUpperCase() || 'U'}
-        </div>
+        {comment.author?.avatar ? (
+          <img
+            src={comment.author.avatar}
+            alt={comment.author?.name || comment.author_name}
+            className="w-8 h-8 rounded-full object-cover"
+          />
+        ) : (
+          <div className="w-8 h-8 bg-blue-400 rounded-full flex items-center justify-center text-gray-900 text-sm font-bold">
+            {comment.author?.name?.charAt(0).toUpperCase() || 'U'}
+          </div>
+        )}
       </div>
 
       {/* Comment Content */}
@@ -184,6 +192,9 @@ export function CommentsSection({
   const [replyingTo, setReplyingTo] = useState<number | null>(null);
   const [isPosting, setIsPosting] = useState(false);
   const [page, setPage] = useState(1);
+  const [touchStart, setTouchStart] = useState(0);
+  const [touchEnd, setTouchEnd] = useState(0);
+  const commentsListRef = useRef<HTMLDivElement>(null);
 
   const postComments = comments.get(postId) || [];
   const isLoadingComments = commentLoading.has(postId);
@@ -194,6 +205,32 @@ export function CommentsSection({
       fetchComments(postId, page);
     }
   }, [postId]);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStart(e.targetTouches[0].clientY);
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    setTouchEnd(e.changedTouches[0].clientY);
+    handleSwipeComments();
+  };
+
+  const handleSwipeComments = () => {
+    if (!commentsListRef.current) return;
+
+    const distance = touchStart - touchEnd;
+    const minSwipeDistance = 50;
+
+    if (Math.abs(distance) > minSwipeDistance) {
+      if (distance > 0) {
+        // Swiped up - scroll down
+        commentsListRef.current.scrollTop += 80;
+      } else {
+        // Swiped down - scroll up
+        commentsListRef.current.scrollTop -= 80;
+      }
+    }
+  };
 
   const handlePostComment = async () => {
     if (!isAuthenticated) {
@@ -230,7 +267,12 @@ export function CommentsSection({
       </h3>
 
       {/* Comments List - Scrollable with bottom padding for fixed form */}
-      <div className="flex-1 overflow-y-auto space-y-2 pb-48">
+      <div
+        ref={commentsListRef}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        className="max-h-[calc(5*80px)] overflow-y-auto space-y-2 pb-48"
+      >
         {isLoadingComments && postComments.length === 0 ? (
           <div className="text-center py-8">
             <div className="inline-block animate-spin">⏳</div>
@@ -270,25 +312,11 @@ export function CommentsSection({
             </div>
           ))
         )}
-
-        {/* Load More Button */}
-        {postComments.length > 0 && postComments.length % 15 === 0 && (
-          <button
-            onClick={() => {
-              setPage(page + 1);
-              fetchComments(postId, page + 1);
-            }}
-            disabled={isLoadingComments}
-            className="w-full py-2 text-blue-500 hover:text-blue-700 font-medium text-sm disabled:opacity-50"
-          >
-            {isLoadingComments ? 'Loading...' : 'Load More Comments'}
-          </button>
-        )}
       </div>
 
       {/* Comment Input - Fixed at Bottom of Viewport */}
       {isAuthenticated ? (
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-300 shadow-lg z-50 p-4 space-y-2">
+        <div className="fixed bottom-[50px] left-0 right-0 bg-white border-t border-gray-300 shadow-lg z-50 p-4 space-y-2">
           {replyingTo !== null && (
             <div className="flex items-center gap-2 p-2 bg-blue-50 rounded border border-blue-200">
               <span className="text-sm text-blue-700">
@@ -304,25 +332,90 @@ export function CommentsSection({
           )}
 
           <div className="max-w-7xl mx-auto">
-            <textarea
-              value={commentText}
-              onChange={(e) => setCommentText(e.target.value)}
-              placeholder="Write a comment..."
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-              rows={3}
-            />
+            <div className="flex gap-2">
+              <textarea
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                placeholder="Write a comment..."
+                className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                rows={3}
+              />
 
-            <button
-              onClick={handlePostComment}
-              disabled={isPosting || !commentText.trim()}
-              className="mt-2 px-6 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-600 disabled:opacity-50 font-medium text-sm"
-            >
-              {isPosting ? 'Posting...' : 'Post Comment'}
-            </button>
+              <button
+                onClick={handlePostComment}
+                disabled={isPosting || !commentText.trim()}
+                className="px-4 py-3 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-600 disabled:opacity-50 font-medium text-sm flex items-center gap-2 flex-shrink-0 h-fit"
+                title="Post comment"
+              >
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M16.6915026,12.4744748 L3.50612381,13.2599618 C3.19218622,13.2599618 3.03521743,13.4170592 3.03521743,13.5741566 L1.15159189,20.0151496 C0.8376543,20.8006365 0.99,21.89 1.77946707,22.52 C2.41,22.99 3.50612381,23.1 4.13399899,22.8429026 L21.714504,14.0454487 C22.6563168,13.5741566 23.1272231,12.6315722 22.9702544,11.6889879 L4.13399899,1.16151496 C3.34915502,0.9 2.40734225,1.00636533 1.77946707,1.4776575 C0.994623095,2.10604706 0.837654326,3.0486314 1.15159189,3.99047963 L3.03521743,10.4314727 C3.03521743,10.5885701 3.34915502,10.7456675 3.50612381,10.7456675 L16.6915026,11.5311544 C16.6915026,11.5311544 17.1624089,11.5311544 17.1624089,12.0024465 C17.1624089,12.4744748 16.6915026,12.4744748 16.6915026,12.4744748 Z"/>
+                </svg>
+                {isPosting ? '...' : ''}
+              </button>
+            </div>
+
+            {/* Facebook-like action icons */}
+            <div className="flex items-center gap-1 mt-2 px-2">
+              {/* Camera/Photo icon */}
+              <button
+                type="button"
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                title="Add photo"
+              >
+                <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </button>
+
+              {/* Emoji icon */}
+              <button
+                type="button"
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                title="Add emoji"
+              >
+                <svg className="w-5 h-5 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </button>
+
+              {/* GIF icon */}
+              <button
+                type="button"
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                title="Add GIF"
+              >
+                <svg className="w-5 h-5 text-purple-500" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9.5 8.5c0 .8-.7 1.5-1.5 1.5H7v2H5.5V9H8c.8 0 1.5.7 1.5 1.5v1zm5 2c0 .8-.7 1.5-1.5 1.5h-2.5V9H13c.8 0 1.5.7 1.5 1.5v3zm4-3H17v1h1.5v1.5H17v2h-1.5V9h3v1.5zM8 10.5h-.5v1H8v-1zm5 0h-.5v3h.5v-3z"/>
+                </svg>
+              </button>
+
+              {/* Sticker icon */}
+              <button
+                type="button"
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                title="Add sticker"
+              >
+                <svg className="w-5 h-5 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </button>
+
+              {/* @ Mention icon */}
+              <button
+                type="button"
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                title="Mention someone"
+              >
+                <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
       ) : (
-        <div className="fixed bottom-0 left-0 right-0 bg-blue-50 border-t border-blue-200 shadow-lg z-50 p-4">
+        <div className="fixed bottom-[50px] left-0 right-0 bg-blue-50 border-t border-blue-200 shadow-lg z-50 p-4">
           <div className="max-w-7xl mx-auto">
             <p className="text-blue-700 text-sm mb-3">Sign in to comment on this post</p>
             <button

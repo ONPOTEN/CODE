@@ -19,6 +19,7 @@ interface GroupEngagementButtonsProps {
   className?: string;
   showLabels?: boolean;
   compact?: boolean;
+  onCommentClick?: () => void;
 }
 
 export function GroupEngagementButtons({
@@ -27,6 +28,7 @@ export function GroupEngagementButtons({
   className = '',
   showLabels = true,
   compact = false,
+  onCommentClick,
 }: GroupEngagementButtonsProps) {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
@@ -182,9 +184,13 @@ export function GroupEngagementButtons({
       {/* Comments Button */}
       <button
         onClick={() => {
-          const commentsSection = document.getElementById(`group-comments-section-${postId}`);
-          if (commentsSection) {
-            commentsSection.scrollIntoView({ behavior: 'smooth' });
+          if (onCommentClick) {
+            onCommentClick();
+          } else {
+            const commentsSection = document.getElementById(`group-comments-section-${postId}`);
+            if (commentsSection) {
+              commentsSection.scrollIntoView({ behavior: 'smooth' });
+            }
           }
         }}
         className={`${baseButtonClasses} bg-gray-100 text-gray-700 hover:bg-gray-200`}

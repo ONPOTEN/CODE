@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import UserSearchAutocomplete from '@/components/UserSearchAutocomplete';
-import { friends, FriendRequest } from '@/lib/api';
+import { friends, FriendRequest, users } from '@/lib/api';
 
 export default function ProfilePage() {
   const { user, isAuthenticated, isLoading, logout } = useAuth();
@@ -13,12 +13,39 @@ export default function ProfilePage() {
   const [pendingRequests, setPendingRequests] = useState<FriendRequest[]>([]);
   const [requestsLoading, setRequestsLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<number | null>(null);
+  const [profileData, setProfileData] = useState<any>(null);
+  const [profileLoading, setProfileLoading] = useState(true);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       router.push('/login');
     }
   }, [isAuthenticated, isLoading, router]);
+
+  // Fetch fresh user profile data from API
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (user && isAuthenticated) {
+        try {
+          setProfileLoading(true);
+          const response = await users.getById(user.id);
+          // Extract data from response if it's wrapped in a data object
+          const userData = response && typeof response === 'object' && 'data' in response
+            ? response.data
+            : response;
+          setProfileData(userData);
+        } catch (error) {
+          console.error('[Profile] Error fetching user profile:', error);
+          // Fall back to using cached user data
+          setProfileData(user);
+        } finally {
+          setProfileLoading(false);
+        }
+      }
+    };
+
+    fetchUserProfile();
+  }, [user, isAuthenticated]);
 
   useEffect(() => {
     const fetchPendingRequests = async () => {
@@ -74,17 +101,27 @@ export default function ProfilePage() {
     }
   };
 
-  if (isLoading) {
+  if (isLoading || profileLoading) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <p>Loading...</p>
+        <div className="flex justify-center items-center py-20">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
       </div>
     );
   }
 
-  if (!user) {
+  if (!user || !profileData) {
     return null;
   }
+
+  // Use profileData for display (has fresh data from API)
+  const displayUser = profileData;
+  console.log(displayUser);
+
+  // Helper function to check if a field is public (handles true, 1, "1", "true", null)
+  // null is treated as public (default)
+  const isPublic = (value: any) => value === null || value === true || value === 1 || value === "1" || value === "true";
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -97,107 +134,105 @@ export default function ProfilePage() {
           {/* Avatar Display */}
           <div className="flex items-center gap-4 mb-6 pb-6 border-b border-gray-300">
             <div className="w-24 h-24 rounded-full overflow-hidden bg-blue-500 border-2 border-gray-300">
-              {user.avatar ? (
+              {displayUser.avatar || displayUser.avatar_url ? (
                 <img
-                  src={user.avatar}
+                  src={displayUser.avatar || displayUser.avatar_url}
                   alt="User avatar"
                   className="w-full h-full object-cover"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600 text-gray-900 text-3xl font-bold">
-                  {user.display_name?.charAt(0).toUpperCase() || 'U'}
+                  {displayUser.display_name?.charAt(0).toUpperCase() || 'U'}
                 </div>
               )}
             </div>
             <div>
-              <h3 className="text-2xl font-bold text-gray-900">{user.display_name}</h3>
-              <p className="text-gray-600">@{user.username}</p>
+              <h3 className="text-2xl font-bold text-gray-900">{displayUser.display_name}</h3>
+              <p className="text-gray-600">@{displayUser.username}</p>
             </div>
           </div>
 
           <div className="space-y-3">
             <div>
               <span className="font-medium text-gray-700">Display Name:</span>
-              <span className="ml-2 text-gray-900">{user.display_name}</span>
+              <span className="ml-2 text-gray-900">{displayUser.display_name}</span>
             </div>
 
             <div>
               <span className="font-medium text-gray-700">Username:</span>
-              <span className="ml-2 text-gray-900">{user.username}</span>
+              <span className="ml-2 text-gray-900">{displayUser.username}</span>
             </div>
 
-            {user.email_public && (
-              <div>
-                <span className="font-medium text-gray-700">Email:</span>
-                <span className="ml-2 text-gray-900">{user.email}</span>
-                {user.email_public !== undefined && (
-                  <span className={`ml-2 text-xs px-2 py-0.5 rounded ${user.email_public ? 'bg-blue-500 text-green-800' : 'bg-blue-500 text-orange-800'}`}>
-                    {user.email_public ? 'Public' : 'Private'}
-                  </span>
-                )}
-              </div>
-            )}
+            <div>
+              <span className="font-medium text-gray-700">Email:</span>
+              <span className="ml-2 text-gray-900">{displayUser.email}</span>
+              <span className={`ml-2 text-xs px-2 py-0.5 rounded ${isPublic(displayUser.email_public) ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'}`}>
+                {isPublic(displayUser.email_public) ? 'Public' : 'Private'}
+              </span>
+            </div>
 
             <div>
               <span className="font-medium text-gray-700">User ID:</span>
-              <span className="ml-2 text-gray-900">{user.id}</span>
+              <span className="ml-2 text-gray-900">{displayUser.id}</span>
             </div>
 
-            {user.hobby_public && (
-              <div>
-                <span className="font-medium text-gray-700">Hobby:</span>
-                <span className="ml-2 text-gray-900">{user.hobby || 'Not specified'}</span>
-                {user.hobby_public !== undefined && (
-                  <span className={`ml-2 text-xs px-2 py-0.5 rounded ${user.hobby_public ? 'bg-blue-500 text-green-800' : 'bg-blue-500 text-orange-800'}`}>
-                    {user.hobby_public ? 'Public' : 'Private'}
-                  </span>
-                )}
-              </div>
-            )}
+            <div>
+              <span className="font-medium text-gray-700">Hobby:</span>
+              <span className="ml-2 text-gray-900">{displayUser.hobby || 'Not specified'}</span>
+              <span className={`ml-2 text-xs px-2 py-0.5 rounded ${isPublic(displayUser.hobby_public) ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'}`}>
+                {isPublic(displayUser.hobby_public) ? 'Public' : 'Private'}
+              </span>
+            </div>
 
-            {user.company_public && (
-              <div>
-                <span className="font-medium text-gray-700">Company:</span>
-                <span className="ml-2 text-gray-900">{user.company || 'Not specified'}</span>
-                {user.company_public !== undefined && (
-                  <span className={`ml-2 text-xs px-2 py-0.5 rounded ${user.company_public ? 'bg-blue-500 text-green-800' : 'bg-blue-500 text-orange-800'}`}>
-                    {user.company_public ? 'Public' : 'Private'}
-                  </span>
-                )}
-              </div>
-            )}
+            <div>
+              <span className="font-medium text-gray-700">Company:</span>
+              <span className="ml-2 text-gray-900">{displayUser.company || 'Not specified'}</span>
+              <span className={`ml-2 text-xs px-2 py-0.5 rounded ${isPublic(displayUser.company_public) ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'}`}>
+                {isPublic(displayUser.company_public) ? 'Public' : 'Private'}
+              </span>
+            </div>
 
-            {user.location_public && (
-              <div>
-                <span className="font-medium text-gray-700">Location:</span>
-                <span className="ml-2 text-gray-900">{user.location || 'Not specified'}</span>
-                {user.location_public !== undefined && (
-                  <span className={`ml-2 text-xs px-2 py-0.5 rounded ${user.location_public ? 'bg-blue-500 text-green-800' : 'bg-blue-500 text-orange-800'}`}>
-                    {user.location_public ? 'Public' : 'Private'}
-                  </span>
-                )}
-              </div>
-            )}
+            <div>
+              <span className="font-medium text-gray-700">Occupation:</span>
+              <span className="ml-2 text-gray-900">{displayUser.occupation || 'Not specified'}</span>
+              <span className={`ml-2 text-xs px-2 py-0.5 rounded ${isPublic(displayUser.occupation_public) ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'}`}>
+                {isPublic(displayUser.occupation_public) ? 'Public' : 'Private'}
+              </span>
+            </div>
+
+            <div>
+              <span className="font-medium text-gray-700">Main Occupation:</span>
+              <span className="ml-2 text-gray-900">{displayUser.main_occupation || 'Not specified'}</span>
+              <span className={`ml-2 text-xs px-2 py-0.5 rounded ${isPublic(displayUser.main_occupation_public) ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'}`}>
+                {isPublic(displayUser.main_occupation_public) ? 'Public' : 'Private'}
+              </span>
+            </div>
+
+            <div>
+              <span className="font-medium text-gray-700">Location:</span>
+              <span className="ml-2 text-gray-900">{displayUser.location || 'Not specified'}</span>
+              <span className={`ml-2 text-xs px-2 py-0.5 rounded ${isPublic(displayUser.location_public) ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'}`}>
+                {isPublic(displayUser.location_public) ? 'Public' : 'Private'}
+              </span>
+            </div>
 
             <div>
               <span className="font-medium text-gray-700">Phone:</span>
-              <span className="ml-2 text-gray-900">{user.phone || 'Not specified'}</span>
-              {user.phone_public !== undefined && (
-                <span className={`ml-2 text-xs px-2 py-0.5 rounded ${user.phone_public ? 'bg-blue-500 text-green-800' : 'bg-blue-500 text-orange-800'}`}>
-                  {user.phone_public ? 'Public' : 'Private'}
-                </span>
-              )}
+              <span className="ml-2 text-gray-900">{displayUser.phone || 'Not specified'}</span>
+              <span className={`ml-2 text-xs px-2 py-0.5 rounded ${isPublic(displayUser.phone_public) ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'}`}>
+                {isPublic(displayUser.phone_public) ? 'Public' : 'Private'}
+              </span>
             </div>
 
             <div>
               <span className="font-medium text-gray-700">Role:</span>
-              <span className="ml-2 text-gray-900 capitalize">{user.role || 'user'}</span>
+              <span className="ml-2 text-gray-900 capitalize">{displayUser.role || 'user'}</span>
             </div>
 
             <div>
               <span className="font-medium text-gray-700">Profile Visibility:</span>
-              <span className={`ml-2 font-medium ${user.profile_visibility === 'private' ? 'text-orange-600' : 'text-green-600'}`}>
-                {user.profile_visibility === 'private' ? (
+              <span className={`ml-2 font-medium ${displayUser.profile_visibility === 'private' ? 'text-orange-600' : 'text-green-600'}`}>
+                {displayUser.profile_visibility === 'private' ? (
                   <span className="inline-flex items-center gap-1">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />

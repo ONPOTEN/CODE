@@ -608,8 +608,11 @@ export interface User {
   name: string;
   username: string;
   email: string;
+  display_name?: string;
   hobby?: string;
   company?: string;
+  occupation?: string;
+  main_occupation?: string;
   location?: string;
   role?: string;
   avatar?: string;
@@ -619,6 +622,8 @@ export interface User {
   email_public?: boolean;
   hobby_public?: boolean;
   company_public?: boolean;
+  occupation_public?: boolean;
+  main_occupation_public?: boolean;
   location_public?: boolean;
   phone_public?: boolean;
   created_at: string;
@@ -651,7 +656,9 @@ export const users = {
   },
 
   getById: async (id: number) => {
-    return apiRequest<User>(`/users/${id}`);
+    // Add timestamp to prevent caching issues
+    const timestamp = Date.now();
+    return apiRequest<User>(`/users/${id}?_t=${timestamp}`);
   },
 
   getByUsername: async (username: string) => {
@@ -664,7 +671,7 @@ export const users = {
     return apiRequest(`/users/search?${searchParams}`);
   },
 
-  updateProfile: async (data: { user_login?: string; display_name?: string; user_email?: string; hobby?: string; company?: string; location?: string; profile_visibility?: string; email_public?: boolean; hobby_public?: boolean; company_public?: boolean; location_public?: boolean; phone_public?: boolean }): Promise<User> => {
+  updateProfile: async (data: { user_login?: string; display_name?: string; user_email?: string; hobby?: string; company?: string; occupation?: string; main_occupation?: string; location?: string; profile_visibility?: string; email_public?: boolean; hobby_public?: boolean; company_public?: boolean; occupation_public?: boolean; main_occupation_public?: boolean; location_public?: boolean; phone_public?: boolean }): Promise<User> => {
     // NOTE: phone field is intentionally not included - phone cannot be changed
     // role field is intentionally not included - users cannot change their own role
     console.log('[users.updateProfile] Calling API with data:', data);
@@ -1389,6 +1396,22 @@ export const friends = {
 
   getStatus: async (userId: number): Promise<{ status: string; is_friend: boolean; friend_request_sent: boolean; friend_request_received: boolean }> => {
     return apiRequest(`/friends/status/${userId}`);
+  },
+
+  block: async (userId: number): Promise<{ message: string }> => {
+    return apiRequest(`/friends/block/${userId}`, {
+      method: 'POST',
+    });
+  },
+
+  unblock: async (userId: number): Promise<{ message: string }> => {
+    return apiRequest(`/friends/unblock/${userId}`, {
+      method: 'DELETE',
+    });
+  },
+
+  getBlockedUsers: async (): Promise<{ data: User[] }> => {
+    return apiRequest('/friends/blocked');
   },
 };
 

@@ -13,6 +13,8 @@ interface AuthUser {
   display_name: string;
   hobby?: string;
   company?: string;
+  occupation?: string;
+  main_occupation?: string;
   location?: string;
   role?: string;
   avatar?: string;
@@ -21,6 +23,8 @@ interface AuthUser {
   email_public?: boolean;
   hobby_public?: boolean;
   company_public?: boolean;
+  occupation_public?: boolean;
+  main_occupation_public?: boolean;
   location_public?: boolean;
   phone_public?: boolean;
 }

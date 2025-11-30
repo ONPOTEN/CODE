@@ -200,24 +200,10 @@ export default function ViewPostPage() {
         <article className="bg-grey-200 rounded-lg shadow-lg overflow-hidden border border-gray-300 w-full">
           <div className="w-full">
             {/* Header */}
-            <header className="mb-8 pb-6">
-              <div className="flex flex-col md:flex-row items-start justify-between mb-4 gap-4">
-                <span
-                  className={`px-3 py-1 text-sm font-medium rounded-full whitespace-nowrap ml-0 md:ml-4 flex-shrink-0 ${
-                    post.status === 'publish'
-                      ? 'bg-blue-500 text-green-800'
-                      : post.status === 'draft'
-                      ? 'bg-yellow-100 text-yellow-800'
-                      : 'bg-blue-500 text-gray-800'
-                  }`}
-                >
-                  {post.status}
-                </span>
-              </div>
-
+            <header className="">
               {/* Author Card */}
               {post.author && (
-                <div className="mb-6">
+                <div className="">
                   <AuthorCard
                     author={post.author}
                     createdAt={post.created_at}
@@ -230,7 +216,7 @@ export default function ViewPostPage() {
 
             {/* Additional Images Carousel */}
             {post.images && post.images.length > 0 && (
-              <div className="mb-8">
+              <div className="">
                 {/* Main Carousel */}
                 <div
                   className="relative bg-gray-900 rounded-lg overflow-hidden mb-4 cursor-grab active:cursor-grabbing"
@@ -285,7 +271,7 @@ export default function ViewPostPage() {
 
             {/* Debug info for images */}
             {(!post.images || !Array.isArray(post.images) || post.images.length === 0) && (
-              <div className="mb-8 p-4 bg-white border border-gray-300 rounded-lg">
+              <div className="mb-8 p-4 bg-white border border-gray-300 rounded-lg mx-4 md:mx-8">
                 <p className="text-sm text-gray-600">
                   <span className="font-medium">Debug:</span> No additional images array found.
                   {post.featured_image && ' (Featured image is displayed above)'}
@@ -294,34 +280,33 @@ export default function ViewPostPage() {
             )}
 
             {/* Content */}
-            <div className="mb-8">
+            <div className="">
               <div className="prose prose-lg max-w-none">
-                <div className="text-gray-800 whitespace-pre-wrap leading-relaxed bg-white rounded-lg border border-gray-300">
+                <div className="text-gray-800 whitespace-pre-wrap leading-relaxed bg-white rounded-lg">
                   {post.content || 'No content available.'}
                 </div>
               </div>
             </div>
 
             {/* Engagement Buttons */}
-            <div className="mb-8 border-t border-gray-300">
+            <div className="mb-8 px-4 md:px-8 border-t border-gray-300 pt-4">
               <EngagementButtons
                 postId={post.id}
                 postTitle={post.title}
                 postSlug={post.slug}
                 postText={post.excerpt || post.content?.substring(0, 200)}
                 showLabels={true}
-                className="mb-4"
               />
             </div>
 
             {/* Comments Section */}
-            <div className="mb-8 border-t border-gray-300 flex flex-col max-h-[600px]" data-comments-section>
+            <div className="mb-8 px-4 md:px-8 border-t border-gray-300 flex flex-col" data-comments-section>
               <CommentsSection postId={post.id} currentUserId={user?.id} className="mt-6" />
             </div>
 
             {/* Action Buttons */}
             {isOwner && (
-              <div className="flex gap-3 border-t border-gray-300">
+              <div className="flex gap-3 px-4 md:px-8 border-t border-gray-300 pt-4">
                 <Link
                   href={`/posts/edit/${post.id}`}
                   className="px-6 py-2 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-lg font-medium transition-colors"

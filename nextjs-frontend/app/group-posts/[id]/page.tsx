@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { groupPosts, GroupPost, User, ApiException } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
@@ -12,8 +12,10 @@ import { GroupCommentsSection } from '@/components/GroupCommentsSection';
 export default function GroupPostDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user: currentUser } = useAuth();
   const postId = params.id as string;
+  const shouldScrollToComments = searchParams.get('scrollToComments') === 'true';
 
   const [post, setPost] = useState<GroupPost | null>(null);
   const [loading, setLoading] = useState(true);
@@ -65,6 +67,18 @@ export default function GroupPostDetailPage() {
       };
     }
   }, [showMenu]);
+
+  // Scroll to comments section when shouldScrollToComments is true
+  useEffect(() => {
+    if (shouldScrollToComments && post) {
+      setTimeout(() => {
+        const commentsElement = document.getElementById(`group-comments-section-${post.id}`);
+        if (commentsElement) {
+          commentsElement.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 100);
+    }
+  }, [shouldScrollToComments, post]);
 
   // Check if current user can delete this post (post author or group admin)
   const canDeletePost = currentUser && post && (
@@ -189,114 +203,7 @@ export default function GroupPostDetailPage() {
           <article className="bg-grey-200 rounded-lg shadow-lg overflow-hidden border border-gray-300 w-full">
             <div className="w-full">
               {/* Header Section */}
-              <header className="mb-8 pb-6 px-4 md:px-8">
-                {/* Status Badges */}
-                <div className="flex flex-col md:flex-row items-start justify-between mb-4 gap-4">
-                  <span
-                    className={`px-3 py-1 text-sm font-medium rounded-full whitespace-nowrap flex-shrink-0 ${
-                      post.post_status === 'publish'
-                        ? 'bg-blue-500 text-green-800'
-                        : post.post_status === 'pending'
-                        ? 'bg-yellow-100 text-yellow-800'
-                        : post.post_status === 'draft'
-                        ? 'bg-blue-500 text-gray-800'
-                        : 'bg-blue-500 text-red-800'
-                    }`}
-                  >
-                    {post.post_status.charAt(0).toUpperCase() + post.post_status.slice(1)}
-                  </span>
-                  <span className="px-3 py-1 rounded-full text-sm font-semibold bg-blue-500 text-blue-800 flex-shrink-0">
-                    🏘️ Group Post
-                  </span>
-                  {post.visibility && (
-                    <span
-                      className={`px-3 py-1 rounded-full text-sm font-semibold flex-shrink-0 ${
-                        post.visibility === 'public'
-                          ? 'bg-blue-500 text-blue-800'
-                          : 'bg-blue-500 text-gray-800'
-                      }`}
-                    >
-                      {post.visibility === 'public' ? '🌍 Public' : '🔒 Private'}
-                    </span>
-                  )}
-                </div>
-
-                {/* Title and Menu */}
-                <div className="flex items-start justify-between gap-4 mb-6">
-                  <h1 className="text-3xl md:text-4xl font-bold text-gray-900 flex-1 leading-tight">{post.post_title}</h1>
-                  {canDeletePost && (
-                    <div className="relative" ref={menuRef}>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setShowMenu(!showMenu);
-                        }}
-                        className="p-2 hover:bg-blue-500 rounded-full transition-colors flex-shrink-0"
-                        title="Post options"
-                      >
-                        <svg className="w-6 h-6 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M10.5 1.5H9.5V3.5H10.5V1.5ZM10.5 8.5H9.5V10.5H10.5V8.5ZM10.5 15.5H9.5V17.5H10.5V15.5Z" />
-                        </svg>
-                      </button>
-
-                      {/* Dropdown Menu */}
-                      {showMenu && (
-                        <div className="absolute right-0 mt-2 w-48 bg-grey-200 rounded-lg shadow-xl border border-gray-300 z-20 py-1">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeletePost();
-                            }}
-                            disabled={isDeleting}
-                            className="w-full text-left px-4 py-2 hover:bg-grey-200 transition-colors flex items-center gap-2 text-red-600 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                            {isDeleting ? 'Deleting...' : 'Delete'}
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* Post Metadata */}
-                <div className="space-y-2">
-                  <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
-                    <span className="flex items-center gap-2">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                      <span className="font-medium">Posted:</span>{' '}
-                      {new Date(post.post_date).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </span>
-                  </div>
-
-                  {post.post_modified && post.post_modified !== post.post_date && (
-                    <div className="flex items-center gap-2 text-sm text-gray-500">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                      </svg>
-                      <span className="font-medium">Updated:</span>{' '}
-                      {new Date(post.post_modified).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </div>
-                  )}
-                </div>
-              </header>
-
+              
               {/* Author Info */}
               {post.author && (
                 <div className="flex items-center gap-4 mb-8 px-4 md:px-8">
@@ -311,7 +218,42 @@ export default function GroupPostDetailPage() {
                         <span className="px-2 py-1 text-xs font-medium bg-blue-500 text-blue-800 rounded">You</span>
                       )}
                     </div>
-                    <p className="text-sm text-gray-600 mt-1">@{post.author.username}</p>
+                    <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 mt-2">
+                      <span className="flex items-center gap-2">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <span className="font-medium">Posted:</span>{' '}
+                        {(() => {
+                          const postDate = new Date(post.post_date);
+                          const now = new Date();
+                          const diffInSeconds = Math.floor((now.getTime() - postDate.getTime()) / 1000);
+
+                          if (diffInSeconds < 60) return 'just now';
+                          if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minute${Math.floor(diffInSeconds / 60) > 1 ? 's' : ''} ago`;
+                          if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hour${Math.floor(diffInSeconds / 3600) > 1 ? 's' : ''} ago`;
+                          if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)} day${Math.floor(diffInSeconds / 86400) > 1 ? 's' : ''} ago`;
+                          if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 604800)} week${Math.floor(diffInSeconds / 604800) > 1 ? 's' : ''} ago`;
+                          if (diffInSeconds < 31536000) return `${Math.floor(diffInSeconds / 2592000)} month${Math.floor(diffInSeconds / 2592000) > 1 ? 's' : ''} ago`;
+                          return `${Math.floor(diffInSeconds / 31536000)} year${Math.floor(diffInSeconds / 31536000) > 1 ? 's' : ''} ago`;
+                        })()}
+                      </span>
+                    </div>
+                    {post.post_modified && post.post_modified !== post.post_date && (
+                      <div className="flex items-center gap-2 text-sm text-gray-500 mt-1">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        <span className="font-medium">Updated:</span>{' '}
+                        {new Date(post.post_modified).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -396,7 +338,7 @@ export default function GroupPostDetailPage() {
                         d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                       />
                     </svg>
-                    Content
+                    {post.post_title}
                   </h3>
                   <div className="prose prose-lg max-w-none">
                     <div className="text-gray-800 whitespace-pre-wrap leading-relaxed bg-white p-6 rounded-lg border border-gray-300">
@@ -416,32 +358,12 @@ export default function GroupPostDetailPage() {
               </div>
 
               {/* Comments Section */}
-              <div className="mb-8 px-4 md:px-8 border-t border-gray-300 flex flex-col max-h-[600px]">
+              <div className="mb-8 px-4 md:px-8 border-t border-gray-300 flex flex-col">
                 <GroupCommentsSection postId={post.id} currentUserId={currentUser?.id} className="mt-6" />
               </div>
 
               {/* Group Info */}
-              {post.group && (
-                <div className="px-4 md:px-8 mb-8">
-                  <div className="p-6 bg-grey-200 rounded-lg border border-blue-200">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      Posted in Group
-                    </h3>
-                    <Link
-                      href={`/groups/${post.group_id}`}
-                      className="text-blue-600 hover:text-blue-700 font-medium text-lg transition-colors"
-                    >
-                      🏘️ {post.group.group_name}
-                    </Link>
-                    {post.group.description && (
-                      <p className="text-gray-600 mt-3">{post.group.description}</p>
-                    )}
-                  </div>
-                </div>
-              )}
+              
             </div>
           </article>
 
@@ -540,28 +462,6 @@ export default function GroupPostDetailPage() {
               )}
             </div>
           )}
-
-          {/* Related Actions */}
-          <div className="mt-12 flex gap-4 justify-center flex-wrap">
-            <Link
-              href={post.group ? `/groups/${post.group_id}/create-post` : '/'}
-              className="px-6 py-3 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-lg font-medium transition-colors flex items-center gap-2"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              Create New Post
-            </Link>
-            <Link
-              href={post.group ? `/groups/${post.group_id}` : '/'}
-              className="px-6 py-3 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-lg font-medium transition-colors flex items-center gap-2"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-              Back to {post.group ? post.group.group_name : 'Group'}
-            </Link>
-          </div>
         </div>
       </div>
     </GroupEngagementProvider>

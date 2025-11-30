@@ -274,6 +274,11 @@ export default function InfiniteScrollGroupPosts({
     router.push(`/group-posts/${postId}`);
   };
 
+  const handleScrollToComments = (postId: number) => {
+    setOpenMenuId(null);
+    router.push(`/group-posts/${postId}?scrollToComments=true`);
+  };
+
   // Initial load
   useEffect(() => {
     setPostsList([]);
@@ -427,6 +432,7 @@ export default function InfiniteScrollGroupPosts({
                         <GroupEngagementButtons
                           postId={post.id}
                           postTitle={post.post_title}
+                          onCommentClick={() => handleScrollToComments(post.id)}
                         />
                       </div>
                     </div>

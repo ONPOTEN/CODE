@@ -4,10 +4,11 @@ import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
-import { orders, ApiException } from '@/lib/api';
+import { orders, shopPosts, ApiException } from '@/lib/api';
 
 interface OrderItem {
   id: number;
+  shop_post_id?: number;
   product_name: string;
   product_type: 'Đơn giản' | 'Biến thể' | 'Tải xuống';
   quantity: number;
@@ -16,11 +17,13 @@ interface OrderItem {
   variant_options?: Record<string, string>;
   download_files?: any;
   link_files?: any[];
+  product?: any; // Product details loaded from API
 }
 
 interface OrderDetail {
   id: number;
   order_number: string;
+  shop_id?: number;
   status: 'pending' | 'processing' | 'completed' | 'cancelled';
   subtotal: number;
   tax: number;
@@ -58,7 +61,38 @@ export default function OrderDetailPage() {
         setError(null);
 
         const response = await orders.get(parseInt(orderId));
-        setOrder(response.data || response.order || response);
+        const orderData = response.data || response.order || response;
+
+        // For completed orders with download products, ALWAYS fetch product details to get download_files and link_files
+        if (orderData.status === 'completed' && orderData.items && orderData.shop_id) {
+          const downloadItems = orderData.items.filter(
+            (item: OrderItem) => item.product_type === 'Tải xuống'
+          );
+
+          // Fetch product details for ALL download items to ensure we have the latest files
+          for (const item of downloadItems) {
+            // Always try to fetch product details for download products
+            if (item.shop_post_id) {
+              try {
+                const productResponse = await shopPosts.getById(orderData.shop_id, item.shop_post_id);
+                const product = productResponse && typeof productResponse === 'object' && 'id' in productResponse
+                  ? productResponse
+                  : (productResponse as any)?.data;
+
+                if (product) {
+                  // Always use the product's files (they may have been updated after order was placed)
+                  item.download_files = product.download_files;
+                  item.link_files = product.link_files;
+                  item.product = product;
+                }
+              } catch (err) {
+                console.error('Error fetching product details for download item:', err);
+              }
+            }
+          }
+        }
+
+        setOrder(orderData);
       } catch (err) {
         let errorMsg = 'Failed to fetch order details';
         if (err instanceof ApiException) {
@@ -277,49 +311,146 @@ export default function OrderDetailPage() {
                     </div>
                   )}
 
-                  {/* Download Files */}
+                  {/* Download Product Section */}
                   {item.product_type === 'Tải xuống' && (
-                    <div className="bg-grey-200 rounded p-3 mb-3">
-                      <p className="text-sm font-medium text-blue-900 mb-2">Download Files:</p>
-                      {item.download_files ? (
-                        <a
-                          href={item.download_files.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-2"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                          </svg>
-                          {item.download_files.name || 'Download File'}
-                        </a>
-                      ) : (
-                        <p className="text-sm text-gray-600">No file available</p>
-                      )}
-                    </div>
-                  )}
+                    <div className="mt-3">
+                      {order.status === 'completed' ? (
+                        <>
+                          {/* Downloadable Files - New Design */}
+                          {item.download_files && (Array.isArray(item.download_files) ? item.download_files.length > 0 : (typeof item.download_files === 'object' ? Object.keys(item.download_files).length > 0 : !!item.download_files)) && (
+                            <div className="border border-green-300 rounded-lg p-4 bg-grey-200 mb-3">
+                              <h4 className="font-medium text-gray-900 mb-4 flex items-center gap-2">
+                                <span>📁</span> Downloadable File
+                              </h4>
+                              <div className="space-y-3">
+                                {(Array.isArray(item.download_files) ? item.download_files : [item.download_files]).map((file: any, fileIdx: number) => {
+                                  const fileName = typeof file === 'string' ? file.split('/').pop() : file.name || `File ${fileIdx + 1}`;
+                                  const fileSize = file.size ? `${(file.size / 1024).toFixed(2)} KB` : null;
+                                  const fileUrl = typeof file === 'string' ? file : file.url || file;
 
-                  {/* Download Links */}
-                  {item.product_type === 'Tải xuống' && item.link_files && item.link_files.length > 0 && (
-                    <div className="bg-grey-200 rounded p-3">
-                      <p className="text-sm font-medium text-green-900 mb-2">Download Links:</p>
-                      <ul className="space-y-2">
-                        {item.link_files.map((link: any, linkIdx: number) => (
-                          <li key={linkIdx}>
-                            <a
-                              href={link.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-green-600 hover:text-green-800 text-sm font-medium flex items-center gap-2"
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.658 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                              </svg>
-                              {link.title || `Link ${linkIdx + 1}`}
-                            </a>
-                          </li>
-                        ))}
-                      </ul>
+                                  return (
+                                    <div key={fileIdx} className="flex items-start justify-between bg-grey-200 p-4 rounded border border-green-200">
+                                      <div className="flex-1">
+                                        <div className="flex items-center gap-2 mb-2">
+                                          <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
+                                          </svg>
+                                          <p className="font-medium text-gray-900">{fileName}</p>
+                                        </div>
+                                        {fileSize && <p className="text-xs text-gray-500">Size: {fileSize}</p>}
+                                      </div>
+                                      <a
+                                        href={fileUrl}
+                                        download
+                                        className="ml-2 px-4 py-2 bg-green-500 text-white text-sm rounded hover:bg-green-600 transition-colors flex-shrink-0 flex items-center gap-2"
+                                      >
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                        </svg>
+                                        Download
+                                      </a>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* External Links - New Design */}
+                          {item.link_files && item.link_files.length > 0 && (
+                            <div className="border border-blue-300 rounded-lg p-4 bg-grey-200">
+                              <h4 className="font-medium text-gray-900 mb-4 flex items-center gap-2">
+                                <span>🔗</span> External Links
+                              </h4>
+                              <div className="space-y-3">
+                                {item.link_files.map((link: any, linkIdx: number) => {
+                                  const linkTitle = link.title || link.label || `Link ${linkIdx + 1}`;
+                                  const linkUrl = link.url || link;
+
+                                  return (
+                                    <div key={linkIdx} className="flex items-start justify-between bg-grey-200 p-4 rounded border border-blue-200">
+                                      <div className="flex-1">
+                                        <div className="flex items-center gap-2 mb-2">
+                                          <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                          </svg>
+                                          <p className="font-medium text-gray-900">{linkTitle}</p>
+                                        </div>
+                                        <p className="text-xs text-gray-500 truncate">{linkUrl}</p>
+                                      </div>
+                                      <a
+                                        href={linkUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="ml-2 px-4 py-2 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 transition-colors flex-shrink-0 flex items-center gap-2"
+                                      >
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                        </svg>
+                                        Open
+                                      </a>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* No downloads available - only show if product has NO download files AND NO link files */}
+                          {(() => {
+                            const hasDownloadFiles = item.download_files && (
+                              Array.isArray(item.download_files)
+                                ? item.download_files.length > 0
+                                : (typeof item.download_files === 'object'
+                                    ? Object.keys(item.download_files).length > 0
+                                    : !!item.download_files)
+                            );
+                            const hasLinkFiles = item.link_files && item.link_files.length > 0;
+
+                            if (!hasDownloadFiles && !hasLinkFiles) {
+                              return (
+                                <div className="border border-gray-300 rounded-lg p-4 bg-gray-50">
+                                  <h4 className="font-medium text-gray-700 mb-2 flex items-center gap-2">
+                                    <span>ℹ️</span> No Download Files Configured
+                                  </h4>
+                                  <p className="text-sm text-gray-600">
+                                    This product does not have any download files or external links configured yet. Please contact the seller for assistance.
+                                  </p>
+                                  {order.shop_id && item.shop_post_id && (
+                                    <Link
+                                      href={`/shops/${order.shop_id}/posts/${item.shop_post_id}`}
+                                      className="inline-flex items-center gap-2 mt-3 text-sm text-blue-600 hover:text-blue-700"
+                                    >
+                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                      </svg>
+                                      View Product Page
+                                    </Link>
+                                  )}
+                                </div>
+                              );
+                            }
+                            return null;
+                          })()}
+                        </>
+                      ) : (
+                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                          <div className="flex items-start gap-3">
+                            <svg className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                            <div>
+                              <p className="text-sm font-semibold text-yellow-800">Downloads Not Available Yet</p>
+                              <p className="text-sm text-yellow-700 mt-1">
+                                Your download files and external links will be available once the order is marked as <span className="font-semibold">Completed</span>.
+                              </p>
+                              <p className="text-xs text-yellow-600 mt-2">
+                                Current status: <span className="font-medium">{getStatusLabel(order.status)}</span>
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

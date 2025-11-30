@@ -48,12 +48,49 @@ export default function ShopOrdersPage() {
 
         // Fetch shop details
         const shopResponse = await shops.getById(shopId);
+
+        // Log raw response for debugging
+        console.log('[ShopOrders] Raw shop response:', shopResponse);
+
         // Handle both direct object and wrapped response
-        const shopInfo = (shopResponse as any)?.data || shopResponse;
+        let shopInfo = (shopResponse as any)?.data || shopResponse;
+
+        // Sometimes the shop data might be nested deeper
+        if (shopInfo?.shop) {
+          shopInfo = shopInfo.shop;
+        }
+
+        console.log('[ShopOrders] Processed shop info:', {
+          id: shopInfo?.id,
+          name: shopInfo?.name,
+          user_id: shopInfo?.user_id,
+          owner_id: shopInfo?.owner?.id,
+          ownerObject: shopInfo?.owner,
+        });
+
         setShop(shopInfo);
 
-        // Check if user owns this shop
-        if (shopInfo?.user_id !== user?.id) {
+        // Check if user owns this shop - shop owner should have user_id matching
+        // Convert both to numbers for comparison to handle string/number type mismatches
+        const shopOwnerId = parseInt(String(shopInfo?.user_id || shopInfo?.owner?.id || '0'), 10);
+        const userId = parseInt(String(user?.id || '0'), 10);
+
+        console.log('[ShopOrders] Permission check:', {
+          shopOwnerId,
+          userId,
+          shopOwnerIdRaw: shopInfo?.user_id || shopInfo?.owner?.id,
+          userIdRaw: user?.id,
+          isAuthorized: shopOwnerId > 0 && shopOwnerId === userId,
+          authenticatedUser: user ? { id: user.id, username: user.username, email: user.email } : 'NOT_AUTHENTICATED',
+          shopOwner: { id: shopInfo?.user_id || shopInfo?.owner?.id, name: shopInfo?.owner?.name },
+        });
+
+        if (!shopOwnerId || shopOwnerId <= 0 || shopOwnerId !== userId) {
+          console.warn('[ShopOrders] Permission denied - shop owner mismatch', {
+            reason: !shopOwnerId ? 'No shop owner ID found' : shopOwnerId <= 0 ? 'Invalid shop owner ID' : `User ID mismatch: shop owner is ${shopOwnerId}, but authenticated user is ${userId}`,
+            expectedOwnerId: shopOwnerId,
+            actualUserId: userId,
+          });
           setError('You do not have permission to view this shop\'s orders');
           return;
         }

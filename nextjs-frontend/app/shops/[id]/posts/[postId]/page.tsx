@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { shopPosts, type ShopPost } from '@/lib/api';
+import { shopPosts, type ShopPost, orders } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
 
@@ -20,10 +20,16 @@ export default function ProductDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [showAddedNotification, setShowAddedNotification] = useState(false);
+  const [selectedAttributes, setSelectedAttributes] = useState<{ [key: string]: string }>({});
+  const [attributeError, setAttributeError] = useState<string | null>(null);
+  const [hasCompletedOrder, setHasCompletedOrder] = useState(false);
 
   useEffect(() => {
     fetchPost();
-  }, [postId, shopId]);
+    if (user) {
+      checkUserOrderStatus();
+    }
+  }, [postId, shopId, user]);
 
   const fetchPost = async () => {
     try {
@@ -46,9 +52,83 @@ export default function ProductDetailPage() {
     }
   };
 
+  const checkUserOrderStatus = async () => {
+    if (!user) return;
+
+    try {
+      const ordersResponse = await orders.myOrders({ shop_id: shopId, per_page: 100 });
+      const allOrders = ordersResponse.data || ordersResponse;
+
+      console.log('[ProductDetail] Checking order status for postId:', postId, 'shopId:', shopId);
+      console.log('[ProductDetail] All orders:', allOrders);
+
+      if (Array.isArray(allOrders)) {
+        const completedOrder = allOrders.find((order: any) => {
+          // Only include completed orders - strict check
+          const isCompleted = order.status === 'completed';
+          console.log('[ProductDetail] Order', order.id, 'status:', order.status, 'isCompleted:', isCompleted);
+
+          if (!isCompleted) return false;
+
+          const items = order.items || [];
+          console.log('[ProductDetail] Checking order', order.id, 'with', items.length, 'items');
+
+          const hasProduct = items.some((item: any) => {
+            // Try multiple possible field names for product ID
+            const possibleIds = [
+              item.id,
+              item.postId,
+              item.post_id,
+              item.product_id,
+            ];
+
+            const matches = possibleIds.some(id => {
+              const isMatch = parseInt(String(id)) === postId;
+              if (isMatch) {
+                console.log('[ProductDetail] MATCH FOUND! Item field value:', id, 'Post ID:', postId);
+              }
+              return isMatch;
+            });
+
+            console.log('[ProductDetail] Item with possible IDs:', possibleIds, 'Post ID:', postId, 'Matches:', matches);
+            return matches;
+          });
+
+          console.log('[ProductDetail] Order', order.id, 'has product:', hasProduct);
+          return hasProduct;
+        });
+
+        const hasCompleted = !!completedOrder;
+        console.log('[ProductDetail] Final result - Has completed order:', hasCompleted);
+        console.log('[ProductDetail] Completed order details:', completedOrder);
+        setHasCompletedOrder(hasCompleted);
+      } else {
+        console.warn('[ProductDetail] Orders response is not an array:', allOrders);
+      }
+    } catch (err) {
+      console.error('[ProductDetail] Error checking order status:', err);
+    }
+  };
+
   const handleAddToCart = () => {
     if (!post) return;
 
+    // Validate attributes for variant products
+    if (post.product_type === 'Biến thể') {
+      const attributes = (post as any).attributes || [];
+      const missingAttributes = attributes.filter(
+        (attr: any) => !selectedAttributes[attr.name]
+      );
+
+      if (missingAttributes.length > 0) {
+        setAttributeError(
+          `Please select all attributes: ${missingAttributes.map((a: any) => a.name).join(', ')}`
+        );
+        return;
+      }
+    }
+
+    setAttributeError(null);
     const price = parseFloat((post as any).price) || 0;
     const image = (post as any).main_image || post.featured_images?.[0] || '/placeholder.png';
 
@@ -62,12 +142,14 @@ export default function ProductDetailPage() {
         image,
         product_type: post.product_type || 'unknown',
         type: post.type,
+        attributes: post.product_type === 'Biến thể' ? selectedAttributes : undefined,
       });
     }
 
     setShowAddedNotification(true);
     setTimeout(() => setShowAddedNotification(false), 3000);
     setQuantity(1);
+    setSelectedAttributes({});
   };
 
   if (loading) {
@@ -145,35 +227,14 @@ export default function ProductDetailPage() {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <article className="bg-grey-200 rounded-lg shadow-md p-8 space-y-8">
+      <div className="max-w-4xl mx-auto py-8">
+        <article className="bg-grey-200 rounded-lg shadow-md space-y-8">
           {/* Title and Badges */}
           <div>
             <div className="flex items-center gap-3 mb-4 flex-wrap">
               <h1 className="text-4xl font-bold text-gray-900">{post.title}</h1>
-              <span className={`px-3 py-1.5 text-sm font-semibold rounded-full ${
-                post.type === 'post' ? 'bg-blue-500 text-blue-800' : 'bg-blue-500 text-purple-800'
-              }`}>
-                {post.type.toUpperCase()}
-              </span>
-              {post.product_type && (
-                <span className={`px-3 py-1.5 text-sm font-semibold rounded-full ${
-                  post.product_type === 'Đơn giản'
-                    ? 'bg-blue-500 text-blue-800'
-                    : post.product_type === 'Biến thể'
-                    ? 'bg-blue-500 text-purple-800'
-                    : 'bg-blue-500 text-green-800'
-                }`}>
-                  {post.product_type}
-                </span>
-              )}
-              <span className={`px-3 py-1.5 text-sm font-semibold rounded-full ${
-                post.status === 'published'
-                  ? 'bg-blue-500 text-green-800'
-                  : 'bg-yellow-100 text-yellow-800'
-              }`}>
-                {post.status.toUpperCase()}
-              </span>
+              
+              
             </div>
 
             {/* Metadata */}
@@ -263,6 +324,45 @@ export default function ProductDetailPage() {
             </div>
           )}
 
+          {/* Attribute Selection for Variant Products */}
+          {post.product_type === 'Biến thể' && (post as any).attributes && (post as any).attributes.length > 0 && (
+            <div className="bg-grey-200 border border-purple-200 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-purple-900 mb-4">Choose Attributes</h3>
+              <div className="space-y-4">
+                {((post as any).attributes as any[]).map((attribute, index) => (
+                  <div key={index} className="bg-white rounded-lg p-4 border border-purple-300">
+                    <label className="block text-sm font-semibold text-gray-900 mb-2">
+                      {attribute.name} <span className="text-red-500">*</span>
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {attribute.options && attribute.options.map((option: any, optIndex: number) => (
+                        <button
+                          key={optIndex}
+                          onClick={() => setSelectedAttributes({
+                            ...selectedAttributes,
+                            [attribute.name]: option.value
+                          })}
+                          className={`px-4 py-2 rounded-lg border-2 font-medium transition-all ${
+                            selectedAttributes[attribute.name] === option.value
+                              ? 'bg-purple-500 border-purple-600 text-white'
+                              : 'bg-white border-gray-300 text-gray-900 hover:border-purple-400'
+                          }`}
+                        >
+                          {option.value}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {attributeError && (
+                <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                  {attributeError}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Price Information & Add to Cart */}
           {(post.price_range || (post as any).price || post.product_type === 'Tải xuống') && (
             <div className="bg-grey-200 border border-green-200 rounded-lg p-6">
@@ -330,8 +430,15 @@ export default function ProductDetailPage() {
 
                 {/* Notification */}
                 {showAddedNotification && (
-                  <div className="px-4 py-2 bg-blue-500 text-gray-900 rounded-lg text-sm font-medium animate-pulse">
-                    ✓ Added {quantity} item(s) to cart!
+                  <div className="px-4 py-3 bg-green-100 border border-green-300 text-green-800 rounded-lg text-sm font-medium animate-pulse">
+                    <div>✓ Added {quantity} item(s) to cart!</div>
+                    {Object.keys(selectedAttributes).length > 0 && (
+                      <div className="mt-1 text-xs text-green-700">
+                        {Object.entries(selectedAttributes).map(([key, value]) => (
+                          <div key={key}>{key}: {value}</div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -381,61 +488,36 @@ export default function ProductDetailPage() {
             </div>
           )}
 
-          {/* Attributes (for variant products) */}
-          {(post as any).attributes && (post as any).attributes.length > 0 && (
-            <div className="bg-grey-200 border border-purple-200 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-purple-900 mb-4">Attributes</h3>
-              <div className="space-y-4">
-                {((post as any).attributes as any[]).map((attribute, attrIndex) => (
-                  <div key={attrIndex} className="bg-grey-200 rounded-lg p-4">
-                    <h4 className="font-semibold text-gray-900 mb-2">{attribute.name}</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {attribute.options && attribute.options.map((option: any, optIndex: number) => (
-                        <span
-                          key={optIndex}
-                          className="px-3 py-1 bg-blue-500 text-purple-800 rounded-full text-sm"
-                        >
-                          {option.value}
-                        </span>
-                      ))}
+          {/* Download Products - Only Show if User Has Completed Order */}
+          {post?.product_type === 'Tải xuống' && hasCompletedOrder && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-green-900 mb-4">Available Download for Purchase</h3>
+              <div className="space-y-3">
+                {(post as any).download_files && (Array.isArray((post as any).download_files) ? ((post as any).download_files as any[]) : [(post as any).download_files]).map((file: any, idx: number) => (
+                  <div key={idx} className="bg-white rounded-lg p-4 flex items-center justify-between border border-gray-200">
+                    <div className="flex items-center gap-3">
+                      <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      <div>
+                        <p className="font-semibold text-gray-900">{typeof file === 'string' ? file.split('/').pop() : file.name || `File ${idx + 1}`}</p>
+                        <p className="text-sm text-gray-600">{typeof file === 'string' ? 'Download file' : file.size ? `${(file.size / 1024).toFixed(2)} KB` : 'File'}</p>
+                      </div>
                     </div>
+                    <a href={typeof file === 'string' ? file : file.url || file} download className="px-4 py-2 bg-blue-500 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors inline-flex items-center gap-2">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                      </svg>
+                      Download
+                    </a>
                   </div>
                 ))}
               </div>
             </div>
           )}
 
-          {/* Download Files (for download products) */}
-          {(post as any).download_files && (
-            <div className="bg-grey-200 border border-green-200 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-green-900 mb-4">Available for Download</h3>
-              <div className="space-y-3">
-                <div className="bg-grey-200 rounded-lg p-4 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    <div>
-                      <p className="font-semibold text-gray-900">{(post as any).download_files.name}</p>
-                      <p className="text-sm text-gray-600">{(post as any).download_files.size}</p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => {
-                      // In a real app, this would trigger download
-                      alert('Download functionality would be implemented here');
-                    }}
-                    className="px-4 py-2 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-lg font-medium transition-colors"
-                  >
-                    Download
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* External Links (for download products) */}
-          {(post as any).link_files && (post as any).link_files.length > 0 && (
+          {/* External Links (for download products) - Only Show if User Has Completed Order */}
+          {post?.product_type === 'Tải xuống' && hasCompletedOrder && (post as any).link_files && (post as any).link_files.length > 0 && (
             <div className="bg-grey-200 border border-green-200 rounded-lg p-6">
               <h3 className="text-lg font-semibold text-green-900 mb-4">External Links</h3>
               <div className="space-y-3">

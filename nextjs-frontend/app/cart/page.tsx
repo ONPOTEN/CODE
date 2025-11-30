@@ -89,6 +89,15 @@ export default function CartPage() {
                     <p className="text-sm text-gray-600">
                       Type: <span className="font-medium">{item.product_type}</span>
                     </p>
+                    {item.attributes && Object.keys(item.attributes).length > 0 && (
+                      <div className="text-sm text-gray-600 mt-1">
+                        {Object.entries(item.attributes).map(([key, value]) => (
+                          <div key={key}>
+                            <span className="font-medium">{key}:</span> {String(value)}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                     <p className="text-lg font-bold text-green-600 mt-2">
                       ${item.price.toFixed(2)}
                     </p>

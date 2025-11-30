@@ -4,10 +4,11 @@ import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
-import { orders, shops, ApiException } from '@/lib/api';
+import { orders, shops, shopPosts, ApiException } from '@/lib/api';
 
 interface OrderItem {
   id: number;
+  shop_post_id?: number;
   product_name: string;
   product_type: 'Đơn giản' | 'Biến thể' | 'Tải xuống';
   quantity: number;
@@ -16,11 +17,13 @@ interface OrderItem {
   variant_options?: Record<string, string>;
   download_files?: any;
   link_files?: any[];
+  product?: any;
 }
 
 interface OrderDetail {
   id: number;
   order_number: string;
+  shop_id?: number;
   status: 'pending' | 'processing' | 'completed' | 'cancelled';
   subtotal: number;
   tax: number;
@@ -66,24 +69,106 @@ export default function ShopOrderDetailPage() {
         setError(null);
 
         // Fetch shop details
-        const shopInfo = await shops.getById(shopId);
+        let shopInfo = await shops.getById(shopId);
 
-        // Check if user owns this shop
-        if (shopInfo.user_id !== user?.id) {
+        // Log raw response for debugging
+        console.log('[ShopOrderDetail] Raw shop response:', shopInfo);
+
+        // Handle both direct object and wrapped response
+        if ((shopInfo as any)?.data) {
+          shopInfo = (shopInfo as any).data;
+        }
+        if ((shopInfo as any)?.shop) {
+          shopInfo = (shopInfo as any).shop;
+        }
+
+        console.log('[ShopOrderDetail] Processed shop info:', {
+          id: (shopInfo as any)?.id,
+          name: (shopInfo as any)?.name,
+          user_id: (shopInfo as any)?.user_id,
+          owner_id: (shopInfo as any)?.owner?.id,
+          ownerObject: (shopInfo as any)?.owner,
+        });
+
+        // Check if user owns this shop - shop owner should have user_id matching
+        // Convert both to numbers for comparison to handle string/number type mismatches
+        const shopOwnerId = parseInt(String((shopInfo as any)?.user_id || (shopInfo as any)?.owner?.id || '0'), 10);
+        const userId = parseInt(String(user?.id || '0'), 10);
+
+        console.log('[ShopOrderDetail] Permission check:', {
+          shopOwnerId,
+          userId,
+          shopOwnerIdRaw: (shopInfo as any)?.user_id || (shopInfo as any)?.owner?.id,
+          userIdRaw: user?.id,
+          isAuthorized: shopOwnerId > 0 && shopOwnerId === userId,
+          authenticatedUser: user ? { id: user.id, username: user.username, email: user.email } : 'NOT_AUTHENTICATED',
+          shopOwner: { id: (shopInfo as any)?.user_id || (shopInfo as any)?.owner?.id, name: (shopInfo as any)?.owner?.name },
+        });
+
+        if (!shopOwnerId || shopOwnerId <= 0 || shopOwnerId !== userId) {
+          console.warn('[ShopOrderDetail] Permission denied - shop owner mismatch', {
+            reason: !shopOwnerId ? 'No shop owner ID found' : shopOwnerId <= 0 ? 'Invalid shop owner ID' : `User ID mismatch: shop owner is ${shopOwnerId}, but authenticated user is ${userId}`,
+            expectedOwnerId: shopOwnerId,
+            actualUserId: userId,
+          });
           setError('You do not have permission to view this shop\'s orders');
           return;
         }
 
         setShop(shopInfo);
 
-        // Fetch order details
-        const orderData = await orders.get(orderId);
-        const orderDetail = orderData.data || orderData.order || orderData;
+        // Fetch order details from shop orders endpoint
+        // Use the myOrders endpoint with shop_id filter to get shop-specific orders
+        console.log('[ShopOrderDetail] Fetching order', orderId, 'for shop', shopId);
+        const ordersResponse = await orders.myOrders({ shop_id: shopId, per_page: 100 });
+        console.log('[ShopOrderDetail] Orders response:', ordersResponse);
+
+        const allOrders = ordersResponse.data || ordersResponse;
+        const orderDetail = Array.isArray(allOrders)
+          ? allOrders.find((o: any) => o.id === orderId)
+          : null;
+
+        if (!orderDetail) {
+          console.error('[ShopOrderDetail] Order not found in shop orders list');
+          setError('Order not found in your shop');
+          return;
+        }
+
+        console.log('[ShopOrderDetail] Found order:', orderDetail);
 
         // Verify order belongs to this shop
         if (orderDetail.shop_id !== shopId) {
           setError('This order does not belong to your shop');
           return;
+        }
+
+        // For completed orders with download products, ALWAYS fetch product details to get download_files and link_files
+        if (orderDetail.status === 'completed' && orderDetail.items) {
+          const downloadItems = orderDetail.items.filter(
+            (item: OrderItem) => item.product_type === 'Tải xuống'
+          );
+
+          // Fetch product details for ALL download items to ensure we have the latest files
+          for (const item of downloadItems) {
+            // Always try to fetch product details for download products
+            if (item.shop_post_id) {
+              try {
+                const productResponse = await shopPosts.getById(shopId, item.shop_post_id);
+                const product = productResponse && typeof productResponse === 'object' && 'id' in productResponse
+                  ? productResponse
+                  : (productResponse as any)?.data;
+
+                if (product) {
+                  // Always use the product's files (they may have been updated after order was placed)
+                  item.download_files = product.download_files;
+                  item.link_files = product.link_files;
+                  item.product = product;
+                }
+              } catch (err) {
+                console.error('Error fetching product details for download item:', err);
+              }
+            }
+          }
         }
 
         setOrder(orderDetail);
@@ -349,45 +434,123 @@ export default function ShopOrderDetailPage() {
                       {/* Download Files */}
                       {item.product_type === 'Tải xuống' && (
                         <div className="mb-3 space-y-2">
-                          {item.download_files && item.download_files.length > 0 && (
-                            <div>
-                              <p className="text-sm font-semibold text-gray-700 mb-2">Download Files:</p>
-                              <div className="space-y-1">
-                                {item.download_files.map((file: any, idx: number) => (
-                                  <a
-                                    key={idx}
-                                    href={file.url || file}
-                                    download
-                                    className="text-blue-600 hover:text-blue-700 text-sm flex items-center gap-2"
-                                  >
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                                    </svg>
-                                    {typeof file === 'string' ? file.split('/').pop() : file.name || `File ${idx + 1}`}
-                                  </a>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                          {item.link_files && item.link_files.length > 0 && (
-                            <div>
-                              <p className="text-sm font-semibold text-gray-700 mb-2">External Links:</p>
-                              <div className="space-y-1">
-                                {item.link_files.map((link: any, idx: number) => (
-                                  <a
-                                    key={idx}
-                                    href={link.url || link}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-blue-600 hover:text-blue-700 text-sm flex items-center gap-2"
-                                  >
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                    </svg>
-                                    {link.label || `Link ${idx + 1}`}
-                                  </a>
-                                ))}
-                              </div>
+                          {order.status === 'completed' ? (
+                            <>
+                              {/* Downloadable Files - New Design */}
+                              {item.download_files && (Array.isArray(item.download_files) ? item.download_files.length > 0 : (typeof item.download_files === 'object' ? Object.keys(item.download_files).length > 0 : !!item.download_files)) && (
+                                <div className="border border-green-300 rounded-lg p-4 bg-grey-200">
+                                  <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2 text-sm">
+                                    <span>📁</span> Downloadable File
+                                  </h4>
+                                  <div className="space-y-2">
+                                    {(Array.isArray(item.download_files) ? item.download_files : [item.download_files]).map((file: any, idx: number) => {
+                                      const fileName = typeof file === 'string' ? file.split('/').pop() : file.name || `File ${idx + 1}`;
+                                      const fileSize = file.size ? `${(file.size / 1024).toFixed(2)} KB` : null;
+                                      const fileUrl = typeof file === 'string' ? file : file.url || file;
+
+                                      return (
+                                        <div key={idx} className="flex items-center justify-between bg-white p-3 rounded border border-green-200">
+                                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                                            <svg className="w-4 h-4 text-green-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                              <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
+                                            </svg>
+                                            <div className="min-w-0">
+                                              <p className="text-sm font-medium text-gray-900 truncate">{fileName}</p>
+                                              {fileSize && <p className="text-xs text-gray-500">{fileSize}</p>}
+                                            </div>
+                                          </div>
+                                          <a
+                                            href={fileUrl}
+                                            download
+                                            className="ml-2 px-3 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600 transition-colors flex-shrink-0"
+                                          >
+                                            Download
+                                          </a>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              )}
+                              {/* External Links - New Design */}
+                              {item.link_files && item.link_files.length > 0 && (
+                                <div className="border border-blue-300 rounded-lg p-4 bg-grey-200 mt-2">
+                                  <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2 text-sm">
+                                    <span>🔗</span> External Links
+                                  </h4>
+                                  <div className="space-y-2">
+                                    {item.link_files.map((link: any, idx: number) => {
+                                      const linkTitle = link.title || link.label || `Link ${idx + 1}`;
+                                      const linkUrl = link.url || link;
+
+                                      return (
+                                        <div key={idx} className="flex items-center justify-between bg-white p-3 rounded border border-blue-200">
+                                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                                            <svg className="w-4 h-4 text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                            </svg>
+                                            <div className="min-w-0">
+                                              <p className="text-sm font-medium text-gray-900 truncate">{linkTitle}</p>
+                                              <p className="text-xs text-gray-500 truncate">{linkUrl}</p>
+                                            </div>
+                                          </div>
+                                          <a
+                                            href={linkUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="ml-2 px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600 transition-colors flex-shrink-0"
+                                          >
+                                            Open
+                                          </a>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              )}
+                              {/* No downloads available message */}
+                              {(() => {
+                                const hasDownloadFiles = item.download_files && (
+                                  Array.isArray(item.download_files)
+                                    ? item.download_files.length > 0
+                                    : (typeof item.download_files === 'object'
+                                        ? Object.keys(item.download_files).length > 0
+                                        : !!item.download_files)
+                                );
+                                const hasLinkFiles = item.link_files && item.link_files.length > 0;
+
+                                if (!hasDownloadFiles && !hasLinkFiles) {
+                                  return (
+                                    <div className="border border-gray-300 rounded-lg p-3 bg-gray-50">
+                                      <p className="text-sm text-gray-700 flex items-center gap-2 mb-2">
+                                        <span>ℹ️</span>
+                                        No download files configured for this product.
+                                      </p>
+                                      {item.shop_post_id && (
+                                        <Link
+                                          href={`/shops/${shopId}/posts/${item.shop_post_id}/edit`}
+                                          className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700"
+                                        >
+                                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                          </svg>
+                                          Edit Product to Add Files
+                                        </Link>
+                                      )}
+                                    </div>
+                                  );
+                                }
+                                return null;
+                              })()}
+                            </>
+                          ) : (
+                            <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                              <p className="text-sm text-yellow-800 flex items-center gap-2">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                Downloads will be available once the order is completed.
+                              </p>
                             </div>
                           )}
                         </div>

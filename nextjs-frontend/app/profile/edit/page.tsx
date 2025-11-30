@@ -17,6 +17,8 @@ export default function EditProfilePage() {
   const [email, setEmail] = useState('');
   const [hobby, setHobby] = useState('');
   const [company, setCompany] = useState('');
+  const [occupation, setOccupation] = useState('');
+  const [mainOccupation, setMainOccupation] = useState('');
   const [location, setLocation] = useState('');
   const [role, setRole] = useState('user');
   const [profileVisibility, setProfileVisibility] = useState('public');
@@ -24,6 +26,8 @@ export default function EditProfilePage() {
   const [emailPublic, setEmailPublic] = useState(true);
   const [hobbyPublic, setHobbyPublic] = useState(true);
   const [companyPublic, setCompanyPublic] = useState(true);
+  const [occupationPublic, setOccupationPublic] = useState(true);
+  const [mainOccupationPublic, setMainOccupationPublic] = useState(true);
   const [locationPublic, setLocationPublic] = useState(true);
   const [phonePublic, setPhonePublic] = useState(true);
   const [profileLoading, setProfileLoading] = useState(false);
@@ -54,29 +58,90 @@ export default function EditProfilePage() {
     }
   }, [isAuthenticated, isLoading, router]);
 
-  // Initialize form fields from user data - only on initial mount
+  // Initialize form fields from user data - only after fresh data is fetched
   const [isInitialized, setIsInitialized] = useState(false);
+  const [freshUserData, setFreshUserData] = useState<any>(null);
+  const [isFetching, setIsFetching] = useState(false);
 
+  // Fetch fresh user data from API on mount
   useEffect(() => {
-    if (user && !isInitialized) {
-      console.log('[Profile Edit] Initializing form fields from user:', user);
-      setUsername(user.username || '');
-      setDisplayName(user.display_name || '');
-      setEmail(user.email || '');
-      setHobby(user.hobby || '');
-      setCompany(user.company || '');
-      setLocation(user.location || '');
-      setRole(user.role || 'user');
-      setProfileVisibility(user.profile_visibility || 'public');
-      setPhone(user.phone || '');
-      setEmailPublic(user.email_public !== false);
-      setHobbyPublic(user.hobby_public !== false);
-      setCompanyPublic(user.company_public !== false);
+    const fetchUserProfile = async () => {
+      if (user && !freshUserData && !isFetching) {
+        setIsFetching(true);
+        try {
+          console.log('[Profile Edit] Fetching fresh user data from API...');
+          const response = await users.getById(user.id);
+          console.log('[Profile Edit] Fresh user data received:', response);
+          console.log('[Profile Edit] Response has data property?', 'data' in response);
+          // Extract data from response if it's wrapped in a data object
+          const userData = response && typeof response === 'object' && 'data' in response
+            ? response.data
+            : response;
+          console.log('[Profile Edit] Extracted userData:', userData);
+          console.log('[Profile Edit] userData.occupation:', userData?.occupation);
+          console.log('[Profile Edit] userData.main_occupation:', userData?.main_occupation);
+          setFreshUserData(userData);
+        } catch (error) {
+          console.error('[Profile Edit] Error fetching user profile:', error);
+          // Fall back to using cached user data
+          setFreshUserData(user);
+        }
+      }
+    };
+
+    fetchUserProfile();
+  }, [user, freshUserData, isFetching]);
+
+  // Initialize form fields ONLY after freshUserData is available
+  useEffect(() => {
+    // Wait for freshUserData to be fetched before initializing
+    if (freshUserData && !isInitialized) {
+      console.log('[Profile Edit] Initializing form fields from freshUserData:', freshUserData);
+      console.log('[Profile Edit] Occupation value:', freshUserData.occupation);
+      console.log('[Profile Edit] Main occupation value:', freshUserData.main_occupation);
+      setUsername(freshUserData.username || '');
+      setDisplayName(freshUserData.display_name || '');
+      setEmail(freshUserData.email || '');
+      setHobby(freshUserData.hobby || '');
+      setCompany(freshUserData.company || '');
+      setOccupation(freshUserData.occupation || '');
+      setMainOccupation(freshUserData.main_occupation || '');
+      setLocation(freshUserData.location || '');
+      setRole(freshUserData.role || 'user');
+      setProfileVisibility(freshUserData.profile_visibility || 'public');
+      setPhone(freshUserData.phone || '');
+      // Helper to convert API value to boolean (handles true, 1, "1", "true")
+      const toBool = (val: any): boolean => val === true || val === 1 || val === "1" || val === "true";
+
+      console.log('[Profile Edit] Raw public values:', {
+        email_public: freshUserData.email_public,
+        hobby_public: freshUserData.hobby_public,
+        company_public: freshUserData.company_public,
+        occupation_public: freshUserData.occupation_public,
+        main_occupation_public: freshUserData.main_occupation_public,
+        location_public: freshUserData.location_public,
+        phone_public: freshUserData.phone_public,
+      });
+	/*
+      setEmailPublic(toBool(freshUserData.email_public));
+      setHobbyPublic(toBool(freshUserData.hobby_public));
+      setCompanyPublic(toBool(freshUserData.company_public));
+      setOccupationPublic(toBool(freshUserData.occupation_public));
+      setMainOccupationPublic(toBool(freshUserData.main_occupation_public));
+      setLocationPublic(toBool(freshUserData.location_public));
+      setPhonePublic(toBool(freshUserData.phone_public));
+	*/
+	  setEmailPublic(freshUserData.email_public !== false);
+      setHobbyPublic(freshUserData.hobby_public !== false);
+      setCompanyPublic(freshUserData.company_public !== false);
+	  setOccupationPublic(freshUserData.occupation_public !== false);
+      setMainOccupationPublic(freshUserData.main_occupation_public !== false);
       setLocationPublic(user.location_public !== false);
       setPhonePublic(user.phone_public !== false);
       setIsInitialized(true);
+      console.log('[Profile Edit] Form fields initialized with occupation:', freshUserData.occupation, 'main_occupation:', freshUserData.main_occupation);
     }
-  }, [user, isInitialized]);
+  }, [freshUserData, isInitialized]);
 
   const handleProfileSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -125,15 +190,21 @@ export default function EditProfilePage() {
       // Always include these optional fields
       updateData.hobby = hobby || null;
       updateData.company = company || null;
+      updateData.occupation = occupation || null;
+      updateData.main_occupation = mainOccupation || null;
       updateData.location = location || null;
       updateData.profile_visibility = profileVisibility;
       updateData.email_public = emailPublic;
       updateData.hobby_public = hobbyPublic;
       updateData.company_public = companyPublic;
+      updateData.occupation_public = occupationPublic;
+      updateData.main_occupation_public = mainOccupationPublic;
       updateData.location_public = locationPublic;
       updateData.phone_public = phonePublic;
 
       console.log('[Profile Edit] Update data:', updateData);
+      console.log('[Profile Edit] Occupation value:', occupation);
+      console.log('[Profile Edit] Occupation public:', occupationPublic);
 
       const response = await users.updateProfile(updateData);
 
@@ -149,11 +220,15 @@ export default function EditProfilePage() {
             email: email,
             hobby: hobby || undefined,
             company: company || undefined,
+            occupation: occupation || undefined,
+            main_occupation: mainOccupation || undefined,
             location: location || undefined,
             profile_visibility: profileVisibility,
             email_public: emailPublic,
             hobby_public: hobbyPublic,
             company_public: companyPublic,
+            occupation_public: occupationPublic,
+            main_occupation_public: mainOccupationPublic,
             location_public: locationPublic,
             phone_public: phonePublic,
           });
@@ -535,117 +610,161 @@ export default function EditProfilePage() {
                 />
               </div>
 
-              {emailPublic && (
-                <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                    Email Address
-                  </label>
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  id="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  required
+                />
+                <div className="mt-2 flex items-center">
                   <input
-                    type="email"
-                    id="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                    required
+                    type="checkbox"
+                    id="emailPublic"
+                    checked={emailPublic}
+                    onChange={(e) => setEmailPublic(e.target.checked)}
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                   />
-                  <div className="mt-2 flex items-center">
-                    <input
-                      type="checkbox"
-                      id="emailPublic"
-                      checked={emailPublic}
-                      onChange={(e) => setEmailPublic(e.target.checked)}
-                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                    />
-                    <label htmlFor="emailPublic" className="ml-2 text-sm text-gray-600">
-                      Make email public (visible to non-friends)
-                    </label>
-                  </div>
+                  <label htmlFor="emailPublic" className="ml-2 text-sm text-gray-600">
+                    Make email public (visible to non-friends)
+                  </label>
                 </div>
-              )}
+              </div>
 
-              {hobbyPublic && (
-                <div>
-                  <label htmlFor="hobby" className="block text-sm font-medium text-gray-700 mb-1">
-                    Hobby
-                  </label>
+              <div>
+                <label htmlFor="hobby" className="block text-sm font-medium text-gray-700 mb-1">
+                  Hobby
+                </label>
+                <input
+                  type="text"
+                  id="hobby"
+                  value={hobby}
+                  onChange={(e) => setHobby(e.target.value)}
+                  placeholder="What do you like to do?"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                />
+                <div className="mt-2 flex items-center">
                   <input
-                    type="text"
-                    id="hobby"
-                    value={hobby}
-                    onChange={(e) => setHobby(e.target.value)}
-                    placeholder="What do you like to do?"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                    type="checkbox"
+                    id="hobbyPublic"
+                    checked={hobbyPublic}
+                    onChange={(e) => setHobbyPublic(e.target.checked)}
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                   />
-                  <div className="mt-2 flex items-center">
-                    <input
-                      type="checkbox"
-                      id="hobbyPublic"
-                      checked={hobbyPublic}
-                      onChange={(e) => setHobbyPublic(e.target.checked)}
-                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                    />
-                    <label htmlFor="hobbyPublic" className="ml-2 text-sm text-gray-600">
-                      Make hobby public (visible to non-friends)
-                    </label>
-                  </div>
+                  <label htmlFor="hobbyPublic" className="ml-2 text-sm text-gray-600">
+                    Make hobby public (visible to non-friends)
+                  </label>
                 </div>
-              )}
+              </div>
 
-              {companyPublic && (
-                <div>
-                  <label htmlFor="company" className="block text-sm font-medium text-gray-700 mb-1">
-                    Company
-                  </label>
+              <div>
+                <label htmlFor="company" className="block text-sm font-medium text-gray-700 mb-1">
+                  Company
+                </label>
+                <input
+                  type="text"
+                  id="company"
+                  value={company}
+                  onChange={(e) => setCompany(e.target.value)}
+                  placeholder="Where do you work?"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                />
+                <div className="mt-2 flex items-center">
                   <input
-                    type="text"
-                    id="company"
-                    value={company}
-                    onChange={(e) => setCompany(e.target.value)}
-                    placeholder="Where do you work?"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                    type="checkbox"
+                    id="companyPublic"
+                    checked={companyPublic}
+                    onChange={(e) => setCompanyPublic(e.target.checked)}
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                   />
-                  <div className="mt-2 flex items-center">
-                    <input
-                      type="checkbox"
-                      id="companyPublic"
-                      checked={companyPublic}
-                      onChange={(e) => setCompanyPublic(e.target.checked)}
-                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                    />
-                    <label htmlFor="companyPublic" className="ml-2 text-sm text-gray-600">
-                      Make company public (visible to non-friends)
-                    </label>
-                  </div>
+                  <label htmlFor="companyPublic" className="ml-2 text-sm text-gray-600">
+                    Make company public (visible to non-friends)
+                  </label>
                 </div>
-              )}
+              </div>
 
-              {locationPublic && (
-                <div>
-                  <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-1">
-                    Location
-                  </label>
+              <div>
+                <label htmlFor="occupation" className="block text-sm font-medium text-gray-700 mb-1">
+                  Nghề Nghiệp (Occupation)
+                </label>
+                <input
+                  type="text"
+                  id="occupation"
+                  value={occupation}
+                  onChange={(e) => setOccupation(e.target.value)}
+                  placeholder="What is your occupation?"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                />
+                <div className="mt-2 flex items-center">
                   <input
-                    type="text"
-                    id="location"
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
-                    placeholder="Where are you based?"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                    type="checkbox"
+                    id="occupationPublic"
+                    checked={occupationPublic}
+                    onChange={(e) => setOccupationPublic(e.target.checked)}
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                   />
-                  <div className="mt-2 flex items-center">
-                    <input
-                      type="checkbox"
-                      id="locationPublic"
-                      checked={locationPublic}
-                      onChange={(e) => setLocationPublic(e.target.checked)}
-                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                    />
-                    <label htmlFor="locationPublic" className="ml-2 text-sm text-gray-600">
-                      Make location public (visible to non-friends)
-                    </label>
-                  </div>
+                  <label htmlFor="occupationPublic" className="ml-2 text-sm text-gray-600">
+                    Make occupation public (visible to non-friends)
+                  </label>
                 </div>
-              )}
+              </div>
+
+              <div>
+                <label htmlFor="mainOccupation" className="block text-sm font-medium text-gray-700 mb-1">
+                  Nghề Nghiệp Chính (Main Occupation)
+                </label>
+                <input
+                  type="text"
+                  id="mainOccupation"
+                  value={mainOccupation}
+                  onChange={(e) => setMainOccupation(e.target.value)}
+                  placeholder="What is your main occupation?"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                />
+                <div className="mt-2 flex items-center">
+                  <input
+                    type="checkbox"
+                    id="mainOccupationPublic"
+                    checked={mainOccupationPublic}
+                    onChange={(e) => setMainOccupationPublic(e.target.checked)}
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <label htmlFor="mainOccupationPublic" className="ml-2 text-sm text-gray-600">
+                    Make main occupation public (visible to non-friends)
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-1">
+                  Location
+                </label>
+                <input
+                  type="text"
+                  id="location"
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  placeholder="Where are you based?"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                />
+                <div className="mt-2 flex items-center">
+                  <input
+                    type="checkbox"
+                    id="locationPublic"
+                    checked={locationPublic}
+                    onChange={(e) => setLocationPublic(e.target.checked)}
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <label htmlFor="locationPublic" className="ml-2 text-sm text-gray-600">
+                    Make location public (visible to non-friends)
+                  </label>
+                </div>
+              </div>
 
               <div>
                 <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">

@@ -140,8 +140,8 @@ class GroupEngagementService {
     return await response.json();
   }
 
-  async getGroupPostComments(postId: number, page: number = 1): Promise<{ data: GroupComment[] }> {
-    const response = await fetch(`${this.apiBaseUrl}/group-posts/${postId}/comments?page=${page}`, {
+  async getGroupPostComments(postId: number, page: number = 1, perPage: number = 10000): Promise<{ data: GroupComment[] }> {
+    const response = await fetch(`${this.apiBaseUrl}/group-posts/${postId}/comments?page=${page}&per_page=${perPage}`, {
       headers: {
         'Authorization': `Bearer ${this.token}`,
         'Content-Type': 'application/json',

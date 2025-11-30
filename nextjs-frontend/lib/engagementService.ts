@@ -321,7 +321,7 @@ class EngagementService {
   /**
    * Get all comments for a post
    */
-  async getPostComments(postId: number, page: number = 1, perPage: number = 15): Promise<any> {
+  async getPostComments(postId: number, page: number = 1, perPage: number = 10000): Promise<any> {
     const response = await fetch(
       `${this.apiBaseUrl}/posts/${postId}/comments?page=${page}&per_page=${perPage}`,
       {
