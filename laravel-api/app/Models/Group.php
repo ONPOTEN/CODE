@@ -47,6 +47,11 @@ class Group extends Model
         return $this->hasMany(GroupUser::class, 'group_id', 'group_id');
     }
 
+    public function messages(): HasMany
+    {
+        return $this->hasMany(GroupMessage::class, 'group_id', 'group_id');
+    }
+
     public function scopeActive($query)
     {
         return $query->where('status', 'active');

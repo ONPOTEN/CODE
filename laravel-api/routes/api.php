@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\CommentController;
 use App\Http\Controllers\Api\EngagementController;
 use App\Http\Controllers\Api\FriendController;
 use App\Http\Controllers\Api\GroupController;
+use App\Http\Controllers\Api\GroupMessageController;
 use App\Http\Controllers\Api\GroupPostController;
 use App\Http\Controllers\Api\GroupPostEngagementController;
 use App\Http\Controllers\Api\GroupCommentController;
@@ -13,6 +14,7 @@ use App\Http\Controllers\Api\PostController;
 use App\Http\Controllers\Api\PurchaseOrderController;
 use App\Http\Controllers\Api\QRCodeController;
 use App\Http\Controllers\Api\RoomController;
+use App\Http\Controllers\Api\S3Controller;
 use App\Http\Controllers\Api\ShopController;
 use App\Http\Controllers\Api\ShopPaymentSettingController;
 use App\Http\Controllers\Api\ShopPostController;
@@ -65,10 +67,11 @@ Route::prefix('v1')->group(function () {
     // Users
     Route::get('/users', [UserController::class, 'index']);
     Route::get('/users/search', [UserController::class, 'search']);
-    Route::get('/users/{id}', [UserController::class, 'show'])->where('id', '[0-9]+');
+    // User profile with optional auth - allows friendship status when logged in
+    Route::get('/users/{id}', [UserController::class, 'show'])->where('id', '[0-9]+')->middleware('optional.auth');
     Route::get('/users/{id}/wall', [PostController::class, 'userWall'])->where('id', '[0-9]+');
     Route::get('/users/{id}/shared-wall', [PostController::class, 'sharedWall'])->where('id', '[0-9]+');
-    Route::get('/users/username/{username}', [UserController::class, 'byUsername']);
+    Route::get('/users/username/{username}', [UserController::class, 'byUsername'])->middleware('optional.auth');
     Route::get('/users/by-nickname/{nickname}', [UserController::class, 'byNickname']);
     Route::get('/users/by-phone', [UserController::class, 'byPhoneQuery']); // Query parameter version (preferred)
     Route::get('/users/by-phone/{phone}', [UserController::class, 'byPhone']); // Path parameter version (legacy)
@@ -78,6 +81,8 @@ Route::prefix('v1')->group(function () {
     Route::get('/shops/{id}', [ShopController::class, 'show'])->where('id', '[0-9]+');
 
     // Shop Posts/Pages (public)
+    Route::get('/shops/products/feed', [ShopPostController::class, 'feed']); // Latest products feed
+    Route::get('/shops/products/trending', [ShopPostController::class, 'trending']); // Trending products by views
     Route::get('/shops/{shopId}/posts', [ShopPostController::class, 'index'])->where('shopId', '[0-9]+');
     Route::get('/shops/{shopId}/posts/{id}', [ShopPostController::class, 'show'])->where(['shopId' => '[0-9]+', 'id' => '[0-9]+']);
 
@@ -107,6 +112,10 @@ Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
     Route::get('/user', function (Request $request) {
         return $request->user();
     });
+
+    // S3 (authenticated)
+    Route::post('/s3/presigned-url', [S3Controller::class, 'generatePresignedUrl']);
+    Route::delete('/s3/delete-object', [S3Controller::class, 'deleteObject']);
 
     // Posts (authenticated)
     Route::get('/my-posts', [PostController::class, 'myPosts']);
@@ -156,6 +165,9 @@ Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
     Route::post('/friends/accept/{userId}', [FriendController::class, 'acceptRequest'])->where('userId', '[0-9]+');
     Route::post('/friends/reject/{userId}', [FriendController::class, 'rejectRequest'])->where('userId', '[0-9]+');
     Route::delete('/friends/unfriend/{userId}', [FriendController::class, 'unfriend'])->where('userId', '[0-9]+');
+    Route::post('/friends/block/{userId}', [FriendController::class, 'block'])->where('userId', '[0-9]+');
+    Route::delete('/friends/unblock/{userId}', [FriendController::class, 'unblock'])->where('userId', '[0-9]+');
+    Route::get('/friends/blocked', [FriendController::class, 'blockedUsers']);
 
     // Shops (authenticated)
     Route::get('/my-shops', [ShopController::class, 'myShops']);
@@ -212,6 +224,12 @@ Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
     Route::post('/groups/{group}/requests/{userId}/reject', [GroupController::class, 'rejectJoinRequest']);
     Route::get('/groups/{group}/members', [GroupController::class, 'getMembers']);
     Route::delete('/groups/{group}/members/{userId}', [GroupController::class, 'removeMember']);
+
+    // Group Messages (authenticated)
+    Route::get('/groups/{group}/messages', [GroupMessageController::class, 'index']);
+    Route::post('/groups/{group}/messages', [GroupMessageController::class, 'store']);
+    Route::put('/groups/{group}/messages/{message}', [GroupMessageController::class, 'update']);
+    Route::delete('/groups/{group}/messages/{message}', [GroupMessageController::class, 'destroy']);
 
     // Group Posts (authenticated)
     Route::post('/group-posts', [GroupPostController::class, 'store']);

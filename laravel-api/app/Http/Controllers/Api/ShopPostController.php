@@ -13,6 +13,43 @@ use Illuminate\Support\Str;
 class ShopPostController extends Controller
 {
     /**
+     * Get latest products across all shops (for feed)
+     */
+    public function feed(Request $request)
+    {
+        $query = ShopPost::with(['shop', 'author'])
+            ->whereHas('shop', function ($q) {
+                $q->where('status', 'active');
+            })
+            ->published()
+            ->where('type', 'post'); // Only get products/posts, not pages
+
+        $perPage = min($request->input('per_page', 10), 50);
+        $posts = $query->latest()->paginate($perPage);
+
+        return ShopPostResource::collection($posts);
+    }
+
+    /**
+     * Get trending products across all shops (sorted by view_count)
+     */
+    public function trending(Request $request)
+    {
+        $query = ShopPost::with(['shop', 'author'])
+            ->whereHas('shop', function ($q) {
+                $q->where('status', 'active');
+            })
+            ->published()
+            ->where('type', 'post') // Only get products/posts, not pages
+            ->orderBy('view_count', 'desc');
+
+        $perPage = min($request->input('per_page', 10), 50);
+        $posts = $query->paginate($perPage);
+
+        return ShopPostResource::collection($posts);
+    }
+
+    /**
      * Get all posts/pages for a specific shop
      */
     public function index(Request $request, $shopId)
@@ -64,6 +101,7 @@ class ShopPostController extends Controller
             'featured_images.*' => 'nullable|image|mimes:jpeg,jpg,png,gif,webp|max:5120', // 5MB max per image
             'main_image' => 'nullable|image|mimes:jpeg,jpg,png,gif,webp|max:5120', // 5MB max
             'other_images.*' => 'nullable|image|mimes:jpeg,jpg,png,gif,webp|max:5120', // 5MB max per image
+            'variant_option_images.*' => 'nullable|image|mimes:jpeg,jpg,png,gif,webp|max:5120', // 5MB max for variant option images
             'download_files[file]' => 'nullable|file|max:102400', // 100MB max for download file
             'download_files[name]' => 'nullable|string|max:255',
         ]);
@@ -224,7 +262,34 @@ class ShopPostController extends Controller
         }
         if ($request->has('attributes')) {
             $attributesInput = $request->input('attributes');
-            $createData['attributes'] = is_string($attributesInput) ? json_decode($attributesInput, true) : $attributesInput;
+            $attributes = is_string($attributesInput) ? json_decode($attributesInput, true) : $attributesInput;
+
+            // Handle variant option images upload
+            if ($request->hasFile('variant_option_images')) {
+                $variantImages = $request->file('variant_option_images');
+
+                // Upload each variant option image and update the attributes array
+                foreach ($variantImages as $key => $file) {
+                    // Upload the image to S3
+                    $imagePath = $uploadImage($file, $shopId);
+
+                    // Generate the full S3 URL
+                    $imageUrl = \Storage::disk('s3')->url("shop_posts/{$imagePath}");
+
+                    // Find the option in attributes and update its image
+                    foreach ($attributes as &$attr) {
+                        foreach ($attr['options'] as &$option) {
+                            if (isset($option['image_key']) && $option['image_key'] === $key) {
+                                $option['image'] = $imageUrl;
+                                unset($option['image_key']); // Remove the temporary key
+                            }
+                        }
+                    }
+                    usleep(10000); // 10ms delay to ensure unique timestamps
+                }
+            }
+
+            $createData['attributes'] = $attributes;
         }
         if ($request->has('link_files')) {
             $linkFilesInput = $request->input('link_files');
@@ -277,6 +342,7 @@ class ShopPostController extends Controller
             'featured_images.*' => 'nullable|image|mimes:jpeg,jpg,png,gif,webp|max:5120', // 5MB max per image
             'main_image' => 'nullable|image|mimes:jpeg,jpg,png,gif,webp|max:5120', // 5MB max
             'other_images.*' => 'nullable|image|mimes:jpeg,jpg,png,gif,webp|max:5120', // 5MB max per image
+            'variant_option_images.*' => 'nullable|image|mimes:jpeg,jpg,png,gif,webp|max:5120', // 5MB max for variant option images
             'remove_images' => 'sometimes|array', // Array of image paths to remove
             'remove_images.*' => 'string',
         ]);
@@ -445,7 +511,34 @@ class ShopPostController extends Controller
         }
         if ($request->has('attributes')) {
             $attributesInput = $request->input('attributes');
-            $shopPost->attributes = is_string($attributesInput) ? json_decode($attributesInput, true) : $attributesInput;
+            $attributes = is_string($attributesInput) ? json_decode($attributesInput, true) : $attributesInput;
+
+            // Handle variant option images upload
+            if ($request->hasFile('variant_option_images')) {
+                $variantImages = $request->file('variant_option_images');
+
+                // Upload each variant option image and update the attributes array
+                foreach ($variantImages as $key => $file) {
+                    // Upload the image to S3
+                    $imagePath = $uploadImage($file, $shopId);
+
+                    // Generate the full S3 URL
+                    $imageUrl = \Storage::disk('s3')->url("shop_posts/{$imagePath}");
+
+                    // Find the option in attributes and update its image
+                    foreach ($attributes as &$attr) {
+                        foreach ($attr['options'] as &$option) {
+                            if (isset($option['image_key']) && $option['image_key'] === $key) {
+                                $option['image'] = $imageUrl;
+                                unset($option['image_key']); // Remove the temporary key
+                            }
+                        }
+                    }
+                    usleep(10000); // 10ms delay to ensure unique timestamps
+                }
+            }
+
+            $shopPost->attributes = $attributes;
         }
         if ($request->has('download_files')) {
             $downloadFilesInput = $request->input('download_files');

@@ -19,7 +19,7 @@ class GroupCommentController extends Controller
     public function index(Request $request, $postId): JsonResponse
     {
         try {
-            $perPage = $request->input('per_page', 15);
+            $perPage = $request->input('per_page', 10000); // Default to very high number to get all comments
             $status = $request->input('status', 'approved');
             $sortBy = $request->input('sort_by', 'created_at');
             $order = $request->input('order', 'desc');
@@ -210,7 +210,7 @@ class GroupCommentController extends Controller
     public function replies(Request $request, $postId, $commentId): JsonResponse
     {
         try {
-            $perPage = $request->input('per_page', 15);
+            $perPage = $request->input('per_page', 10000); // Default to very high number to get all replies
 
             $replies = GroupComment::where('post_id', $postId)
                 ->where('parent_id', $commentId)

@@ -19,6 +19,8 @@ class UserResource extends JsonResource
         $shouldShowEmail = $isOwnProfile || $this->email_public || $isFriend;
         $shouldShowHobby = $isOwnProfile || $this->hobby_public || $isFriend;
         $shouldShowCompany = $isOwnProfile || $this->company_public || $isFriend;
+        $shouldShowOccupation = $isOwnProfile || $this->occupation_public || $isFriend;
+        $shouldShowMainOccupation = $isOwnProfile || $this->main_occupation_public || $isFriend;
         $shouldShowLocation = $isOwnProfile || $this->location_public || $isFriend;
         $shouldShowPhone = $isOwnProfile || $this->phone_public || $isFriend;
 
@@ -32,6 +34,8 @@ class UserResource extends JsonResource
             'url' => $this->user_url,
             'hobby' => $shouldShowHobby ? $this->hobby : null,
             'company' => $shouldShowCompany ? $this->company : null,
+            'occupation' => $shouldShowOccupation ? $this->occupation : null,
+            'main_occupation' => $shouldShowMainOccupation ? $this->main_occupation : null,
             'location' => $shouldShowLocation ? $this->location : null,
             'role' => $this->role,
             'avatar' => $this->avatar,
@@ -41,6 +45,8 @@ class UserResource extends JsonResource
             'email_public' => $isOwnProfile ? $this->email_public : null,
             'hobby_public' => $isOwnProfile ? $this->hobby_public : null,
             'company_public' => $isOwnProfile ? $this->company_public : null,
+            'occupation_public' => $isOwnProfile ? $this->occupation_public : null,
+            'main_occupation_public' => $isOwnProfile ? $this->main_occupation_public : null,
             'location_public' => $isOwnProfile ? $this->location_public : null,
             'phone_public' => $isOwnProfile ? $this->phone_public : null,
             'created_at' => $this->user_registered?->toIso8601String(),
@@ -76,6 +82,13 @@ class UserResource extends JsonResource
             $query->where('user_id', $this->ID)
                   ->where('friend_id', $currentUser->ID);
         })->first();
+
+        \Log::info('Friendship check', [
+            'current_user_id' => $currentUser->ID,
+            'target_user_id' => $this->ID,
+            'friendship_found' => $friendship ? true : false,
+            'friendship_status' => $friendship?->status,
+        ]);
 
         if (!$friendship) {
             return [

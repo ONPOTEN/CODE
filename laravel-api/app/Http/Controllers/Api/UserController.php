@@ -190,6 +190,8 @@ class UserController extends Controller
             'user_email' => 'sometimes|email|unique:wp_users,user_email,' . $user->ID . ',ID',
             'hobby' => 'sometimes|nullable|string|max:255',
             'company' => 'sometimes|nullable|string|max:255',
+            'occupation' => 'sometimes|nullable|string|max:255',
+            'main_occupation' => 'sometimes|nullable|string|max:255',
             'location' => 'sometimes|nullable|string|max:255',
             // REMOVED: 'role' - Users cannot change their own role
             'profile_visibility' => 'sometimes|nullable|string|in:public,private',
@@ -197,6 +199,8 @@ class UserController extends Controller
             'email_public' => 'sometimes|boolean',
             'hobby_public' => 'sometimes|boolean',
             'company_public' => 'sometimes|boolean',
+            'occupation_public' => 'sometimes|boolean',
+            'main_occupation_public' => 'sometimes|boolean',
             'location_public' => 'sometimes|boolean',
             'phone_public' => 'sometimes|boolean',
         ]);
@@ -232,6 +236,14 @@ class UserController extends Controller
             $user->company = $validated['company'];
         }
 
+        if (isset($validated['occupation'])) {
+            $user->occupation = $validated['occupation'];
+        }
+
+        if (isset($validated['main_occupation'])) {
+            $user->main_occupation = $validated['main_occupation'];
+        }
+
         if (isset($validated['location'])) {
             $user->location = $validated['location'];
         }
@@ -254,6 +266,14 @@ class UserController extends Controller
 
         if (isset($validated['company_public'])) {
             $user->company_public = $validated['company_public'];
+        }
+
+        if (isset($validated['occupation_public'])) {
+            $user->occupation_public = $validated['occupation_public'];
+        }
+
+        if (isset($validated['main_occupation_public'])) {
+            $user->main_occupation_public = $validated['main_occupation_public'];
         }
 
         if (isset($validated['location_public'])) {

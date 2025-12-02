@@ -161,8 +161,35 @@ export default function EditShopPostPage() {
             : formData.categories
         ));
       }
+      // Handle attributes with option images
       if (formData.attributes && formData.attributes.length > 0) {
-        submitData.append('attributes', JSON.stringify(formData.attributes));
+        // Process attributes to separate file data from JSON data
+        const attributesForJson = (formData.attributes as any[]).map((attr: any, attrIndex: number) => ({
+          name: attr.name,
+          options: attr.options.map((opt: any, optIndex: number) => {
+            const optionData: any = {
+              value: opt.value,
+            };
+            if (opt.price) optionData.price = opt.price;
+            // Mark that this option has an image file that will be uploaded separately
+            if (opt.image instanceof File) {
+              optionData.image_key = `attr_${attrIndex}_opt_${optIndex}`;
+            } else if (typeof opt.image === 'string' && opt.image) {
+              optionData.image = opt.image;
+            }
+            return optionData;
+          }),
+        }));
+        submitData.append('attributes', JSON.stringify(attributesForJson));
+
+        // Append variant option images as separate files
+        (formData.attributes as any[]).forEach((attr: any, attrIndex: number) => {
+          attr.options.forEach((opt: any, optIndex: number) => {
+            if (opt.image instanceof File) {
+              submitData.append(`variant_option_images[attr_${attrIndex}_opt_${optIndex}]`, opt.image);
+            }
+          });
+        });
       }
       if (formData.download_files && (formData.download_files as any).file) {
         const downloadFileObj = formData.download_files as any;

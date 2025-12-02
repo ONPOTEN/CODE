@@ -87,12 +87,17 @@ export default function CreateShopPostPage() {
     try {
       setLoading(true);
 
-      // Check if we have any file uploads (featured images, main_image, other_images, or download file)
+      // Check if we have any file uploads (featured images, main_image, other_images, download file, or variant option images)
       const hasDownloadFile = formData.download_files && (formData.download_files as any).file;
       const hasMainImage = formData.main_image && formData.main_image instanceof File;
       const hasOtherImages = formData.other_images && formData.other_images.some((img) => img instanceof File);
 
-      if (featuredImages.length > 0 || hasDownloadFile || hasMainImage || hasOtherImages) {
+      // Check if any variant option has an image file
+      const hasVariantOptionImages = formData.attributes && (formData.attributes as any[]).some((attr: any) =>
+        attr.options && attr.options.some((opt: any) => opt.image instanceof File)
+      );
+
+      if (featuredImages.length > 0 || hasDownloadFile || hasMainImage || hasOtherImages || hasVariantOptionImages) {
         // Use FormData for file uploads with S3
         const submitData = new FormData();
         submitData.append('title', formData.title);
@@ -106,8 +111,36 @@ export default function CreateShopPostPage() {
         if (formData.short_description) submitData.append('short_description', formData.short_description);
         if (formData.detail_description) submitData.append('detail_description', formData.detail_description);
         if (formData.categories) submitData.append('categories', formData.categories);
+
+        // Handle attributes with option images
         if (formData.attributes && formData.attributes.length > 0) {
-          submitData.append('attributes', JSON.stringify(formData.attributes));
+          // Process attributes to separate file data from JSON data
+          const attributesForJson = (formData.attributes as any[]).map((attr: any, attrIndex: number) => ({
+            name: attr.name,
+            options: attr.options.map((opt: any, optIndex: number) => {
+              const optionData: any = {
+                value: opt.value,
+              };
+              if (opt.price) optionData.price = opt.price;
+              // Mark that this option has an image file that will be uploaded separately
+              if (opt.image instanceof File) {
+                optionData.image_key = `attr_${attrIndex}_opt_${optIndex}`;
+              } else if (typeof opt.image === 'string' && opt.image) {
+                optionData.image = opt.image;
+              }
+              return optionData;
+            }),
+          }));
+          submitData.append('attributes', JSON.stringify(attributesForJson));
+
+          // Append variant option images as separate files
+          (formData.attributes as any[]).forEach((attr: any, attrIndex: number) => {
+            attr.options.forEach((opt: any, optIndex: number) => {
+              if (opt.image instanceof File) {
+                submitData.append(`variant_option_images[attr_${attrIndex}_opt_${optIndex}]`, opt.image);
+              }
+            });
+          });
         }
 
         // Handle main_image

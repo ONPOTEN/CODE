@@ -23,7 +23,6 @@ export default function UserProfilePage() {
   const [showShareModal, setShowShareModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [messageLoading, setMessageLoading] = useState(false);
-  const [blockLoading, setBlockLoading] = useState(false);
 
   const userId = params.id as string;
 
@@ -53,6 +52,7 @@ export default function UserProfilePage() {
         if (userData && typeof userData === 'object' && 'data' in userData) {
           userData = (userData as any).data;
         }
+        console.log('[UserProfile] is_friend:', userData?.is_friend, 'friend_request_sent:', userData?.friend_request_sent, 'friendship_status:', userData?.friendship_status);
         setUser(userData as any);
       } catch (err) {
         if (err instanceof ApiException) {
@@ -209,52 +209,6 @@ export default function UserProfilePage() {
     }
   };
 
-  const handleBlockUser = async () => {
-    if (!user) return;
-
-    const confirmed = window.confirm(
-      `Are you sure you want to block ${user.name}? This will also unfriend them and block message conversations.`
-    );
-
-    if (!confirmed) return;
-
-    try {
-      setBlockLoading(true);
-
-      // First unfriend if they are friends
-      if (user.is_friend) {
-        try {
-          await friends.unfriend(user.id);
-        } catch (err) {
-          console.log('Unfriend error (may be expected):', err);
-        }
-      }
-
-      // Then block the user
-      await friends.block(user.id);
-
-      // Update local state
-      setUser({
-        ...user,
-        is_friend: false,
-        friend_request_sent: false,
-        friend_request_received: false,
-        friendship_status: 'blocked' as const
-      });
-
-      alert(`${user.name} has been blocked.`);
-    } catch (err: any) {
-      console.error('Error blocking user:', err);
-      if (err instanceof ApiException) {
-        alert(`Failed to block user: ${err.message}`);
-      } else {
-        alert(`Failed to block user: ${err?.message || 'Unknown error'}`);
-      }
-    } finally {
-      setBlockLoading(false);
-    }
-  };
-
   // Helper to check if field is public (null is treated as public, only false means private)
   const isPublic = (value: any) => value !== false && value !== 0 && value !== "0" && value !== "false";
 
@@ -352,60 +306,9 @@ export default function UserProfilePage() {
             </div>
           </div>
 
-          {/* Action Buttons - All 5 on same row (responsive for mobile) */}
+          {/* Action Buttons */}
           {!isOwnProfile && currentUser && (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3 w-full mb-8">
-              {user.is_friend ? (
-                // Already friends - show unfriend button
-                <button
-                  onClick={handleUnfriend}
-                  disabled={friendActionLoading}
-                  className="flex items-center justify-center gap-2 px-3 py-2 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
-                >
-                  <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7a4 4 0 11-8 0 4 4 0 018 0zM9 14a6 6 0 00-6 6v1h12v-1a6 6 0 00-6-6zM21 12h-6" />
-                  </svg>
-                  <span className="hidden sm:inline">{friendActionLoading ? 'Processing...' : 'Unfriend'}</span>
-                  <span className="sm:hidden">{friendActionLoading ? '...' : 'Unfriend'}</span>
-                </button>
-              ) : user.friend_request_received ? (
-                // Received friend request - show accept button
-                <button
-                  onClick={handleAcceptFriendRequest}
-                  disabled={friendActionLoading}
-                  className="flex items-center justify-center gap-2 px-3 py-2 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
-                >
-                  <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  <span className="hidden sm:inline">{friendActionLoading ? 'Processing...' : 'Accept'}</span>
-                  <span className="sm:hidden">{friendActionLoading ? '...' : 'Accept'}</span>
-                </button>
-              ) : user.friend_request_sent ? (
-                // Friend request already sent - show pending button
-                <button
-                  disabled
-                  className="flex items-center justify-center gap-2 px-3 py-2 bg-blue-400 text-gray-900 rounded-lg font-medium cursor-not-allowed text-sm sm:text-base"
-                >
-                  <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <span>Pending</span>
-                </button>
-              ) : (
-                // Not friends - show add friend button
-                <button
-                  onClick={handleSendFriendRequest}
-                  disabled={friendActionLoading}
-                  className="flex items-center justify-center gap-2 px-3 py-2 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
-                >
-                  <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                  </svg>
-                  <span className="hidden sm:inline">{friendActionLoading ? 'Sending...' : 'Add Friend'}</span>
-                  <span className="sm:hidden">{friendActionLoading ? '...' : 'Add'}</span>
-                </button>
-              )}
+            <div className="grid grid-cols-2 gap-2 sm:gap-3 w-full mb-8">
               {/* Message Button */}
               <button
                 onClick={handleMessageClick}
@@ -421,22 +324,44 @@ export default function UserProfilePage() {
                 )}
                 <span>{messageLoading ? 'Loading...' : 'Message'}</span>
               </button>
-              {/* Block Button */}
-              <button
-                type="button"
-                onClick={handleBlockUser}
-                disabled={blockLoading}
-                className="flex items-center justify-center gap-2 px-3 py-2 bg-red-500 hover:bg-red-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
-              >
-                {blockLoading ? (
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                ) : (
-                  <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
-                  </svg>
-                )}
-                <span>{blockLoading ? 'Blocking...' : 'Blocked'}</span>
-              </button>
+              {/* Dynamic Friend Button */}
+              {user.is_friend ? (
+                <button
+                  type="button"
+                  onClick={handleUnfriend}
+                  disabled={friendActionLoading}
+                  className="flex items-center justify-center gap-2 px-3 py-2 bg-red-500 hover:bg-red-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
+                >
+                  {friendActionLoading ? (
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                  ) : (
+                    <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7a4 4 0 11-8 0 4 4 0 018 0zM9 14a6 6 0 00-6 6v1h12v-1a6 6 0 00-6-6zM21 12h-6" />
+                    </svg>
+                  )}
+                  <span>{friendActionLoading ? 'Processing...' : 'Un Friend'}</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleSendFriendRequest}
+                  disabled={friendActionLoading || user.friend_request_sent}
+                  className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base ${
+                    user.friend_request_sent
+                      ? 'bg-gray-400 text-white cursor-not-allowed'
+                      : 'bg-green-500 hover:bg-green-700 text-white'
+                  }`}
+                >
+                  {friendActionLoading ? (
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                  ) : (
+                    <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                    </svg>
+                  )}
+                  <span>{friendActionLoading ? 'Sending...' : user.friend_request_sent ? 'Pending' : 'Add Friend'}</span>
+                </button>
+              )}
               {/* Post on Wall Button */}
               <button
                 onClick={() => setShowShareModal(true)}
@@ -453,7 +378,7 @@ export default function UserProfilePage() {
               <button
                 onClick={() => setShowCreateModal(true)}
                 disabled={friendActionLoading}
-                className="flex items-center justify-center gap-2 px-3 py-2 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base col-span-2 sm:col-span-1"
+                className="flex items-center justify-center gap-2 px-3 py-2 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
               >
                 <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />

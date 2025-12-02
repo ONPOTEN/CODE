@@ -21,6 +21,7 @@ export default function ProductDetailPage() {
   const [quantity, setQuantity] = useState(1);
   const [showAddedNotification, setShowAddedNotification] = useState(false);
   const [selectedAttributes, setSelectedAttributes] = useState<{ [key: string]: string }>({});
+  const [selectedOptionData, setSelectedOptionData] = useState<{ [key: string]: any }>({});
   const [attributeError, setAttributeError] = useState<string | null>(null);
   const [hasCompletedOrder, setHasCompletedOrder] = useState(false);
 
@@ -43,6 +44,9 @@ export default function ProductDetailPage() {
         throw new Error('Post not found');
       }
 
+      console.log('[ProductDetail] Post loaded:', postData);
+      console.log('[ProductDetail] Product type:', postData.product_type);
+      console.log('[ProductDetail] Attributes:', JSON.stringify(postData.attributes));
       setPost(postData);
     } catch (err) {
       console.error('Error fetching post:', err);
@@ -129,8 +133,23 @@ export default function ProductDetailPage() {
     }
 
     setAttributeError(null);
-    const price = parseFloat((post as any).price) || 0;
-    const image = (post as any).main_image || post.featured_images?.[0] || '/placeholder.png';
+
+    // Get price - check for selected option price first (for variant products)
+    let price = parseFloat((post as any).price) || 0;
+    let image = (post as any).main_image || post.featured_images?.[0] || '/placeholder.png';
+
+    // For variant products, use selected option's price and image if available
+    if (post.product_type === 'Biến thể' && Object.keys(selectedOptionData).length > 0) {
+      const optionWithPrice = Object.values(selectedOptionData).find((opt: any) => opt?.price);
+      if (optionWithPrice) {
+        price = parseFloat((optionWithPrice as any).price) || price;
+      }
+      // Use option image if available
+      const optionWithImage = Object.values(selectedOptionData).find((opt: any) => opt?.image);
+      if (optionWithImage && (optionWithImage as any).image) {
+        image = (optionWithImage as any).image;
+      }
+    }
 
     for (let i = 0; i < quantity; i++) {
       addToCart({
@@ -150,6 +169,7 @@ export default function ProductDetailPage() {
     setTimeout(() => setShowAddedNotification(false), 3000);
     setQuantity(1);
     setSelectedAttributes({});
+    setSelectedOptionData({});
   };
 
   if (loading) {
@@ -227,8 +247,8 @@ export default function ProductDetailPage() {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-4xl mx-auto py-8">
-        <article className="bg-grey-200 rounded-lg shadow-md space-y-8">
+      <div className="max-w-4xl mx-auto py-8 px-4">
+        <article className="bg-grey-200 rounded-lg shadow-md space-y-8 p-6">
           {/* Title and Badges */}
           <div>
             <div className="flex items-center gap-3 mb-4 flex-wrap">
@@ -256,13 +276,26 @@ export default function ProductDetailPage() {
                   day: 'numeric'
                 })}
               </span>
-              {post.author && (
-                <span className="flex items-center gap-2">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                  {post.author.name || post.author.username}
-                </span>
+              {post.shop && (
+                <Link
+                  href={`/shops/${post.shop.id}`}
+                  className="flex items-center gap-2 hover:text-blue-600 transition-colors"
+                >
+                  {post.shop.logo ? (
+                    <img
+                      src={post.shop.logo}
+                      alt={post.shop.name}
+                      className="w-6 h-6 rounded-full object-cover border border-gray-200"
+                    />
+                  ) : (
+                    <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center">
+                      <span className="text-white text-xs font-bold">
+                        {post.shop.name?.charAt(0) || 'S'}
+                      </span>
+                    </div>
+                  )}
+                  <span className="font-medium">{post.shop.name}</span>
+                </Link>
               )}
             </div>
           </div>
@@ -325,7 +358,7 @@ export default function ProductDetailPage() {
           )}
 
           {/* Attribute Selection for Variant Products */}
-          {post.product_type === 'Biến thể' && (post as any).attributes && (post as any).attributes.length > 0 && (
+          {(post.product_type === 'Biến thể' || post.product_type?.includes('Bi')) && (post as any).attributes && Array.isArray((post as any).attributes) && (post as any).attributes.length > 0 && (
             <div className="bg-grey-200 border border-purple-200 rounded-lg p-6">
               <h3 className="text-lg font-semibold text-purple-900 mb-4">Choose Attributes</h3>
               <div className="space-y-4">
@@ -334,21 +367,46 @@ export default function ProductDetailPage() {
                     <label className="block text-sm font-semibold text-gray-900 mb-2">
                       {attribute.name} <span className="text-red-500">*</span>
                     </label>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-3">
                       {attribute.options && attribute.options.map((option: any, optIndex: number) => (
                         <button
                           key={optIndex}
-                          onClick={() => setSelectedAttributes({
-                            ...selectedAttributes,
-                            [attribute.name]: option.value
-                          })}
-                          className={`px-4 py-2 rounded-lg border-2 font-medium transition-all ${
+                          onClick={() => {
+                            setSelectedAttributes({
+                              ...selectedAttributes,
+                              [attribute.name]: option.value
+                            });
+                            setSelectedOptionData({
+                              ...selectedOptionData,
+                              [attribute.name]: option
+                            });
+                          }}
+                          className={`flex flex-col items-center p-2 rounded-lg border-2 font-medium transition-all min-w-[80px] ${
                             selectedAttributes[attribute.name] === option.value
                               ? 'bg-purple-500 border-purple-600 text-white'
                               : 'bg-white border-gray-300 text-gray-900 hover:border-purple-400'
                           }`}
                         >
-                          {option.value}
+                          {/* Option Image */}
+                          {option.image && (
+                            <img
+                              src={option.image}
+                              alt={option.value}
+                              className="w-16 h-16 object-cover rounded-lg mb-2 border border-gray-200"
+                            />
+                          )}
+                          {/* Option Value */}
+                          <span className="text-sm">{option.value}</span>
+                          {/* Option Price */}
+                          {option.price && (
+                            <span className={`text-xs mt-1 ${
+                              selectedAttributes[attribute.name] === option.value
+                                ? 'text-purple-100'
+                                : 'text-green-600'
+                            }`}>
+                              {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(parseFloat(option.price))}
+                            </span>
+                          )}
                         </button>
                       ))}
                     </div>
@@ -368,6 +426,31 @@ export default function ProductDetailPage() {
             <div className="bg-grey-200 border border-green-200 rounded-lg p-6">
               <h3 className="text-lg font-semibold text-green-900 mb-3">Pricing</h3>
               <div className="space-y-2 mb-6">
+                {/* Show selected option price for variant products */}
+                {post.product_type === 'Biến thể' && Object.keys(selectedOptionData).length > 0 && (() => {
+                  // Find the first selected option with a price
+                  const optionWithPrice = Object.values(selectedOptionData).find((opt: any) => opt?.price);
+                  if (optionWithPrice) {
+                    const optionPrice = parseFloat((optionWithPrice as any).price);
+                    const basePrice = parseFloat((post as any).price) || 0;
+
+                    return (
+                      <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-4">
+                        <p className="text-sm text-purple-600 mb-2">Selected variant price:</p>
+                        <p className="text-2xl font-bold text-purple-900">
+                          {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(optionPrice)}
+                        </p>
+                        {basePrice > 0 && optionPrice !== basePrice && (
+                          <p className="text-sm text-gray-500 line-through mt-1">
+                            Base price: {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(basePrice)}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
+
                 {post.price_range && (
                   <p className="text-lg text-green-800">
                     <span className="font-semibold">Price Range:</span> {post.price_range}
@@ -375,12 +458,12 @@ export default function ProductDetailPage() {
                 )}
                 {(post as any).price && (
                   <p className="text-lg text-green-800">
-                    <span className="font-semibold">Price:</span> ${parseFloat((post as any).price).toFixed(2)}
+                    <span className="font-semibold">Base Price:</span> {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(parseFloat((post as any).price))}
                   </p>
                 )}
                 {(post as any).sale_price && (
                   <p className="text-lg text-green-800">
-                    <span className="font-semibold">Sale Price:</span> ${parseFloat((post as any).sale_price).toFixed(2)}
+                    <span className="font-semibold">Sale Price:</span> {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(parseFloat((post as any).sale_price))}
                     {(post as any).price && (
                       <span className="text-sm text-green-600 ml-2">
                         ({(((Number((post as any).price) - Number((post as any).sale_price)) / Number((post as any).price)) * 100).toFixed(1)}% off)

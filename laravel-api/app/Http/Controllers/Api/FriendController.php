@@ -44,6 +44,17 @@ class FriendController extends Controller
                   ->where('friend_id', $currentUser->ID);
         })->first();
 
+        \Log::info('FriendController::sendRequest check', [
+            'current_user_id' => $currentUser->ID,
+            'target_user_id' => $userId,
+            'existing_request' => $existingRequest ? [
+                'id' => $existingRequest->id,
+                'user_id' => $existingRequest->user_id,
+                'friend_id' => $existingRequest->friend_id,
+                'status' => $existingRequest->status,
+            ] : null,
+        ]);
+
         if ($existingRequest) {
             if ($existingRequest->status === 'accepted') {
                 return response()->json(['message' => 'You are already friends'], 400);
@@ -258,5 +269,112 @@ class FriendController extends Controller
             'friend_request_sent' => $friendRequestSent,
             'friend_request_received' => $friendRequestReceived,
         ]);
+    }
+
+    /**
+     * Block a user
+     */
+    public function block(Request $request, $userId)
+    {
+        $currentUser = $request->user();
+
+        // Check if user is authenticated
+        if (!$currentUser) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
+        // Can't block yourself
+        if ($currentUser->ID == $userId) {
+            return response()->json(['message' => 'You cannot block yourself'], 400);
+        }
+
+        // Check if user exists
+        $targetUser = WpUser::find($userId);
+        if (!$targetUser) {
+            return response()->json(['message' => 'User not found'], 404);
+        }
+
+        // Check if already blocked
+        $existingBlock = Friend::where('user_id', $currentUser->ID)
+            ->where('friend_id', $userId)
+            ->where('status', 'blocked')
+            ->first();
+
+        if ($existingBlock) {
+            return response()->json(['message' => 'User is already blocked'], 400);
+        }
+
+        // Delete any existing friendship/request between these users
+        Friend::where(function ($query) use ($currentUser, $userId) {
+            $query->where('user_id', $currentUser->ID)
+                  ->where('friend_id', $userId);
+        })->orWhere(function ($query) use ($currentUser, $userId) {
+            $query->where('user_id', $userId)
+                  ->where('friend_id', $currentUser->ID);
+        })->delete();
+
+        // Create blocked relationship
+        Friend::create([
+            'user_id' => $currentUser->ID,
+            'friend_id' => $userId,
+            'status' => 'blocked',
+        ]);
+
+        return response()->json([
+            'message' => 'User has been blocked successfully',
+        ]);
+    }
+
+    /**
+     * Unblock a user
+     */
+    public function unblock(Request $request, $userId)
+    {
+        $currentUser = $request->user();
+
+        // Check if user is authenticated
+        if (!$currentUser) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
+        // Find the block relationship (only the blocker can unblock)
+        $block = Friend::where('user_id', $currentUser->ID)
+            ->where('friend_id', $userId)
+            ->where('status', 'blocked')
+            ->first();
+
+        if (!$block) {
+            return response()->json(['message' => 'User is not blocked'], 404);
+        }
+
+        // Delete the block
+        $block->delete();
+
+        return response()->json([
+            'message' => 'User has been unblocked successfully',
+        ]);
+    }
+
+    /**
+     * Get list of blocked users
+     */
+    public function blockedUsers(Request $request)
+    {
+        $currentUser = $request->user();
+
+        // Check if user is authenticated
+        if (!$currentUser) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
+        // Get all blocked user IDs
+        $blockedIds = Friend::where('user_id', $currentUser->ID)
+            ->where('status', 'blocked')
+            ->pluck('friend_id');
+
+        // Get user details for all blocked users
+        $blockedUsers = WpUser::whereIn('ID', $blockedIds)->get();
+
+        return UserResource::collection($blockedUsers);
     }
 }

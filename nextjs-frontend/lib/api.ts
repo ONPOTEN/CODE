@@ -1320,6 +1320,26 @@ export interface CreateShopPostData {
 
 // Shop Posts API
 export const shopPosts = {
+  // Get latest products feed across all shops
+  getFeed: async (params?: { per_page?: number; page?: number }) => {
+    const searchParams = new URLSearchParams();
+    if (params?.per_page) searchParams.append('per_page', params.per_page.toString());
+    if (params?.page) searchParams.append('page', params.page.toString());
+
+    const query = searchParams.toString() ? `?${searchParams}` : '';
+    return apiRequest<PaginatedResponse<ShopPost>>(`/shops/products/feed${query}`);
+  },
+
+  // Get trending products across all shops (sorted by view count)
+  getTrending: async (params?: { per_page?: number; page?: number }) => {
+    const searchParams = new URLSearchParams();
+    if (params?.per_page) searchParams.append('per_page', params.per_page.toString());
+    if (params?.page) searchParams.append('page', params.page.toString());
+
+    const query = searchParams.toString() ? `?${searchParams}` : '';
+    return apiRequest<PaginatedResponse<ShopPost>>(`/shops/products/trending${query}`);
+  },
+
   getAll: async (shopId: number, params?: { per_page?: number; page?: number; type?: string; status?: string }) => {
     const searchParams = new URLSearchParams();
     if (params?.per_page) searchParams.append('per_page', params.per_page.toString());

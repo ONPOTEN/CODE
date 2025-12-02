@@ -17,7 +17,7 @@ class CommentController extends Controller
      */
     public function getPostComments(Request $request, $postId): AnonymousResourceCollection
     {
-        $perPage = min($request->input('per_page', 15), 100);
+        $perPage = $request->input('per_page', 10000); // Default to very high number to get all comments
 
         $comments = WpComment::where('comment_post_ID', $postId)
             ->approved()

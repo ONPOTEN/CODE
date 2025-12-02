@@ -1,10 +1,17 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
+
+interface AttributeOption {
+  value: string;
+  image?: string | File;
+  imagePreview?: string;
+  price?: string | number;
+}
 
 interface Attribute {
   name: string;
-  options: Array<{ value: string }>;
+  options: AttributeOption[];
 }
 
 interface VariantProductComponentProps {
@@ -26,6 +33,9 @@ export const VariantProductComponent: React.FC<VariantProductComponentProps> = (
 }) => {
   const [newAttributeName, setNewAttributeName] = useState('');
   const [newAttributeOption, setNewAttributeOption] = useState('');
+  const [newOptionPrice, setNewOptionPrice] = useState('');
+  const [newOptionImage, setNewOptionImage] = useState<File | null>(null);
+  const [newOptionImagePreview, setNewOptionImagePreview] = useState<string | null>(null);
   const [selectedAttributeIndex, setSelectedAttributeIndex] = useState<number | null>(null);
   const [mainImagePreview, setMainImagePreview] = useState<string | null>(
     formData.main_image instanceof File ? URL.createObjectURL(formData.main_image) : (typeof formData.main_image === 'string' ? formData.main_image : null)
@@ -35,6 +45,7 @@ export const VariantProductComponent: React.FC<VariantProductComponentProps> = (
       img instanceof File ? URL.createObjectURL(img) : typeof img === 'string' ? img : ''
     ).filter(Boolean)
   );
+  const optionImageInputRef = useRef<HTMLInputElement>(null);
 
   const attributes = formData.attributes || [];
 
@@ -92,6 +103,25 @@ export const VariantProductComponent: React.FC<VariantProductComponentProps> = (
     setSelectedAttributeIndex(attributes.length);
   };
 
+  const handleOptionImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setNewOptionImage(file);
+      setNewOptionImagePreview(URL.createObjectURL(file));
+    }
+  };
+
+  const clearNewOptionImage = () => {
+    if (newOptionImagePreview && newOptionImagePreview.startsWith('blob:')) {
+      URL.revokeObjectURL(newOptionImagePreview);
+    }
+    setNewOptionImage(null);
+    setNewOptionImagePreview(null);
+    if (optionImageInputRef.current) {
+      optionImageInputRef.current.value = '';
+    }
+  };
+
   const handleAddOption = () => {
     if (selectedAttributeIndex === null) {
       alert('Please select an attribute first');
@@ -104,28 +134,98 @@ export const VariantProductComponent: React.FC<VariantProductComponentProps> = (
     }
 
     const updatedAttributes = [...attributes];
-    updatedAttributes[selectedAttributeIndex].options.push({
+    const newOption: AttributeOption = {
       value: newAttributeOption,
-    });
+    };
+
+    // Add price if provided
+    if (newOptionPrice.trim()) {
+      newOption.price = newOptionPrice;
+    }
+
+    // Add image if provided
+    if (newOptionImage) {
+      newOption.image = newOptionImage;
+      newOption.imagePreview = newOptionImagePreview || undefined;
+    }
+
+    updatedAttributes[selectedAttributeIndex].options.push(newOption);
 
     onFormDataChange('attributes', updatedAttributes);
     setNewAttributeOption('');
+    setNewOptionPrice('');
+    clearNewOptionImage();
   };
 
   const handleRemoveAttribute = (index: number) => {
+    // Clean up image previews for all options in this attribute
+    const attrToRemove = attributes[index];
+    attrToRemove.options.forEach((opt) => {
+      if (opt.imagePreview && opt.imagePreview.startsWith('blob:')) {
+        URL.revokeObjectURL(opt.imagePreview);
+      }
+    });
+
     const updatedAttributes = attributes.filter((_, i) => i !== index);
     onFormDataChange('attributes', updatedAttributes);
     if (selectedAttributeIndex === index) {
       setSelectedAttributeIndex(null);
+    } else if (selectedAttributeIndex !== null && selectedAttributeIndex > index) {
+      setSelectedAttributeIndex(selectedAttributeIndex - 1);
     }
   };
 
   const handleRemoveOption = (attributeIndex: number, optionIndex: number) => {
+    const optionToRemove = attributes[attributeIndex].options[optionIndex];
+    if (optionToRemove.imagePreview && optionToRemove.imagePreview.startsWith('blob:')) {
+      URL.revokeObjectURL(optionToRemove.imagePreview);
+    }
+
     const updatedAttributes = [...attributes];
     updatedAttributes[attributeIndex].options = updatedAttributes[attributeIndex].options.filter(
       (_, i) => i !== optionIndex
     );
     onFormDataChange('attributes', updatedAttributes);
+  };
+
+  const handleUpdateOptionImage = (attributeIndex: number, optionIndex: number, file: File) => {
+    const updatedAttributes = [...attributes];
+    const option = updatedAttributes[attributeIndex].options[optionIndex];
+
+    // Clean up old preview
+    if (option.imagePreview && option.imagePreview.startsWith('blob:')) {
+      URL.revokeObjectURL(option.imagePreview);
+    }
+
+    option.image = file;
+    option.imagePreview = URL.createObjectURL(file);
+    onFormDataChange('attributes', updatedAttributes);
+  };
+
+  const handleRemoveOptionImage = (attributeIndex: number, optionIndex: number) => {
+    const updatedAttributes = [...attributes];
+    const option = updatedAttributes[attributeIndex].options[optionIndex];
+
+    if (option.imagePreview && option.imagePreview.startsWith('blob:')) {
+      URL.revokeObjectURL(option.imagePreview);
+    }
+
+    option.image = undefined;
+    option.imagePreview = undefined;
+    onFormDataChange('attributes', updatedAttributes);
+  };
+
+  const handleUpdateOptionPrice = (attributeIndex: number, optionIndex: number, price: string) => {
+    const updatedAttributes = [...attributes];
+    updatedAttributes[attributeIndex].options[optionIndex].price = price;
+    onFormDataChange('attributes', updatedAttributes);
+  };
+
+  const formatPrice = (price: string | number | undefined): string => {
+    if (!price) return '';
+    const numPrice = typeof price === 'string' ? parseFloat(price) : price;
+    if (isNaN(numPrice)) return '';
+    return new Intl.NumberFormat('vi-VN').format(numPrice) + ' ₫';
   };
 
   return (
@@ -137,7 +237,7 @@ export const VariantProductComponent: React.FC<VariantProductComponentProps> = (
       {/* Price */}
       <div>
         <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-2">
-          Price
+          Base Price
         </label>
         <input
           type="number"
@@ -147,7 +247,7 @@ export const VariantProductComponent: React.FC<VariantProductComponentProps> = (
           value={formData.price || ''}
           onChange={(e) => onFormDataChange('price', e.target.value)}
           className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500"
-          placeholder="Enter price"
+          placeholder="Enter base price"
         />
       </div>
 
@@ -225,14 +325,14 @@ export const VariantProductComponent: React.FC<VariantProductComponentProps> = (
               <button
                 type="button"
                 onClick={removeMainImage}
-                className="absolute top-2 right-2 p-2 bg-blue-500 text-gray-900 rounded-full hover:bg-blue-700 transition-colors"
+                className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-full hover:bg-red-700 transition-colors"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
-            <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-purple-300 rounded-lg cursor-pointer bg-grey-200 hover:bg-blue-500 transition-colors">
+            <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-purple-300 rounded-lg cursor-pointer bg-grey-200 hover:bg-purple-50 transition-colors">
               <div className="flex flex-col items-center justify-center pt-2 pb-2">
                 <svg className="w-6 h-6 text-purple-600 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
@@ -243,7 +343,7 @@ export const VariantProductComponent: React.FC<VariantProductComponentProps> = (
             </label>
           </div>
         ) : (
-          <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-purple-300 rounded-lg cursor-pointer bg-grey-200 hover:bg-blue-500 transition-colors">
+          <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-purple-300 rounded-lg cursor-pointer bg-grey-200 hover:bg-purple-50 transition-colors">
             <div className="flex flex-col items-center justify-center pt-5 pb-6">
               <svg className="w-8 h-8 text-purple-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
@@ -274,7 +374,7 @@ export const VariantProductComponent: React.FC<VariantProductComponentProps> = (
                   <button
                     type="button"
                     onClick={() => removeOtherImage(index)}
-                    className="absolute top-1 right-1 p-1 bg-blue-500 text-gray-900 rounded-full hover:bg-blue-700 transition-colors"
+                    className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full hover:bg-red-700 transition-colors"
                   >
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -285,7 +385,7 @@ export const VariantProductComponent: React.FC<VariantProductComponentProps> = (
             </div>
           </div>
         )}
-        <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-purple-300 rounded-lg cursor-pointer bg-grey-200 hover:bg-blue-500 transition-colors">
+        <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-purple-300 rounded-lg cursor-pointer bg-grey-200 hover:bg-purple-50 transition-colors">
           <div className="flex flex-col items-center justify-center pt-2 pb-2">
             <svg className="w-6 h-6 text-purple-600 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
@@ -298,10 +398,13 @@ export const VariantProductComponent: React.FC<VariantProductComponentProps> = (
 
       {/* Attributes Section */}
       <div className="border-t border-purple-200 pt-4">
-        <h4 className="text-md font-semibold text-purple-900 mb-4">📋 Product Attributes</h4>
+        <h4 className="text-md font-semibold text-purple-900 mb-4">📋 Product Attributes (Variants)</h4>
+        <p className="text-sm text-gray-600 mb-4">
+          Add attributes like Size, Color, etc. Each option can have its own image and price.
+        </p>
 
         {/* Add New Attribute */}
-        <div className="bg-grey-200 p-4 rounded-lg border border-purple-300 mb-4">
+        <div className="bg-white p-4 rounded-lg border border-purple-300 mb-4">
           <div className="flex gap-2 mb-2">
             <input
               type="text"
@@ -313,7 +416,7 @@ export const VariantProductComponent: React.FC<VariantProductComponentProps> = (
             <button
               type="button"
               onClick={handleAddAttribute}
-              className="px-4 py-2 bg-blue-500 text-gray-900 rounded-md hover:bg-blue-700 transition-colors"
+              className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
             >
               Add Attribute
             </button>
@@ -325,25 +428,25 @@ export const VariantProductComponent: React.FC<VariantProductComponentProps> = (
 
         {/* Existing Attributes */}
         {attributes.length > 0 && (
-          <div className="space-y-3 mb-4">
+          <div className="space-y-4 mb-4">
             {attributes.map((attribute, attrIndex) => (
-              <div key={attrIndex} className="bg-grey-200 p-4 rounded-lg border border-purple-300">
+              <div key={attrIndex} className="bg-white p-4 rounded-lg border border-purple-300">
                 <div className="flex items-center justify-between mb-3">
                   <button
                     type="button"
                     onClick={() => setSelectedAttributeIndex(attrIndex)}
                     className={`flex-1 text-left px-3 py-2 rounded-md font-medium transition-colors ${
                       selectedAttributeIndex === attrIndex
-                        ? 'bg-blue-500 text-purple-900'
-                        : 'bg-blue-500 text-gray-900 hover:bg-blue-500'
+                        ? 'bg-purple-100 text-purple-900 border-2 border-purple-500'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                   >
-                    {attribute.name}
+                    {attribute.name} ({attribute.options.length} options)
                   </button>
                   <button
                     type="button"
                     onClick={() => handleRemoveAttribute(attrIndex)}
-                    className="px-3 py-2 bg-blue-500 text-red-700 rounded-md hover:bg-blue-500 transition-colors ml-2"
+                    className="px-3 py-2 bg-red-100 text-red-700 rounded-md hover:bg-red-200 transition-colors ml-2"
                   >
                     Remove
                   </button>
@@ -352,41 +455,157 @@ export const VariantProductComponent: React.FC<VariantProductComponentProps> = (
                 {/* Options for selected attribute */}
                 {selectedAttributeIndex === attrIndex && (
                   <div className="border-t border-purple-200 pt-3">
-                    <p className="text-sm font-medium text-gray-700 mb-2">Options:</p>
+                    <p className="text-sm font-medium text-gray-700 mb-3">Add Option with Image & Price:</p>
 
-                    {/* Add Option */}
-                    <div className="flex gap-2 mb-3">
-                      <input
-                        type="text"
-                        value={newAttributeOption}
-                        onChange={(e) => setNewAttributeOption(e.target.value)}
-                        placeholder={`Add option for ${attribute.name}`}
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500"
-                      />
+                    {/* Add Option Form */}
+                    <div className="bg-purple-50 p-4 rounded-lg mb-4 space-y-3">
+                      {/* Option Value */}
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Option Value *</label>
+                        <input
+                          type="text"
+                          value={newAttributeOption}
+                          onChange={(e) => setNewAttributeOption(e.target.value)}
+                          placeholder={`e.g., Large, Red, Cotton...`}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500"
+                        />
+                      </div>
+
+                      {/* Option Price */}
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Price for this option (Optional)</label>
+                        <input
+                          type="number"
+                          value={newOptionPrice}
+                          onChange={(e) => setNewOptionPrice(e.target.value)}
+                          placeholder="Leave empty to use base price"
+                          step="1000"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500"
+                        />
+                      </div>
+
+                      {/* Option Image */}
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Image for this option (Optional)</label>
+                        {newOptionImagePreview ? (
+                          <div className="flex items-center gap-3">
+                            <img
+                              src={newOptionImagePreview}
+                              alt="Option preview"
+                              className="w-16 h-16 object-cover rounded-lg border border-gray-300"
+                            />
+                            <button
+                              type="button"
+                              onClick={clearNewOptionImage}
+                              className="px-3 py-1 bg-red-100 text-red-700 rounded-md hover:bg-red-200 text-sm"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        ) : (
+                          <label className="flex items-center justify-center w-full h-16 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                            <div className="flex items-center gap-2">
+                              <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
+                              <span className="text-sm text-gray-500">Click to add image</span>
+                            </div>
+                            <input
+                              ref={optionImageInputRef}
+                              type="file"
+                              className="hidden"
+                              accept="image/*"
+                              onChange={handleOptionImageChange}
+                            />
+                          </label>
+                        )}
+                      </div>
+
                       <button
                         type="button"
                         onClick={handleAddOption}
-                        className="px-3 py-2 bg-grey-2000 text-gray-900 rounded-md hover:bg-blue-500 transition-colors"
+                        className="w-full px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors font-medium"
                       >
-                        Add
+                        + Add Option
                       </button>
                     </div>
 
                     {/* Display Options */}
                     {attribute.options.length > 0 && (
-                      <div className="flex flex-wrap gap-2">
+                      <div className="space-y-3">
+                        <p className="text-sm font-medium text-gray-700">Options:</p>
                         {attribute.options.map((option, optIndex) => (
                           <div
                             key={optIndex}
-                            className="inline-flex items-center gap-2 bg-blue-500 text-purple-900 px-3 py-1 rounded-full text-sm"
+                            className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200"
                           >
-                            <span>{option.value}</span>
+                            {/* Option Image */}
+                            <div className="flex-shrink-0">
+                              {option.imagePreview || (typeof option.image === 'string' && option.image) ? (
+                                <div className="relative">
+                                  <img
+                                    src={option.imagePreview || (option.image as string)}
+                                    alt={option.value}
+                                    className="w-16 h-16 object-cover rounded-lg border border-gray-300"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveOptionImage(attrIndex, optIndex)}
+                                    className="absolute -top-1 -right-1 p-1 bg-red-500 text-white rounded-full hover:bg-red-700 transition-colors"
+                                  >
+                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                  </button>
+                                </div>
+                              ) : (
+                                <label className="flex items-center justify-center w-16 h-16 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
+                                  <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                  </svg>
+                                  <input
+                                    type="file"
+                                    className="hidden"
+                                    accept="image/*"
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0];
+                                      if (file) handleUpdateOptionImage(attrIndex, optIndex, file);
+                                    }}
+                                  />
+                                </label>
+                              )}
+                            </div>
+
+                            {/* Option Details */}
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium text-gray-900">{option.value}</div>
+                              <div className="mt-1">
+                                <label className="text-xs text-gray-500">Price:</label>
+                                <input
+                                  type="number"
+                                  value={option.price || ''}
+                                  onChange={(e) => handleUpdateOptionPrice(attrIndex, optIndex, e.target.value)}
+                                  placeholder="Use base price"
+                                  step="1000"
+                                  className="ml-2 px-2 py-1 border border-gray-300 rounded text-sm w-32"
+                                />
+                                {option.price && (
+                                  <span className="ml-2 text-sm text-green-600 font-medium">
+                                    {formatPrice(option.price)}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Remove Button */}
                             <button
                               type="button"
                               onClick={() => handleRemoveOption(attrIndex, optIndex)}
-                              className="text-purple-600 hover:text-purple-800 font-bold"
+                              className="flex-shrink-0 p-2 text-red-600 hover:bg-red-100 rounded-md transition-colors"
                             >
-                              ×
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
                             </button>
                           </div>
                         ))}
@@ -394,7 +613,7 @@ export const VariantProductComponent: React.FC<VariantProductComponentProps> = (
                     )}
 
                     {attribute.options.length === 0 && (
-                      <p className="text-xs text-gray-500 italic">No options added yet</p>
+                      <p className="text-sm text-gray-500 italic text-center py-4">No options added yet. Add options above.</p>
                     )}
                   </div>
                 )}
@@ -403,12 +622,22 @@ export const VariantProductComponent: React.FC<VariantProductComponentProps> = (
                 {selectedAttributeIndex !== attrIndex && attribute.options.length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-2">
                     {attribute.options.map((option, optIndex) => (
-                      <span
+                      <div
                         key={optIndex}
-                        className="inline-block bg-blue-500 text-purple-900 px-2 py-1 rounded text-xs"
+                        className="inline-flex items-center gap-2 bg-purple-100 text-purple-900 px-3 py-1 rounded-full text-sm"
                       >
-                        {option.value}
-                      </span>
+                        {(option.imagePreview || option.image) && (
+                          <img
+                            src={option.imagePreview || (option.image as string)}
+                            alt={option.value}
+                            className="w-5 h-5 object-cover rounded-full"
+                          />
+                        )}
+                        <span>{option.value}</span>
+                        {option.price && (
+                          <span className="text-xs text-purple-600">({formatPrice(option.price)})</span>
+                        )}
+                      </div>
                     ))}
                   </div>
                 )}
@@ -419,20 +648,29 @@ export const VariantProductComponent: React.FC<VariantProductComponentProps> = (
 
         {/* Empty State */}
         {attributes.length === 0 && (
-          <div className="bg-white rounded-lg p-4 text-center border border-dashed border-gray-300">
-            <p className="text-sm text-gray-600">
-              No attributes added yet. Add attributes like Size, Color, Material, etc.
+          <div className="bg-white rounded-lg p-6 text-center border border-dashed border-gray-300">
+            <svg className="w-12 h-12 mx-auto text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+            </svg>
+            <p className="text-gray-600 mb-2">No attributes added yet</p>
+            <p className="text-sm text-gray-500">
+              Add attributes like Size, Color, Material to create product variants.
+              Each variant option can have its own image and price.
             </p>
           </div>
         )}
 
         {/* Summary */}
         {attributes.length > 0 && (
-          <div className="mt-4 p-3 bg-blue-500 rounded-lg">
+          <div className="mt-4 p-4 bg-purple-100 rounded-lg">
             <p className="text-sm text-purple-900">
               <strong>Total Attributes:</strong> {attributes.length}
               <br />
               <strong>Total Options:</strong> {attributes.reduce((sum, attr) => sum + attr.options.length, 0)}
+              <br />
+              <strong>Options with Images:</strong> {attributes.reduce((sum, attr) => sum + attr.options.filter(opt => opt.image || opt.imagePreview).length, 0)}
+              <br />
+              <strong>Options with Custom Prices:</strong> {attributes.reduce((sum, attr) => sum + attr.options.filter(opt => opt.price).length, 0)}
             </p>
           </div>
         )}
