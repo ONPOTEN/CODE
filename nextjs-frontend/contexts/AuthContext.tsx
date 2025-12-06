@@ -43,6 +43,8 @@ interface AuthContextType {
   firebaseLoginGoogle: () => Promise<void>;
   firebaseLoginFacebook: () => Promise<void>;
   firebaseLoginApple: () => Promise<void>;
+  facebookLogin: () => Promise<void>;
+  googleLogin: () => Promise<void>;
   firebasePhoneVerify: (phoneNumber: string, recaptchaVerifier: any) => Promise<any>;
   firebasePhoneConfirm: (confirmationResult: any, code: string, phoneNumber: string) => Promise<void>;
   updateUserAvatar: (avatarUrl: string) => void;
@@ -332,6 +334,101 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Direct Facebook OAuth login (using Facebook SDK)
+  const facebookLogin = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      // Check if FB SDK is loaded
+      if (typeof window === 'undefined' || !(window as any).FB) {
+        throw new Error('Facebook SDK not loaded');
+      }
+
+      const FB = (window as any).FB;
+
+      // Login with Facebook
+      const loginResponse = await new Promise<any>((resolve, reject) => {
+        FB.login((response: any) => {
+          if (response.authResponse) {
+            resolve(response);
+          } else {
+            reject(new Error('Facebook login cancelled or failed'));
+          }
+        }, { scope: 'email,public_profile' });
+      });
+
+      const accessToken = loginResponse.authResponse.accessToken;
+      console.log('[AuthContext] Facebook access token obtained');
+
+      // Send access token to Laravel backend
+      const response = await auth.facebookLogin(accessToken);
+
+      setUser(response.user as any);
+      setAuthMethod('facebook');
+
+      const token = tokenStorage.get();
+      if (token && typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('tokenUpdated', { detail: token }));
+      }
+
+      console.log('[AuthContext] Facebook login successful');
+    } catch (err: any) {
+      console.error('[AuthContext] Facebook login error:', err);
+      setError(err.message || 'Facebook login failed');
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Direct Google OAuth login (using Google SDK)
+  const googleLogin = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      // Check if Google SDK is loaded
+      if (typeof window === 'undefined' || !(window as any).google) {
+        throw new Error('Google SDK not loaded');
+      }
+
+      const google = (window as any).google;
+
+      // Use Google Identity Services
+      const tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: '791242064597-3mfofd54joho65gkms9cc2439862j0bn.apps.googleusercontent.com',
+        scope: 'email profile',
+        callback: async (tokenResponse: any) => {
+          if (tokenResponse.access_token) {
+            console.log('[AuthContext] Google access token obtained');
+
+            // Send access token to Laravel backend
+            const response = await auth.googleLogin(tokenResponse.access_token);
+
+            setUser(response.user as any);
+            setAuthMethod('google');
+
+            const token = tokenStorage.get();
+            if (token && typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('tokenUpdated', { detail: token }));
+            }
+
+            console.log('[AuthContext] Google login successful');
+          }
+        },
+      });
+
+      tokenClient.requestAccessToken();
+    } catch (err: any) {
+      console.error('[AuthContext] Google login error:', err);
+      setError(err.message || 'Google login failed');
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Firebase phone verification
   const firebasePhoneVerify = async (phoneNumber: string, recaptchaVerifier: any) => {
     try {
@@ -451,6 +548,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         firebaseLoginGoogle,
         firebaseLoginFacebook,
         firebaseLoginApple,
+        facebookLogin,
+        googleLogin,
         firebasePhoneVerify,
         firebasePhoneConfirm,
         updateUserAvatar,

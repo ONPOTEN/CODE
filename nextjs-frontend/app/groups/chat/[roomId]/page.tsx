@@ -325,7 +325,7 @@ export default function GroupChatPage() {
     const tempMessage: ChatMessage = {
       id: messageId,
       userId: user.id,
-      username: user.username || user.name || 'Anonymous',
+      username: user.username || user.display_name || 'Anonymous',
       avatar: user.avatar,
       message: messageText,
       timestamp,

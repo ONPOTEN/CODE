@@ -595,4 +595,266 @@ class ShopPostController extends Controller
 
         return round($bytes, 2) . ' ' . $units[$pow];
     }
+
+    // ============================================
+    // ADMIN ONLY METHODS
+    // ============================================
+
+    /**
+     * ADMIN ONLY: Get all shop posts with filtering and pagination
+     */
+    public function adminIndex(Request $request)
+    {
+        $query = ShopPost::with(['shop', 'author', 'category']);
+
+        // Filter by shop
+        if ($request->has('shop_id')) {
+            $query->where('shop_id', $request->input('shop_id'));
+        }
+
+        // Filter by type
+        if ($request->has('type')) {
+            $query->where('type', $request->input('type'));
+        }
+
+        // Filter by status
+        if ($request->has('status')) {
+            $query->where('status', $request->input('status'));
+        }
+
+        // Filter by author
+        if ($request->has('user_id')) {
+            $query->where('user_id', $request->input('user_id'));
+        }
+
+        // Search
+        if ($request->has('search')) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                  ->orWhere('content', 'like', "%{$search}%")
+                  ->orWhere('short_description', 'like', "%{$search}%");
+            });
+        }
+
+        // Order by
+        $orderBy = $request->input('order_by', 'created_at');
+        $order = $request->input('order', 'desc');
+        $query->orderBy($orderBy, $order);
+
+        $perPage = min($request->input('per_page', 15), 100);
+        $posts = $query->paginate($perPage);
+
+        return ShopPostResource::collection($posts);
+    }
+
+    /**
+     * ADMIN ONLY: Get a single shop post by ID
+     */
+    public function adminShow($id)
+    {
+        $shopPost = ShopPost::with(['shop', 'author', 'category'])->findOrFail($id);
+
+        return new ShopPostResource($shopPost);
+    }
+
+    /**
+     * ADMIN ONLY: Create a new shop post
+     */
+    public function adminStore(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'shop_id' => 'required|exists:shops,id',
+            'category_id' => 'nullable|exists:categories,id',
+            'title' => 'required|string|max:255',
+            'content' => 'nullable|string',
+            'price_range' => 'nullable|string|max:100',
+            'type' => 'required|in:post,page',
+            'status' => 'required|in:draft,published',
+            'user_id' => 'nullable|integer|exists:wp_users,ID',
+            'product_type' => 'nullable|string|in:simple,variant,download',
+            'price' => 'nullable|numeric',
+            'sale_price' => 'nullable|numeric',
+            'short_description' => 'nullable|string',
+            'detail_description' => 'nullable|string',
+        ]);
+
+        $user = $request->user();
+        $userId = $validated['user_id'] ?? $user->ID;
+
+        // Generate unique slug
+        $slug = Str::slug($validated['title']);
+        $originalSlug = $slug;
+        $counter = 1;
+
+        while (ShopPost::where('slug', $slug)->exists()) {
+            $slug = $originalSlug . '-' . $counter;
+            $counter++;
+        }
+
+        $createData = [
+            'shop_id' => $validated['shop_id'],
+            'user_id' => $userId,
+            'slug' => $slug,
+            'title' => $validated['title'],
+            'content' => $validated['content'] ?? null,
+            'price_range' => $validated['price_range'] ?? null,
+            'type' => $validated['type'],
+            'status' => $validated['status'],
+            'featured_images' => [],
+        ];
+
+        // Add optional fields
+        if (isset($validated['category_id'])) {
+            $createData['category_id'] = $validated['category_id'];
+        }
+        if (isset($validated['product_type'])) {
+            $createData['product_type'] = $validated['product_type'];
+        }
+        if (isset($validated['price'])) {
+            $createData['price'] = $validated['price'];
+        }
+        if (isset($validated['sale_price'])) {
+            $createData['sale_price'] = $validated['sale_price'];
+        }
+        if (isset($validated['short_description'])) {
+            $createData['short_description'] = $validated['short_description'];
+        }
+        if (isset($validated['detail_description'])) {
+            $createData['detail_description'] = $validated['detail_description'];
+        }
+
+        $shopPost = ShopPost::create($createData);
+
+        \Log::info('[ShopPostController::adminStore] Shop post created by admin', [
+            'created_by' => $user->ID,
+            'post_id' => $shopPost->id,
+            'shop_id' => $shopPost->shop_id,
+            'title' => $shopPost->title,
+        ]);
+
+        return response()->json([
+            'message' => ucfirst($validated['type']) . ' created successfully',
+            'post' => new ShopPostResource($shopPost->load(['shop', 'author', 'category'])),
+        ], 201);
+    }
+
+    /**
+     * ADMIN ONLY: Update any shop post
+     */
+    public function adminUpdate(Request $request, $id): JsonResponse
+    {
+        $shopPost = ShopPost::findOrFail($id);
+
+        $validated = $request->validate([
+            'category_id' => 'nullable|exists:categories,id',
+            'title' => 'sometimes|string|max:255',
+            'content' => 'nullable|string',
+            'price_range' => 'nullable|string|max:100',
+            'type' => 'sometimes|in:post,page',
+            'status' => 'sometimes|in:draft,published',
+            'product_type' => 'nullable|string|in:simple,variant,download',
+            'price' => 'nullable|numeric',
+            'sale_price' => 'nullable|numeric',
+            'short_description' => 'nullable|string',
+            'detail_description' => 'nullable|string',
+        ]);
+
+        // Generate new slug if title changed
+        if (isset($validated['title']) && $validated['title'] !== $shopPost->title) {
+            $slug = Str::slug($validated['title']);
+            $originalSlug = $slug;
+            $counter = 1;
+
+            while (ShopPost::where('slug', $slug)->where('id', '!=', $id)->exists()) {
+                $slug = $originalSlug . '-' . $counter;
+                $counter++;
+            }
+            $shopPost->slug = $slug;
+        }
+
+        // Update fields
+        if (array_key_exists('category_id', $validated)) $shopPost->category_id = $validated['category_id'];
+        if (isset($validated['title'])) $shopPost->title = $validated['title'];
+        if (isset($validated['content'])) $shopPost->content = $validated['content'];
+        if (isset($validated['price_range'])) $shopPost->price_range = $validated['price_range'];
+        if (isset($validated['type'])) $shopPost->type = $validated['type'];
+        if (isset($validated['status'])) $shopPost->status = $validated['status'];
+        if (isset($validated['product_type'])) $shopPost->product_type = $validated['product_type'];
+        if (isset($validated['price'])) $shopPost->price = $validated['price'];
+        if (isset($validated['sale_price'])) $shopPost->sale_price = $validated['sale_price'];
+        if (isset($validated['short_description'])) $shopPost->short_description = $validated['short_description'];
+        if (isset($validated['detail_description'])) $shopPost->detail_description = $validated['detail_description'];
+
+        $shopPost->save();
+
+        \Log::info('[ShopPostController::adminUpdate] Shop post updated by admin', [
+            'updated_by' => $request->user()->ID,
+            'post_id' => $shopPost->id,
+            'fields_updated' => array_keys($validated),
+        ]);
+
+        return response()->json([
+            'message' => ucfirst($shopPost->type) . ' updated successfully',
+            'post' => new ShopPostResource($shopPost->load(['shop', 'author', 'category'])),
+        ]);
+    }
+
+    /**
+     * ADMIN ONLY: Delete any shop post
+     */
+    public function adminDestroy(Request $request, $id): JsonResponse
+    {
+        $shopPost = ShopPost::findOrFail($id);
+
+        $title = $shopPost->title;
+        $shopId = $shopPost->shop_id;
+        $type = $shopPost->type;
+
+        // Delete featured images from S3
+        if (!empty($shopPost->featured_images)) {
+            foreach ($shopPost->featured_images as $imagePath) {
+                $fullS3Path = "shop_posts/{$imagePath}";
+                if (\Storage::disk('s3')->exists($fullS3Path)) {
+                    \Storage::disk('s3')->delete($fullS3Path);
+                }
+            }
+        }
+
+        // Delete main image
+        if ($shopPost->main_image) {
+            $fullS3Path = "shop_posts/{$shopPost->main_image}";
+            if (\Storage::disk('s3')->exists($fullS3Path)) {
+                \Storage::disk('s3')->delete($fullS3Path);
+            }
+        }
+
+        // Delete other images
+        if (!empty($shopPost->other_images)) {
+            foreach ($shopPost->other_images as $imagePath) {
+                $fullS3Path = "shop_posts/{$imagePath}";
+                if (\Storage::disk('s3')->exists($fullS3Path)) {
+                    \Storage::disk('s3')->delete($fullS3Path);
+                }
+            }
+        }
+
+        $shopPost->delete();
+
+        \Log::info('[ShopPostController::adminDestroy] Shop post deleted by admin', [
+            'deleted_by' => $request->user()->ID,
+            'post_id' => $id,
+            'title' => $title,
+            'shop_id' => $shopId,
+        ]);
+
+        return response()->json([
+            'message' => ucfirst($type) . ' deleted successfully',
+            'deleted_post' => [
+                'id' => $id,
+                'title' => $title,
+                'shop_id' => $shopId,
+            ],
+        ]);
+    }
 }

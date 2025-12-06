@@ -563,4 +563,234 @@ class UserController extends Controller
             'success' => true,
         ]);
     }
+
+    /**
+     * ADMIN ONLY: Create a new user
+     * Only accessible by admin users through admin middleware
+     */
+    public function adminCreateUser(Request $request)
+    {
+        $validated = $request->validate([
+            'username' => 'required|string|max:60|unique:wp_users,user_login|regex:/^[a-zA-Z0-9_-]+$/',
+            'email' => 'required|email|unique:wp_users,user_email',
+            'password' => 'required|string|min:6',
+            'display_name' => 'sometimes|string|max:250',
+            'role' => 'sometimes|string|in:user,admin,moderator,editor',
+            'phone' => 'sometimes|nullable|string|max:20',
+            'hobby' => 'sometimes|nullable|string|max:255',
+            'company' => 'sometimes|nullable|string|max:255',
+            'occupation' => 'sometimes|nullable|string|max:255',
+            'main_occupation' => 'sometimes|nullable|string|max:255',
+            'location' => 'sometimes|nullable|string|max:255',
+            'profile_visibility' => 'sometimes|nullable|string|in:public,private',
+        ]);
+
+        // Create the user
+        $user = new WpUser();
+        $user->user_login = $validated['username'];
+        $user->user_email = $validated['email'];
+        $user->user_pass = password_hash($validated['password'], PASSWORD_BCRYPT);
+        $user->user_nicename = $validated['username'];
+        $user->display_name = $validated['display_name'] ?? $validated['username'];
+        $user->user_registered = now();
+        $user->role = $validated['role'] ?? 'user';
+        $user->profile_visibility = $validated['profile_visibility'] ?? 'public';
+
+        // Optional fields
+        if (isset($validated['phone'])) {
+            $user->phone = $validated['phone'];
+        }
+        if (isset($validated['hobby'])) {
+            $user->hobby = $validated['hobby'];
+        }
+        if (isset($validated['company'])) {
+            $user->company = $validated['company'];
+        }
+        if (isset($validated['occupation'])) {
+            $user->occupation = $validated['occupation'];
+        }
+        if (isset($validated['main_occupation'])) {
+            $user->main_occupation = $validated['main_occupation'];
+        }
+        if (isset($validated['location'])) {
+            $user->location = $validated['location'];
+        }
+
+        $user->save();
+
+        \Log::info('[UserController::adminCreateUser] User created by admin', [
+            'created_by' => $request->user()->ID,
+            'new_user_id' => $user->ID,
+            'username' => $user->user_login,
+        ]);
+
+        return response()->json([
+            'message' => 'User created successfully',
+            'user' => new UserResource($user),
+        ], 201);
+    }
+
+    /**
+     * ADMIN ONLY: Update a user's profile
+     * Only accessible by admin users through admin middleware
+     */
+    public function adminUpdateUser(Request $request, $userId)
+    {
+        $targetUser = WpUser::findOrFail($userId);
+
+        $validated = $request->validate([
+            'username' => 'sometimes|string|max:60|unique:wp_users,user_login,' . $userId . ',ID|regex:/^[a-zA-Z0-9_-]+$/',
+            'email' => 'sometimes|email|unique:wp_users,user_email,' . $userId . ',ID',
+            'password' => 'sometimes|string|min:6',
+            'display_name' => 'sometimes|string|max:250',
+            'role' => 'sometimes|string|in:user,admin,moderator,editor',
+            'phone' => 'sometimes|nullable|string|max:20',
+            'hobby' => 'sometimes|nullable|string|max:255',
+            'company' => 'sometimes|nullable|string|max:255',
+            'occupation' => 'sometimes|nullable|string|max:255',
+            'main_occupation' => 'sometimes|nullable|string|max:255',
+            'location' => 'sometimes|nullable|string|max:255',
+            'profile_visibility' => 'sometimes|nullable|string|in:public,private',
+            'email_public' => 'sometimes|boolean',
+            'hobby_public' => 'sometimes|boolean',
+            'company_public' => 'sometimes|boolean',
+            'occupation_public' => 'sometimes|boolean',
+            'main_occupation_public' => 'sometimes|boolean',
+            'location_public' => 'sometimes|boolean',
+            'phone_public' => 'sometimes|boolean',
+        ]);
+
+        // Prevent admin from changing their own role to non-admin
+        if ($request->user()->ID === $targetUser->ID && isset($validated['role']) && $validated['role'] !== 'admin') {
+            return response()->json([
+                'message' => 'You cannot demote yourself',
+                'errors' => ['role' => ['You cannot change your own role to a lower level']]
+            ], 403);
+        }
+
+        // Update fields
+        if (isset($validated['username'])) {
+            $targetUser->user_login = $validated['username'];
+            $targetUser->user_nicename = $validated['username'];
+        }
+        if (isset($validated['email'])) {
+            $targetUser->user_email = $validated['email'];
+        }
+        if (isset($validated['password'])) {
+            $targetUser->user_pass = password_hash($validated['password'], PASSWORD_BCRYPT);
+        }
+        if (isset($validated['display_name'])) {
+            $targetUser->display_name = $validated['display_name'];
+        }
+        if (isset($validated['role'])) {
+            $targetUser->role = $validated['role'];
+        }
+        if (isset($validated['phone'])) {
+            $targetUser->phone = $validated['phone'];
+        }
+        if (isset($validated['hobby'])) {
+            $targetUser->hobby = $validated['hobby'];
+        }
+        if (isset($validated['company'])) {
+            $targetUser->company = $validated['company'];
+        }
+        if (isset($validated['occupation'])) {
+            $targetUser->occupation = $validated['occupation'];
+        }
+        if (isset($validated['main_occupation'])) {
+            $targetUser->main_occupation = $validated['main_occupation'];
+        }
+        if (isset($validated['location'])) {
+            $targetUser->location = $validated['location'];
+        }
+        if (isset($validated['profile_visibility'])) {
+            $targetUser->profile_visibility = $validated['profile_visibility'];
+        }
+        if (isset($validated['email_public'])) {
+            $targetUser->email_public = $validated['email_public'];
+        }
+        if (isset($validated['hobby_public'])) {
+            $targetUser->hobby_public = $validated['hobby_public'];
+        }
+        if (isset($validated['company_public'])) {
+            $targetUser->company_public = $validated['company_public'];
+        }
+        if (isset($validated['occupation_public'])) {
+            $targetUser->occupation_public = $validated['occupation_public'];
+        }
+        if (isset($validated['main_occupation_public'])) {
+            $targetUser->main_occupation_public = $validated['main_occupation_public'];
+        }
+        if (isset($validated['location_public'])) {
+            $targetUser->location_public = $validated['location_public'];
+        }
+        if (isset($validated['phone_public'])) {
+            $targetUser->phone_public = $validated['phone_public'];
+        }
+
+        $targetUser->save();
+
+        \Log::info('[UserController::adminUpdateUser] User updated by admin', [
+            'updated_by' => $request->user()->ID,
+            'target_user_id' => $targetUser->ID,
+            'username' => $targetUser->user_login,
+            'fields_updated' => array_keys($validated),
+        ]);
+
+        return response()->json([
+            'message' => 'User updated successfully',
+            'user' => new UserResource($targetUser),
+        ]);
+    }
+
+    /**
+     * ADMIN ONLY: Delete a user
+     * Only accessible by admin users through admin middleware
+     */
+    public function adminDeleteUser(Request $request, $userId)
+    {
+        $targetUser = WpUser::findOrFail($userId);
+
+        // Prevent admin from deleting themselves
+        if ($request->user()->ID === $targetUser->ID) {
+            return response()->json([
+                'message' => 'You cannot delete your own account',
+            ], 403);
+        }
+
+        $username = $targetUser->user_login;
+        $email = $targetUser->user_email;
+
+        // Delete the user
+        $targetUser->delete();
+
+        \Log::info('[UserController::adminDeleteUser] User deleted by admin', [
+            'deleted_by' => $request->user()->ID,
+            'deleted_user_id' => $userId,
+            'deleted_username' => $username,
+            'deleted_email' => $email,
+        ]);
+
+        return response()->json([
+            'message' => 'User deleted successfully',
+            'deleted_user' => [
+                'id' => $userId,
+                'username' => $username,
+                'email' => $email,
+            ],
+        ]);
+    }
+
+    /**
+     * ADMIN ONLY: Get a single user by ID
+     * Only accessible by admin users through admin middleware
+     */
+    public function adminGetUser(Request $request, $userId)
+    {
+        $user = WpUser::with(['meta'])->findOrFail($userId);
+
+        return response()->json([
+            'user' => new UserResource($user),
+        ]);
+    }
 }

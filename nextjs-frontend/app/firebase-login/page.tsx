@@ -29,7 +29,7 @@ export default function FirebaseLoginPage() {
     setLoginError('');
 
     if (!emailOrPhone || !password) {
-      setLoginError('Email/Phone and password are required');
+      setLoginError('Email/Số điện thoại và mật khẩu là bắt buộc');
       return;
     }
 
@@ -51,16 +51,16 @@ export default function FirebaseLoginPage() {
       // Provide specific error message for phone login failures
       if (isPhoneLogin) {
         if (err?.code === 'auth/user-not-found') {
-          setLoginError('No account found with this phone number. Please sign up first.');
+          setLoginError('Không tìm thấy tài khoản với số điện thoại này. Vui lòng đăng ký trước.');
         } else if (err?.code === 'auth/wrong-password' || err?.message?.includes('incorrect')) {
-          setLoginError('Incorrect password. Please try again.');
+          setLoginError('Mật khẩu không đúng. Vui lòng thử lại.');
         } else if (err?.message?.includes('user-not-found') || err?.message?.includes('not found')) {
-          setLoginError('No account found with this phone number. Please sign up first.');
+          setLoginError('Không tìm thấy tài khoản với số điện thoại này. Vui lòng đăng ký trước.');
         } else {
-          setLoginError(err?.message || 'Phone login failed. Please try again.');
+          setLoginError(err?.message || 'Đăng nhập bằng số điện thoại thất bại. Vui lòng thử lại.');
         }
       } else {
-        setLoginError('Login failed. Please try again.');
+        setLoginError('Đăng nhập thất bại. Vui lòng thử lại.');
       }
     }
   };
@@ -98,12 +98,12 @@ export default function FirebaseLoginPage() {
         {/* Header */}
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Sign in to your account
+            Đăng nhập tài khoản
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            New user?{' '}
+            Người dùng mới?{' '}
             <Link href="/firebase-signup" className="font-medium text-blue-600 hover:text-blue-500">
-              Create account
+              Tạo tài khoản
             </Link>
           </p>
         </div>
@@ -121,7 +121,7 @@ export default function FirebaseLoginPage() {
             {/* Email or Phone Input */}
             <div>
               <label htmlFor="emailOrPhone" className="sr-only">
-                Email or Phone
+                Email hoặc Số điện thoại
               </label>
               <input
                 id="emailOrPhone"
@@ -130,14 +130,14 @@ export default function FirebaseLoginPage() {
                 autoComplete="off"
                 required
                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                placeholder="Email address or phone number"
+                placeholder="Địa chỉ email hoặc số điện thoại"
                 value={emailOrPhone}
                 onChange={(e) => detectInputType(e.target.value)}
                 disabled={isLoading}
               />
               {emailOrPhone && (
                 <div className="text-xs text-gray-500 px-3 pt-1">
-                  {isPhoneLogin ? '📱 Phone login' : '✉️ Email login'}
+                  {isPhoneLogin ? '📱 Đăng nhập bằng SĐT' : '✉️ Đăng nhập bằng Email'}
                 </div>
               )}
             </div>
@@ -145,7 +145,7 @@ export default function FirebaseLoginPage() {
             {/* Password Input */}
             <div className="relative">
               <label htmlFor="password" className="sr-only">
-                Password
+                Mật khẩu
               </label>
               <input
                 id="password"
@@ -154,7 +154,7 @@ export default function FirebaseLoginPage() {
                 autoComplete="current-password"
                 required
                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                placeholder="Password"
+                placeholder="Mật khẩu"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={isLoading}
@@ -176,7 +176,7 @@ export default function FirebaseLoginPage() {
             disabled={isLoading}
             className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-gray-900 bg-blue-500 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isLoading ? 'Signing in...' : 'Sign in'}
+            {isLoading ? 'Đang đăng nhập...' : 'Đăng nhập'}
           </button>
         </form>
 
@@ -186,7 +186,7 @@ export default function FirebaseLoginPage() {
             <div className="w-full border-t border-gray-300" />
           </div>
           <div className="relative flex justify-center text-sm">
-            <span className="px-2 bg-white text-gray-500">Or continue with</span>
+            <span className="px-2 bg-white text-gray-500">Hoặc tiếp tục với</span>
           </div>
         </div>
 
@@ -200,7 +200,7 @@ export default function FirebaseLoginPage() {
               onClick={handleGoogleLogin}
               disabled={isLoading}
               className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-grey-200 text-sm font-medium text-gray-500 hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed"
-              title="Sign in with Google"
+              title="Đăng nhập bằng Google"
             >
               <span className="text-xl">🔷</span>
             </button>
@@ -211,7 +211,7 @@ export default function FirebaseLoginPage() {
               onClick={handleFacebookLogin}
               disabled={isLoading}
               className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-grey-200 text-sm font-medium text-gray-500 hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed"
-              title="Sign in with Facebook"
+              title="Đăng nhập bằng Facebook"
             >
               <span className="text-xl">📘</span>
             </button>
@@ -222,7 +222,7 @@ export default function FirebaseLoginPage() {
               onClick={handleAppleLogin}
               disabled={isLoading}
               className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-grey-200 text-sm font-medium text-gray-500 hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed"
-              title="Sign in with Apple"
+              title="Đăng nhập bằng Apple"
             >
               <span className="text-xl">🍎</span>
             </button>
@@ -232,17 +232,17 @@ export default function FirebaseLoginPage() {
           <Link
             href="/firebase-phone-login"
             className="w-full inline-flex justify-center items-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-grey-200 text-sm font-medium text-gray-700 hover:bg-white transition-colors"
-            title="Register with phone and SMS code"
+            title="Đăng ký bằng số điện thoại và mã SMS"
           >
             <span className="text-xl mr-2">📱</span>
-            <span>Register with phone (SMS)</span>
+            <span>Đăng ký bằng số điện thoại (SMS)</span>
           </Link>
         </div>
 
         {/* Traditional Login Link */}
         <p className="text-center text-sm text-gray-600">
           <Link href="/login" className="font-medium text-blue-600 hover:text-blue-500">
-            Use traditional login
+            Sử dụng đăng nhập truyền thống
           </Link>
         </p>
       </div>

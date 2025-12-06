@@ -4,12 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ShopPost extends Model
 {
     protected $fillable = [
         'shop_id',
         'user_id',
+        'category_id',
         'title',
         'slug',
         'content',
@@ -51,6 +53,83 @@ class ShopPost extends Model
     public function author(): BelongsTo
     {
         return $this->belongsTo(WpUser::class, 'user_id', 'ID');
+    }
+
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(Category::class);
+    }
+
+    /**
+     * Engagement Relationships
+     */
+
+    public function likes(): HasMany
+    {
+        return $this->hasMany(ShopPostLike::class, 'post_id', 'id');
+    }
+
+    public function dislikes(): HasMany
+    {
+        return $this->hasMany(ShopPostDislike::class, 'post_id', 'id');
+    }
+
+    public function shares(): HasMany
+    {
+        return $this->hasMany(ShopPostShare::class, 'post_id', 'id');
+    }
+
+    public function comments(): HasMany
+    {
+        return $this->hasMany(ShopPostComment::class, 'post_id', 'id');
+    }
+
+    /**
+     * Get likes count
+     */
+    public function getLikesCount(): int
+    {
+        return $this->likes()->count();
+    }
+
+    /**
+     * Get dislikes count
+     */
+    public function getDislikesCount(): int
+    {
+        return $this->dislikes()->count();
+    }
+
+    /**
+     * Get shares count
+     */
+    public function getSharesCount(): int
+    {
+        return $this->shares()->count();
+    }
+
+    /**
+     * Get comments count
+     */
+    public function getCommentsCount(): int
+    {
+        return $this->comments()->approved()->count();
+    }
+
+    /**
+     * Check if a user has liked this post
+     */
+    public function hasUserLiked($userId): bool
+    {
+        return $this->likes()->where('user_id', $userId)->exists();
+    }
+
+    /**
+     * Check if a user has disliked this post
+     */
+    public function hasUserDisliked($userId): bool
+    {
+        return $this->dislikes()->where('user_id', $userId)->exists();
     }
 
     public function scopePublished($query)

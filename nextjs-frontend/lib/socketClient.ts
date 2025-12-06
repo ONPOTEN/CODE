@@ -63,12 +63,12 @@ export const disconnectSocket = () => {
 
 export const joinGroupChat = (groupId: number, userId: number) => {
   const socket = getSocket();
-  socket.emit('join-group-chat', { groupId, userId });
+  socket?.emit('join-group-chat', { groupId, userId });
 };
 
 export const leaveGroupChat = (groupId: number, userId: number) => {
   const socket = getSocket();
-  socket.emit('leave-group-chat', { groupId, userId });
+  socket?.emit('leave-group-chat', { groupId, userId });
 };
 
 export const sendGroupMessage = (
@@ -87,7 +87,7 @@ export const sendGroupMessage = (
     timestamp: new Date().toISOString(),
   });
 
-  socket.emit(
+  socket?.emit(
     'group-message',
     {
       groupId,
@@ -127,32 +127,32 @@ export const onGroupMessage = (
   }) => void
 ) => {
   const socket = getSocket();
-  socket.on('group-message', callback);
+  socket?.on('group-message', callback);
 };
 
 export const offGroupMessage = () => {
   const socket = getSocket();
-  socket.off('group-message');
+  socket?.off('group-message');
 };
 
 export const onGroupUserJoined = (callback: (data: { userId: number; username: string }) => void) => {
   const socket = getSocket();
-  socket.on('group-user-joined', callback);
+  socket?.on('group-user-joined', callback);
 };
 
 export const onGroupUserLeft = (callback: (data: { userId: number; username: string }) => void) => {
   const socket = getSocket();
-  socket.on('group-user-left', callback);
+  socket?.on('group-user-left', callback);
 };
 
 export const onGroupUserTyping = (callback: (data: { userId: number; username: string; isTyping: boolean }) => void) => {
   const socket = getSocket();
-  socket.on('group-user-typing', callback);
+  socket?.on('group-user-typing', callback);
 };
 
 export const emitGroupUserTyping = (groupId: number, userId: number, isTyping: boolean) => {
   const socket = getSocket();
-  socket.emit('group-user-typing', { groupId, userId, isTyping });
+  socket?.emit('group-user-typing', { groupId, userId, isTyping });
 };
 
 export const loadGroupMessageHistory = (
@@ -162,7 +162,7 @@ export const loadGroupMessageHistory = (
   callback?: (data: any) => void
 ) => {
   const socket = getSocket();
-  socket.emit('group-message-history', { groupId, page, limit }, (response: any) => {
+  socket?.emit('group-message-history', { groupId, page, limit }, (response: any) => {
     if (callback) {
       callback(response);
     }
@@ -173,5 +173,5 @@ export const onGroupMessageHistory = (
   callback: (data: { messages: any[]; total: number; page: number }) => void
 ) => {
   const socket = getSocket();
-  socket.on('group-message-history', callback);
+  socket?.on('group-message-history', callback);
 };

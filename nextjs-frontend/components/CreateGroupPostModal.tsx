@@ -24,6 +24,8 @@ export default function CreateGroupPostModal({
   const [content, setContent] = useState('');
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [selectedVideo, setSelectedVideo] = useState<File | null>(null);
+  const [videoPreview, setVideoPreview] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -42,6 +44,41 @@ export default function CreateGroupPostModal({
     URL.revokeObjectURL(imagePreviews[index]);
     setSelectedImages(selectedImages.filter((_, i) => i !== index));
     setImagePreviews(imagePreviews.filter((_, i) => i !== index));
+  };
+
+  const handleVideoChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('video/') && !file.name.endsWith('.mp4')) {
+      setError('Chỉ hỗ trợ file video MP4');
+      return;
+    }
+
+    // Validate file size (max 100MB)
+    const maxSize = 100 * 1024 * 1024;
+    if (file.size > maxSize) {
+      setError('Video không được vượt quá 100MB');
+      return;
+    }
+
+    // Clear previous video preview
+    if (videoPreview) {
+      URL.revokeObjectURL(videoPreview);
+    }
+
+    setSelectedVideo(file);
+    setVideoPreview(URL.createObjectURL(file));
+    setError(null);
+  };
+
+  const removeVideo = () => {
+    if (videoPreview) {
+      URL.revokeObjectURL(videoPreview);
+    }
+    setSelectedVideo(null);
+    setVideoPreview(null);
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -67,16 +104,26 @@ export default function CreateGroupPostModal({
         formData.append('images[]', image);
       });
 
+      // Add video if provided
+      if (selectedVideo) {
+        formData.append('video', selectedVideo);
+      }
+
       await groupPosts.create(formData);
 
       // Clean up previews
       imagePreviews.forEach((p) => URL.revokeObjectURL(p));
+      if (videoPreview) {
+        URL.revokeObjectURL(videoPreview);
+      }
 
       // Reset form
       setTitle('');
       setContent('');
       setSelectedImages([]);
       setImagePreviews([]);
+      setSelectedVideo(null);
+      setVideoPreview(null);
 
       // Notify parent and close
       if (onPostCreated) {
@@ -199,16 +246,54 @@ export default function CreateGroupPostModal({
             </div>
           )}
 
+          {/* Preview Video */}
+          {videoPreview && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Video
+              </label>
+              <div className="relative">
+                <video
+                  src={videoPreview}
+                  className="w-full max-h-80 object-contain rounded-lg bg-black"
+                  controls
+                />
+                <button
+                  type="button"
+                  className="absolute top-2 right-2 bg-black bg-opacity-70 text-white rounded-full w-8 h-8 text-lg flex items-center justify-center hover:bg-opacity-90"
+                  onClick={removeVideo}
+                >
+                  ×
+                </button>
+                <div className="absolute bottom-2 left-2 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded">
+                  {selectedVideo?.name} ({((selectedVideo?.size || 0) / 1024 / 1024).toFixed(1)} MB)
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Footer icons */}
           <div className="flex justify-between border-t pt-4">
             <div className="flex items-center gap-3">
-              <label className="cursor-pointer hover:opacity-70 transition-opacity">
+              <label className="cursor-pointer hover:opacity-70 transition-opacity" title="Thêm ảnh">
                 <span className="text-2xl">🖼️</span>
                 <input type="file" className="hidden" multiple onChange={handleImageChange} accept="image/*" />
+              </label>
+              <label className={`cursor-pointer hover:opacity-70 transition-opacity ${selectedVideo ? 'opacity-50' : ''}`} title="Thêm video">
+                <span className="text-2xl">🎬</span>
+                <input
+                  type="file"
+                  className="hidden"
+                  onChange={handleVideoChange}
+                  accept="video/mp4,.mp4"
+                  disabled={!!selectedVideo}
+                />
               </label>
             </div>
             <div className="text-sm text-gray-500">
               {selectedImages.length > 0 && `${selectedImages.length} image${selectedImages.length > 1 ? 's' : ''} selected`}
+              {selectedImages.length > 0 && selectedVideo && ' • '}
+              {selectedVideo && '1 video selected'}
             </div>
           </div>
         </form>

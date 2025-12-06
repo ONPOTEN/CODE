@@ -33,4 +33,47 @@ class GroupMessage extends Model
     {
         return $this->belongsTo(WpUser::class, 'user_id', 'ID');
     }
+
+    /**
+     * Check if message contains embedded images
+     */
+    public function hasEmbeddedImages(): bool
+    {
+        return preg_match('/\[IMAGE\].*?\[\/IMAGE\]/s', $this->message) === 1;
+    }
+
+    /**
+     * Get embedded image URLs from message
+     */
+    public function getEmbeddedImages(): array
+    {
+        $images = [];
+        preg_match_all('/\[IMAGE\](.*?)\[\/IMAGE\]/s', $this->message, $matches);
+
+        if (!empty($matches[1])) {
+            $images = $matches[1];
+        }
+
+        return $images;
+    }
+
+    /**
+     * Get message text without image markup
+     */
+    public function getTextContent(): string
+    {
+        return trim(preg_replace('/\[IMAGE\].*?\[\/IMAGE\]/s', '', $this->message));
+    }
+
+    /**
+     * Get parsed message content with text and images separated
+     */
+    public function getParsedContent(): array
+    {
+        return [
+            'text' => $this->getTextContent(),
+            'images' => $this->getEmbeddedImages(),
+            'has_images' => $this->hasEmbeddedImages(),
+        ];
+    }
 }

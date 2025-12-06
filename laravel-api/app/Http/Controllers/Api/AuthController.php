@@ -867,6 +867,300 @@ public function firebaseLogin(Request $request): JsonResponse
     }
 
     /**
+     * Facebook OAuth Login
+     * Authenticates user via Facebook access token
+     */
+    public function facebookLogin(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'access_token' => 'required|string',
+        ]);
+
+        try {
+            // Get user info from Facebook Graph API
+            $fbGraphUrl = 'https://graph.facebook.com/me?fields=id,name,email,picture&access_token=' . $validated['access_token'];
+
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $fbGraphUrl);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            if ($httpCode !== 200) {
+                \Log::error('[AuthController::facebookLogin] Facebook API error', [
+                    'http_code' => $httpCode,
+                    'response' => $response,
+                ]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid Facebook access token',
+                ], 401);
+            }
+
+            $fbUser = json_decode($response, true);
+
+            if (!isset($fbUser['id'])) {
+                \Log::error('[AuthController::facebookLogin] Invalid Facebook response', [
+                    'response' => $fbUser,
+                ]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Could not get Facebook user info',
+                ], 400);
+            }
+
+            \Log::info('[AuthController::facebookLogin] Facebook user info', [
+                'fb_id' => $fbUser['id'],
+                'name' => $fbUser['name'] ?? 'Unknown',
+                'email' => $fbUser['email'] ?? 'not provided',
+            ]);
+
+            // Generate email if not provided by Facebook
+            $email = $fbUser['email'] ?? 'fb_' . $fbUser['id'] . '@facebook.local';
+            $displayName = $fbUser['name'] ?? 'Facebook User';
+            $facebookId = $fbUser['id'];
+
+            // Find or create user by facebook_id
+            $user = WpUser::where('facebook_id', $facebookId)->first();
+
+            if (!$user) {
+                // Try to find by email if provided
+                if (isset($fbUser['email'])) {
+                    $user = WpUser::where('user_email', $fbUser['email'])->first();
+                    if ($user) {
+                        // Link Facebook to existing account
+                        $user->facebook_id = $facebookId;
+                        $user->save();
+                        \Log::info('[AuthController::facebookLogin] Linked Facebook to existing account', [
+                            'user_id' => $user->ID,
+                            'facebook_id' => $facebookId,
+                        ]);
+                    }
+                }
+            }
+
+            if (!$user) {
+                // Create new user
+                $username = 'fb_' . $facebookId;
+
+                // Make sure username is unique
+                $counter = 0;
+                $baseUsername = $username;
+                while (WpUser::where('user_login', $username)->exists()) {
+                    $counter++;
+                    $username = $baseUsername . '_' . $counter;
+                }
+
+                $user = WpUser::create([
+                    'user_login' => $username,
+                    'user_nicename' => \Illuminate\Support\Str::slug($displayName),
+                    'user_email' => $email,
+                    'display_name' => $displayName,
+                    'facebook_id' => $facebookId,
+                    'user_registered' => now(),
+                    'user_status' => 0,
+                    'role' => 'user',
+                    'email_verified_at' => now(),
+                    'user_pass' => Hash::make(\Illuminate\Support\Str::random(32)),
+                    'auth_method' => 'facebook',
+                ]);
+
+                \Log::info('[AuthController::facebookLogin] Created new user from Facebook', [
+                    'user_id' => $user->ID,
+                    'username' => $username,
+                    'facebook_id' => $facebookId,
+                ]);
+            }
+
+            // Update last login
+            $user->update([
+                'last_login_at' => now(),
+                'auth_method' => 'facebook',
+            ]);
+
+            // Revoke old tokens and create new one
+            $user->tokens()->delete();
+            $token = $user->createToken('facebook-auth')->plainTextToken;
+
+            return response()->json([
+                'success' => true,
+                'user' => [
+                    'id' => $user->ID,
+                    'username' => $user->user_login,
+                    'email' => $user->user_email,
+                    'display_name' => $user->display_name,
+                    'role' => $user->role,
+                    'avatar' => $user->avatar,
+                    'phone' => $user->phone,
+                ],
+                'token' => $token,
+                'message' => 'Facebook login successful',
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('[AuthController::facebookLogin] Error', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Facebook login failed: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Google OAuth Login
+     * Authenticates user via Google access token
+     */
+    public function googleLogin(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'access_token' => 'required|string',
+        ]);
+
+        try {
+            // Get user info from Google OAuth2 API
+            $googleUserInfoUrl = 'https://www.googleapis.com/oauth2/v3/userinfo?access_token=' . $validated['access_token'];
+
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $googleUserInfoUrl);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            if ($httpCode !== 200) {
+                \Log::error('[AuthController::googleLogin] Google API error', [
+                    'http_code' => $httpCode,
+                    'response' => $response,
+                ]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid Google access token',
+                ], 401);
+            }
+
+            $googleUser = json_decode($response, true);
+
+            if (!isset($googleUser['sub'])) {
+                \Log::error('[AuthController::googleLogin] Invalid Google response', [
+                    'response' => $googleUser,
+                ]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Could not get Google user info',
+                ], 400);
+            }
+
+            \Log::info('[AuthController::googleLogin] Google user info', [
+                'google_id' => $googleUser['sub'],
+                'name' => $googleUser['name'] ?? 'Unknown',
+                'email' => $googleUser['email'] ?? 'not provided',
+            ]);
+
+            // Get user info from Google response
+            $email = $googleUser['email'] ?? 'google_' . $googleUser['sub'] . '@google.local';
+            $displayName = $googleUser['name'] ?? 'Google User';
+            $googleId = $googleUser['sub'];
+            $picture = $googleUser['picture'] ?? null;
+
+            // Find or create user by google_id
+            $user = WpUser::where('google_id', $googleId)->first();
+
+            if (!$user) {
+                // Try to find by email if provided
+                if (isset($googleUser['email'])) {
+                    $user = WpUser::where('user_email', $googleUser['email'])->first();
+                    if ($user) {
+                        // Link Google to existing account
+                        $user->google_id = $googleId;
+                        $user->save();
+                        \Log::info('[AuthController::googleLogin] Linked Google to existing account', [
+                            'user_id' => $user->ID,
+                            'google_id' => $googleId,
+                        ]);
+                    }
+                }
+            }
+
+            if (!$user) {
+                // Create new user
+                $username = 'google_' . $googleId;
+
+                // Make sure username is unique
+                $counter = 0;
+                $baseUsername = $username;
+                while (WpUser::where('user_login', $username)->exists()) {
+                    $counter++;
+                    $username = $baseUsername . '_' . $counter;
+                }
+
+                $user = WpUser::create([
+                    'user_login' => $username,
+                    'user_nicename' => \Illuminate\Support\Str::slug($displayName),
+                    'user_email' => $email,
+                    'display_name' => $displayName,
+                    'google_id' => $googleId,
+                    'avatar' => $picture,
+                    'user_registered' => now(),
+                    'user_status' => 0,
+                    'role' => 'user',
+                    'email_verified_at' => now(),
+                    'user_pass' => Hash::make(\Illuminate\Support\Str::random(32)),
+                    'auth_method' => 'google',
+                ]);
+
+                \Log::info('[AuthController::googleLogin] Created new user from Google', [
+                    'user_id' => $user->ID,
+                    'username' => $username,
+                    'google_id' => $googleId,
+                ]);
+            }
+
+            // Update last login and avatar if provided
+            $updateData = [
+                'last_login_at' => now(),
+                'auth_method' => 'google',
+            ];
+            if ($picture && empty($user->avatar)) {
+                $updateData['avatar'] = $picture;
+            }
+            $user->update($updateData);
+
+            // Revoke old tokens and create new one
+            $user->tokens()->delete();
+            $token = $user->createToken('google-auth')->plainTextToken;
+
+            return response()->json([
+                'success' => true,
+                'user' => [
+                    'id' => $user->ID,
+                    'username' => $user->user_login,
+                    'email' => $user->user_email,
+                    'display_name' => $user->display_name,
+                    'role' => $user->role,
+                    'avatar' => $user->avatar,
+                    'phone' => $user->phone,
+                ],
+                'token' => $token,
+                'message' => 'Google login successful',
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('[AuthController::googleLogin] Error', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Google login failed: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
      * Verify WordPress password hash
      */
     protected function verifyWordPressPassword(string $password, string $hash): bool

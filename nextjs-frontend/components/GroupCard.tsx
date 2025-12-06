@@ -52,7 +52,7 @@ export function GroupCard({ group, onDeleted }: GroupCardProps) {
   };
 
   const handleDeleteGroup = async () => {
-    if (!confirm('Are you sure you want to delete this group? This action cannot be undone.')) return;
+    if (!confirm('Bạn có chắc muốn xóa nhóm này không? Hành động này không thể hoàn tác.')) return;
 
     try {
       setIsDeleting(true);
@@ -62,10 +62,10 @@ export function GroupCard({ group, onDeleted }: GroupCardProps) {
         onDeleted(group.group_id);
       }
       // Redirect to groups list
-      router.push('/groups?message=Group deleted successfully');
+      router.push('/groups?message=Xóa nhóm thành công');
     } catch (err) {
       console.error('Error deleting group:', err);
-      alert('Failed to delete group');
+      alert('Không thể xóa nhóm');
       setIsDeleting(false);
     }
   };
@@ -129,7 +129,7 @@ export function GroupCard({ group, onDeleted }: GroupCardProps) {
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 8.308 4 4 0 010-8.308M15 21H9a6 6 0 01-6-6v-1h18v1a6 6 0 01-6 6z" />
                       </svg>
-                      Manage Users
+                      Quản lý thành viên
                     </button>
                     <button
                       onClick={(e) => {
@@ -142,7 +142,7 @@ export function GroupCard({ group, onDeleted }: GroupCardProps) {
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v11l-5-5H5" />
                       </svg>
-                      Manage Posts
+                      Quản lý bài viết
                     </button>
                     <button
                       onClick={(e) => {
@@ -155,7 +155,7 @@ export function GroupCard({ group, onDeleted }: GroupCardProps) {
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                       </svg>
-                      Edit Group
+                      Chỉnh sửa nhóm
                     </button>
                     <button
                       onClick={(e) => {
@@ -169,7 +169,7 @@ export function GroupCard({ group, onDeleted }: GroupCardProps) {
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                       </svg>
-                      {isDeleting ? 'Deleting...' : 'Delete Group'}
+                      {isDeleting ? 'Đang xóa...' : 'Xóa nhóm'}
                     </button>
                   </div>
                 )}
@@ -191,7 +191,7 @@ export function GroupCard({ group, onDeleted }: GroupCardProps) {
                     setShowMenu(!showMenu);
                   }}
                   className="p-2 hover:bg-gray-50/20 rounded-full transition-colors"
-                  title="Group options"
+                  title="Tùy chọn nhóm"
                 >
                   <svg className="w-5 h-5 text-gray-900" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M10.5 1.5H9.5V3.5H10.5V1.5ZM10.5 8.5H9.5V10.5H10.5V8.5ZM10.5 15.5H9.5V17.5H10.5V15.5Z" />
@@ -212,7 +212,7 @@ export function GroupCard({ group, onDeleted }: GroupCardProps) {
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 8.308 4 4 0 010-8.308M15 21H9a6 6 0 01-6-6v-1h18v1a6 6 0 01-6 6z" />
                       </svg>
-                      Manage Users
+                      Quản lý thành viên
                     </button>
                     <button
                       onClick={(e) => {
@@ -225,7 +225,7 @@ export function GroupCard({ group, onDeleted }: GroupCardProps) {
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v11l-5-5H5" />
                       </svg>
-                      Manage Posts
+                      Quản lý bài viết
                     </button>
                     <button
                       onClick={(e) => {
@@ -238,7 +238,7 @@ export function GroupCard({ group, onDeleted }: GroupCardProps) {
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                       </svg>
-                      Edit Group
+                      Chỉnh sửa nhóm
                     </button>
                     <button
                       onClick={(e) => {
@@ -252,7 +252,7 @@ export function GroupCard({ group, onDeleted }: GroupCardProps) {
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                       </svg>
-                      {isDeleting ? 'Deleting...' : 'Delete Group'}
+                      {isDeleting ? 'Đang xóa...' : 'Xóa nhóm'}
                     </button>
                   </div>
                 )}
@@ -306,13 +306,13 @@ export function GroupCard({ group, onDeleted }: GroupCardProps) {
                 <span className="font-semibold text-gray-900">
                   {group.posts_count || 0}
                 </span>
-                <span>Posts</span>
+                <span>Bài viết</span>
               </span>
               <span className="flex flex-col items-center">
                 <span className="font-semibold text-gray-900">
                   {group.members_count || 0}
                 </span>
-                <span>Members</span>
+                <span>Thành viên</span>
               </span>
             </div>
           </div>

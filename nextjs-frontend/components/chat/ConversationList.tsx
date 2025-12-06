@@ -20,7 +20,7 @@ export default function ConversationList({
     return (
       <div className="flex flex-col items-center justify-center h-full p-4">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-3"></div>
-        <p className="text-sm text-gray-600">Loading conversations...</p>
+        <p className="text-sm text-gray-600">Đang tải cuộc trò chuyện...</p>
       </div>
     );
   }
@@ -31,8 +31,8 @@ export default function ConversationList({
         <svg className="w-12 h-12 text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
         </svg>
-        <p className="text-gray-600 font-medium">No conversations yet</p>
-        <p className="text-sm text-gray-500 mt-1">Start chatting with your friends!</p>
+        <p className="text-gray-600 font-medium">Chưa có cuộc trò chuyện nào</p>
+        <p className="text-sm text-gray-500 mt-1">Bắt đầu trò chuyện với bạn bè của bạn!</p>
       </div>
     );
   }
@@ -51,7 +51,7 @@ export default function ConversationList({
             <h3 className="font-semibold text-gray-900">
               {conversation.room_name && conversation.room_name.includes('-shop') ? (
                 <div>
-                  <span>🏪 Shop Message</span>
+                  <span>🏪 Tin nhắn cửa hàng</span>
                   <div className="text-sm font-normal text-gray-600 mt-1">
                     {conversation.other_user.name}
                   </div>
@@ -69,15 +69,15 @@ export default function ConversationList({
 
           {conversation.last_message ? (
             <p className="text-sm text-gray-600 truncate">
-              {conversation.last_message.is_mine && 'You: '}
+              {conversation.last_message.is_mine && 'Bạn: '}
               {conversation.last_message.message}
             </p>
           ) : (
             <p className="text-sm text-gray-600 italic">
               {conversation.room_name && conversation.room_name.includes('-shop') ? (
-                'No messages yet'
+                'Chưa có tin nhắn'
               ) : (
-                'No recent messages'
+                'Không có tin nhắn gần đây'
               )}
             </p>
           )}

@@ -42,7 +42,7 @@ export default function ManageGroupPage() {
       const isAdmin = currentUserRole === 'admin' || currentUserRole === 'administrator';
 
       if (currentUser && !isGroupOwner && !isAdmin) {
-        setError('You do not have permission to manage this group');
+        setError('Bạn không có quyền quản lý nhóm này');
         return;
       }
 
@@ -62,7 +62,7 @@ export default function ManageGroupPage() {
       if (err instanceof ApiException) {
         setError(err.message);
       } else {
-        setError('Failed to load data');
+        setError('Không thể tải dữ liệu');
       }
       console.error('Error fetching data:', err);
     } finally {
@@ -79,14 +79,14 @@ export default function ManageGroupPage() {
       await fetchData();
     } catch (err) {
       console.error('Error approving post:', err);
-      setError('Failed to approve post');
+      setError('Không thể duyệt bài viết');
     } finally {
       setApprovingId(null);
     }
   };
 
   const handleRejectPost = async (postId: number) => {
-    if (!confirm('Are you sure you want to reject this post?')) return;
+    if (!confirm('Bạn có chắc muốn từ chối bài viết này không?')) return;
 
     try {
       setRejectingId(postId);
@@ -96,14 +96,14 @@ export default function ManageGroupPage() {
       await fetchData();
     } catch (err) {
       console.error('Error rejecting post:', err);
-      setError('Failed to reject post');
+      setError('Không thể từ chối bài viết');
     } finally {
       setRejectingId(null);
     }
   };
 
   const handleDeletePost = async (postId: number) => {
-    if (!confirm('Are you sure you want to delete this post? This action cannot be undone.')) return;
+    if (!confirm('Bạn có chắc muốn xóa bài viết này không? Hành động này không thể hoàn tác.')) return;
 
     try {
       setDeletingId(postId);
@@ -113,7 +113,7 @@ export default function ManageGroupPage() {
       await fetchData();
     } catch (err) {
       console.error('Error deleting post:', err);
-      setError('Failed to delete post');
+      setError('Không thể xóa bài viết');
     } finally {
       setDeletingId(null);
     }
@@ -132,7 +132,7 @@ export default function ManageGroupPage() {
       <div className="min-h-screen bg-white">
         <div className="max-w-4xl mx-auto px-4 py-8">
           <Link href="/my-groups" className="text-blue-600 hover:text-blue-700 font-medium">
-            ← Back to My Groups
+            ← Quay lại nhóm của tôi
           </Link>
           <div className="mt-8 p-4 bg-grey-200 border border-red-200 rounded-lg text-red-700">
             {error}
@@ -146,9 +146,9 @@ export default function ManageGroupPage() {
     return (
       <div className="min-h-screen bg-white px-4 py-8">
         <div className="max-w-4xl mx-auto text-center py-12">
-          <p className="text-gray-500 text-lg">Group not found</p>
+          <p className="text-gray-500 text-lg">Không tìm thấy nhóm</p>
           <Link href="/my-groups" className="mt-4 inline-block px-4 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-700">
-            Back to My Groups
+            Quay lại nhóm của tôi
           </Link>
         </div>
       </div>
@@ -161,12 +161,12 @@ export default function ManageGroupPage() {
         {/* Header */}
         <div className="mb-8">
           <Link href={`/groups/${groupId}`} className="text-blue-600 hover:text-blue-700 font-medium">
-            ← Back to {group.group_name}
+            ← Quay lại {group.group_name}
           </Link>
           <div className="flex items-center justify-between mt-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Group Manager</h1>
-              <p className="text-gray-600 mt-2">Manage group posts and users</p>
+              <h1 className="text-3xl font-bold text-gray-900">Quản lý nhóm</h1>
+              <p className="text-gray-600 mt-2">Quản lý bài viết và thành viên nhóm</p>
             </div>
             <Link
               href={`/groups/${groupId}/edit`}
@@ -175,7 +175,7 @@ export default function ManageGroupPage() {
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
               </svg>
-              Edit Group
+              Chỉnh sửa nhóm
             </Link>
           </div>
         </div>
@@ -202,7 +202,7 @@ export default function ManageGroupPage() {
                   <path d="M2 5a2 2 0 012-2h12a2 2 0 012 2v2a2 2 0 01-2 2H4a2 2 0 01-2-2V5z" />
                   <path d="M2 13a2 2 0 012-2h12a2 2 0 012 2v2a2 2 0 01-2 2H4a2 2 0 01-2-2v-2z" />
                 </svg>
-                Posts
+                Bài viết
               </div>
             </button>
             <button
@@ -217,7 +217,7 @@ export default function ManageGroupPage() {
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM9 6a3 3 0 11-6 0 3 3 0 016 0zm0 0h12v1a6 6 0 01-6 6H3a6 6 0 01-6-6v-1h12z" />
                 </svg>
-                Users
+                Thành viên
               </div>
             </button>
           </div>
@@ -239,7 +239,7 @@ export default function ManageGroupPage() {
                     <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                       <path d="M10 18a8 8 0 100-16 8 8 0 000 16zm0-2a6 6 0 100-12 6 6 0 000 12zm0-5a1 1 0 100-2 1 1 0 000 2z" />
                     </svg>
-                    Pending ({pendingPosts.length})
+                    Chờ duyệt ({pendingPosts.length})
                   </div>
                 </button>
                 <button
@@ -254,7 +254,7 @@ export default function ManageGroupPage() {
                     <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                       <path d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" />
                     </svg>
-                    Approved ({approvedPosts.length})
+                    Đã duyệt ({approvedPosts.length})
                   </div>
                 </button>
               </div>
@@ -263,7 +263,7 @@ export default function ManageGroupPage() {
               {postsSubTab === 'pending' && (
                 <div className="p-6">
                   {pendingPosts.length === 0 ? (
-                    <p className="text-center text-gray-500 py-8">No pending posts</p>
+                    <p className="text-center text-gray-500 py-8">Không có bài viết chờ duyệt</p>
                   ) : (
                     <div className="space-y-4">
                       {pendingPosts.map((post) => (
@@ -279,7 +279,7 @@ export default function ManageGroupPage() {
                               <p className="font-medium text-gray-900">{post.author?.name}</p>
                               <p className="text-sm text-gray-600 mt-1 line-clamp-3">{post.post_content}</p>
                               <p className="text-xs text-gray-500 mt-2">
-                                Submitted on {new Date(post.post_date).toLocaleDateString('en-US', {
+                                Gửi ngày {new Date(post.post_date).toLocaleDateString('vi-VN', {
                                   year: 'numeric',
                                   month: 'short',
                                   day: 'numeric',
@@ -296,14 +296,14 @@ export default function ManageGroupPage() {
                                 disabled={approvingId === post.id}
                                 className="px-4 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                               >
-                                {approvingId === post.id ? 'Approving...' : 'Approve'}
+                                {approvingId === post.id ? 'Đang duyệt...' : 'Duyệt'}
                               </button>
                               <button
                                 onClick={() => handleRejectPost(post.id)}
                                 disabled={rejectingId === post.id}
                                 className="px-4 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                               >
-                                {rejectingId === post.id ? 'Rejecting...' : 'Reject'}
+                                {rejectingId === post.id ? 'Đang từ chối...' : 'Từ chối'}
                               </button>
                             </div>
                           </div>
@@ -318,7 +318,7 @@ export default function ManageGroupPage() {
               {postsSubTab === 'approved' && (
                 <div className="p-6">
                   {approvedPosts.length === 0 ? (
-                    <p className="text-center text-gray-500 py-8">No approved posts</p>
+                    <p className="text-center text-gray-500 py-8">Không có bài viết đã duyệt</p>
                   ) : (
                     <div className="space-y-4">
                       {approvedPosts.map((post) => (
@@ -334,7 +334,7 @@ export default function ManageGroupPage() {
                               <p className="font-medium text-gray-900">{post.author?.name}</p>
                               <p className="text-sm text-gray-600 mt-1 line-clamp-3">{post.post_content}</p>
                               <p className="text-xs text-gray-500 mt-2">
-                                Published on {new Date(post.post_date).toLocaleDateString('en-US', {
+                                Đăng ngày {new Date(post.post_date).toLocaleDateString('vi-VN', {
                                   year: 'numeric',
                                   month: 'short',
                                   day: 'numeric',
@@ -350,14 +350,14 @@ export default function ManageGroupPage() {
                                 onClick={() => router.push(`/groups/${groupId}/posts/${post.id}/edit`)}
                                 className="px-4 py-2 bg-blue-500 text-blue-600 rounded-lg hover:bg-blue-500 font-medium transition-colors whitespace-nowrap"
                               >
-                                Edit
+                                Sửa
                               </button>
                               <button
                                 onClick={() => handleDeletePost(post.id)}
                                 disabled={deletingId === post.id}
                                 className="px-4 py-2 bg-blue-500 text-red-600 rounded-lg hover:bg-blue-500 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                               >
-                                {deletingId === post.id ? 'Deleting...' : 'Delete'}
+                                {deletingId === post.id ? 'Đang xóa...' : 'Xóa'}
                               </button>
                             </div>
                           </div>
@@ -377,8 +377,8 @@ export default function ManageGroupPage() {
                 <svg className="w-12 h-12 mx-auto mb-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                 </svg>
-                <p className="text-lg font-medium text-gray-700 mb-2">User Management Coming Soon</p>
-                <p className="text-sm">Group user management features will be added in a future update.</p>
+                <p className="text-lg font-medium text-gray-700 mb-2">Quản lý thành viên sắp ra mắt</p>
+                <p className="text-sm">Tính năng quản lý thành viên nhóm sẽ được thêm trong bản cập nhật sau.</p>
               </div>
             </div>
           )}

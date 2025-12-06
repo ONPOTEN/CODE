@@ -186,7 +186,7 @@ class ChatController extends Controller
         $userId = $request->user()->ID;
 
         $validated = $request->validate([
-            'message' => 'required|string|max:5000',
+            'message' => 'required|string|max:65000', // Increased to support multiple image URLs
             'reply_to_message_id' => 'nullable|integer|exists:messages,id',
         ]);
 
@@ -258,7 +258,7 @@ class ChatController extends Controller
         $userId = $request->user()->ID;
 
         $validated = $request->validate([
-            'message' => 'required|string|max:5000',
+            'message' => 'required|string|max:65000', // Increased to support multiple image URLs
         ]);
 
         // Verify user owns the message

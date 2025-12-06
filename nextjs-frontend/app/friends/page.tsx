@@ -47,7 +47,7 @@ export default function FriendsPage() {
 
   const handleUnfriend = async (friendId: number, friendName: string) => {
     const confirmed = window.confirm(
-      `Are you sure you want to unfriend ${friendName}?`
+      `Bạn có chắc chắn muốn hủy kết bạn với ${friendName}?`
     );
 
     if (!confirmed) return;
@@ -57,12 +57,12 @@ export default function FriendsPage() {
       await friends.unfriend(friendId);
       // Remove from list
       setFriendsList((prev) => prev.filter((friend) => friend.id !== friendId));
-      alert('Successfully unfriended');
+      alert('Đã hủy kết bạn thành công');
     } catch (err) {
       if (err instanceof ApiException) {
-        alert(`Failed to unfriend: ${err.message}`);
+        alert(`Không thể hủy kết bạn: ${err.message}`);
       } else {
-        alert('Failed to unfriend');
+        alert('Không thể hủy kết bạn');
       }
       console.error('Error unfriending:', err);
     } finally {
@@ -92,14 +92,14 @@ export default function FriendsPage() {
               <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
               </svg>
-              My Friends
+              Bạn bè của tôi
               {friendsList.length > 0 && (
                 <span className="text-lg font-normal text-gray-500">
                   ({friendsList.length})
                 </span>
               )}
             </h1>
-            <p className="text-gray-600 mt-2">Manage your connections and friendships</p>
+            <p className="text-gray-600 mt-2">Quản lý các kết nối và tình bạn của bạn</p>
           </div>
 
           <Link
@@ -109,14 +109,14 @@ export default function FriendsPage() {
             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            Back to Profile
+            Quay lại hồ sơ
           </Link>
         </div>
 
         {/* Error State */}
         {error && (
           <div className="bg-grey-200 border border-red-200 rounded-lg p-6 mb-6">
-            <h2 className="text-xl font-semibold text-red-900 mb-2">Error</h2>
+            <h2 className="text-xl font-semibold text-red-900 mb-2">Lỗi</h2>
             <p className="text-red-700">{error}</p>
           </div>
         )}
@@ -155,7 +155,7 @@ export default function FriendsPage() {
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                         </svg>
-                        Friends
+                        Bạn bè
                       </div>
                     </div>
 
@@ -171,7 +171,7 @@ export default function FriendsPage() {
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                         </svg>
-                        Profile
+                        Hồ sơ
                       </Link>
 
                       <button
@@ -182,7 +182,7 @@ export default function FriendsPage() {
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7a4 4 0 11-8 0 4 4 0 018 0zM9 14a6 6 0 00-6 6v1h12v-1a6 6 0 00-6-6zM21 12h-6" />
                         </svg>
-                        {unfriendLoading === friend.id ? 'Removing...' : 'Unfriend'}
+                        {unfriendLoading === friend.id ? 'Đang xóa...' : 'Hủy kết bạn'}
                       </button>
                     </div>
                   </div>
@@ -194,8 +194,8 @@ export default function FriendsPage() {
               <svg className="w-24 h-24 mx-auto mb-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg>
-              <h2 className="text-2xl font-semibold text-gray-900 mb-2">No Friends Yet</h2>
-              <p className="text-gray-600 mb-6">Start building your network by sending friend requests</p>
+              <h2 className="text-2xl font-semibold text-gray-900 mb-2">Chưa có bạn bè</h2>
+              <p className="text-gray-600 mb-6">Bắt đầu xây dựng mạng lưới bằng cách gửi lời mời kết bạn</p>
               <Link
                 href="/profile"
                 className="inline-flex items-center gap-2 px-6 py-3 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-lg font-medium transition-colors"
@@ -203,7 +203,7 @@ export default function FriendsPage() {
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
-                Search for Users
+                Tìm kiếm người dùng
               </Link>
             </div>
           )}

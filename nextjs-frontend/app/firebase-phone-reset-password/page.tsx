@@ -24,11 +24,11 @@ export default function FirebasePhoneResetPasswordPage() {
   const router = useRouter();
 
   const validatePassword = (pwd: string): string => {
-    if (!pwd) return 'Password is required';
-    if (pwd.length < 6) return 'Password must be at least 6 characters';
-    if (!/[A-Z]/.test(pwd)) return 'Password must contain at least one uppercase letter';
-    if (!/[a-z]/.test(pwd)) return 'Password must contain at least one lowercase letter';
-    if (!/[0-9]/.test(pwd)) return 'Password must contain at least one number';
+    if (!pwd) return 'Mật khẩu là bắt buộc';
+    if (pwd.length < 6) return 'Mật khẩu phải có ít nhất 6 ký tự';
+    if (!/[A-Z]/.test(pwd)) return 'Mật khẩu phải chứa ít nhất một chữ hoa';
+    if (!/[a-z]/.test(pwd)) return 'Mật khẩu phải chứa ít nhất một chữ thường';
+    if (!/[0-9]/.test(pwd)) return 'Mật khẩu phải chứa ít nhất một số';
     return '';
   };
 
@@ -38,14 +38,14 @@ export default function FirebasePhoneResetPasswordPage() {
     setErrorMessage('');
 
     if (!phoneNumber) {
-      setErrorMessage('Phone number is required');
+      setErrorMessage('Số điện thoại là bắt buộc');
       return;
     }
 
     // Validate and normalize phone number (auto-adds +84 prefix)
     const validation = validateFirebasePhoneNumber(phoneNumber);
     if (!validation.valid) {
-      setErrorMessage(validation.error || 'Invalid phone number');
+      setErrorMessage(validation.error || 'Số điện thoại không hợp lệ');
       return;
     }
 
@@ -63,7 +63,7 @@ export default function FirebasePhoneResetPasswordPage() {
       const response = await getUserByPhone(normalizedPhone);
 
       if (!response.user_email) {
-        setErrorMessage('Phone number not found. Please check and try again.');
+        setErrorMessage('Không tìm thấy số điện thoại. Vui lòng kiểm tra và thử lại.');
         setIsLoading(false);
         return;
       }
@@ -91,13 +91,13 @@ export default function FirebasePhoneResetPasswordPage() {
           setStep('verify');
         } catch (smsError: any) {
           console.error('[Reset Password] SMS error:', smsError);
-          setErrorMessage(smsError?.message || 'Failed to send SMS. Please try again.');
+          setErrorMessage(smsError?.message || 'Gửi SMS thất bại. Vui lòng thử lại.');
           setRecaptchaVerifier(null);
         }
       }
     } catch (err: any) {
       console.error('[Reset Password] Phone sign in error:', err);
-      setErrorMessage(err?.message || 'An error occurred. Please try again.');
+      setErrorMessage(err?.message || 'Đã xảy ra lỗi. Vui lòng thử lại.');
     } finally {
       setIsLoading(false);
     }
@@ -109,12 +109,12 @@ export default function FirebasePhoneResetPasswordPage() {
     setErrorMessage('');
 
     if (!smsCode) {
-      setErrorMessage('SMS code is required');
+      setErrorMessage('Mã SMS là bắt buộc');
       return;
     }
 
     if (!confirmationResult) {
-      setErrorMessage('SMS verification not initialized. Please try again.');
+      setErrorMessage('Xác thực SMS chưa được khởi tạo. Vui lòng thử lại.');
       return;
     }
 
@@ -131,7 +131,7 @@ export default function FirebasePhoneResetPasswordPage() {
       setStep('reset');
     } catch (err: any) {
       console.error('[Reset Password] SMS verification error:', err);
-      setErrorMessage(err?.message || 'Invalid SMS code. Please try again.');
+      setErrorMessage(err?.message || 'Mã SMS không hợp lệ. Vui lòng thử lại.');
     } finally {
       setIsLoading(false);
     }
@@ -151,7 +151,7 @@ export default function FirebasePhoneResetPasswordPage() {
 
     // Check passwords match
     if (newPassword !== confirmNewPassword) {
-      setErrorMessage('New passwords do not match');
+      setErrorMessage('Mật khẩu mới không khớp');
       return;
     }
 
@@ -164,7 +164,7 @@ export default function FirebasePhoneResetPasswordPage() {
 
       if (!currentUser) {
         console.log('[Reset Password] User not authenticated. Please start over.');
-        setErrorMessage('Authentication lost. Please start the reset process again.');
+        setErrorMessage('Phiên xác thực đã mất. Vui lòng bắt đầu lại quy trình đặt lại.');
         setStep('phone');
         return;
       }
@@ -235,15 +235,15 @@ export default function FirebasePhoneResetPasswordPage() {
         router.push('/login?reset=success');
       } else {
         console.warn('[Reset Password] Laravel password update failed - invalid response:', resetResponse);
-        setErrorMessage('Could not update password in backend. Please try again.');
+        setErrorMessage('Không thể cập nhật mật khẩu trên hệ thống. Vui lòng thử lại.');
       }
     } catch (err: any) {
       console.error('[Reset Password] Password reset error:', err);
 
-      let errorMsg = 'Failed to reset password. Please try again.';
+      let errorMsg = 'Đặt lại mật khẩu thất bại. Vui lòng thử lại.';
 
       if (err.code === 'auth/weak-password') {
-        errorMsg = 'Password is too weak. Please use a stronger password.';
+        errorMsg = 'Mật khẩu quá yếu. Vui lòng sử dụng mật khẩu mạnh hơn.';
       } else if (err.message) {
         errorMsg = err.message;
       }
@@ -260,10 +260,10 @@ export default function FirebasePhoneResetPasswordPage() {
         {/* Header */}
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Reset Password
+            Đặt lại mật khẩu
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Reset your phone authentication password
+            Đặt lại mật khẩu xác thực điện thoại của bạn
           </p>
         </div>
 
@@ -282,7 +282,7 @@ export default function FirebasePhoneResetPasswordPage() {
           <form className="mt-8 space-y-6" onSubmit={handlePhoneSignIn}>
             <div>
               <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700">
-                Phone Number
+                Số điện thoại
               </label>
               <input
                 id="phoneNumber"
@@ -295,7 +295,7 @@ export default function FirebasePhoneResetPasswordPage() {
                 onChange={(e) => setPhoneNumber(e.target.value)}
                 disabled={isLoading}
               />
-              <p className="mt-1 text-xs text-gray-500">Include country code (e.g., +1 for USA)</p>
+              <p className="mt-1 text-xs text-gray-500">Bao gồm mã quốc gia (ví dụ: +84 cho Việt Nam)</p>
             </div>
 
             <button
@@ -303,7 +303,7 @@ export default function FirebasePhoneResetPasswordPage() {
               disabled={isLoading || !phoneNumber}
               className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-gray-900 bg-blue-500 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoading ? 'Sending SMS...' : 'Send Verification Code'}
+              {isLoading ? 'Đang gửi SMS...' : 'Gửi mã xác thực'}
             </button>
           </form>
         )}
@@ -313,15 +313,15 @@ export default function FirebasePhoneResetPasswordPage() {
           <form className="mt-8 space-y-6" onSubmit={handleSmsVerification}>
             <div className="rounded-md bg-grey-200 p-4">
               <div className="text-sm text-blue-800">
-                <p className="font-medium">Phone: {phoneNumber}</p>
+                <p className="font-medium">Điện thoại: {phoneNumber}</p>
                 <p className="text-xs mt-1">Email: {userEmail}</p>
-                <p className="text-xs mt-2">Check your SMS for the verification code</p>
+                <p className="text-xs mt-2">Kiểm tra SMS để nhận mã xác thực</p>
               </div>
             </div>
 
             <div>
               <label htmlFor="smsCode" className="block text-sm font-medium text-gray-700">
-                Verification Code
+                Mã xác thực
               </label>
               <input
                 id="smsCode"
@@ -335,7 +335,7 @@ export default function FirebasePhoneResetPasswordPage() {
                 onChange={(e) => setSmsCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                 disabled={isLoading}
               />
-              <p className="mt-1 text-xs text-gray-500">Enter the 6-digit code sent to your phone</p>
+              <p className="mt-1 text-xs text-gray-500">Nhập mã 6 chữ số được gửi đến điện thoại của bạn</p>
             </div>
 
             <button
@@ -343,7 +343,7 @@ export default function FirebasePhoneResetPasswordPage() {
               disabled={isLoading || smsCode.length !== 6}
               className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-gray-900 bg-blue-500 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoading ? 'Verifying...' : 'Verify Code'}
+              {isLoading ? 'Đang xác thực...' : 'Xác thực mã'}
             </button>
 
             <button
@@ -356,7 +356,7 @@ export default function FirebasePhoneResetPasswordPage() {
               }}
               className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-grey-200 hover:bg-white"
             >
-              Back
+              Quay lại
             </button>
           </form>
         )}
@@ -366,15 +366,15 @@ export default function FirebasePhoneResetPasswordPage() {
           <form className="mt-8 space-y-6" onSubmit={handlePasswordReset}>
             <div className="rounded-md bg-grey-200 p-4">
               <div className="text-sm text-green-800">
-                <p className="font-medium">✓ Phone verified</p>
-                <p className="font-medium">✓ SMS verified</p>
-                <p className="text-xs mt-1">Now enter your new password</p>
+                <p className="font-medium">✓ Điện thoại đã xác thực</p>
+                <p className="font-medium">✓ SMS đã xác thực</p>
+                <p className="text-xs mt-1">Bây giờ hãy nhập mật khẩu mới của bạn</p>
               </div>
             </div>
 
             <div>
               <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700">
-                New Password
+                Mật khẩu mới
               </label>
               <div className="relative">
                 <input
@@ -383,7 +383,7 @@ export default function FirebasePhoneResetPasswordPage() {
                   autoComplete="new-password"
                   required
                   className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  placeholder="Enter new password"
+                  placeholder="Nhập mật khẩu mới"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   disabled={isLoading}
@@ -398,13 +398,13 @@ export default function FirebasePhoneResetPasswordPage() {
                 </button>
               </div>
               <p className="mt-2 text-xs text-gray-500">
-                Must contain uppercase, lowercase, number, and be at least 6 characters
+                Phải chứa chữ hoa, chữ thường, số và ít nhất 6 ký tự
               </p>
             </div>
 
             <div>
               <label htmlFor="confirmNewPassword" className="block text-sm font-medium text-gray-700">
-                Confirm New Password
+                Xác nhận mật khẩu mới
               </label>
               <div className="relative">
                 <input
@@ -413,7 +413,7 @@ export default function FirebasePhoneResetPasswordPage() {
                   autoComplete="new-password"
                   required
                   className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  placeholder="Confirm new password"
+                  placeholder="Xác nhận mật khẩu mới"
                   value={confirmNewPassword}
                   onChange={(e) => setConfirmNewPassword(e.target.value)}
                   disabled={isLoading}
@@ -432,22 +432,22 @@ export default function FirebasePhoneResetPasswordPage() {
             {/* Password Requirements */}
             {newPassword && (
               <div className="rounded-md bg-white p-4">
-                <p className="text-sm font-medium text-gray-700 mb-2">Password Requirements:</p>
+                <p className="text-sm font-medium text-gray-700 mb-2">Yêu cầu mật khẩu:</p>
                 <div className="space-y-1 text-sm">
                   <p className={newPassword.length >= 6 ? 'text-green-600' : 'text-gray-500'}>
-                    ✓ At least 6 characters
+                    ✓ Ít nhất 6 ký tự
                   </p>
                   <p className={/[A-Z]/.test(newPassword) ? 'text-green-600' : 'text-gray-500'}>
-                    ✓ Uppercase letter
+                    ✓ Chữ hoa
                   </p>
                   <p className={/[a-z]/.test(newPassword) ? 'text-green-600' : 'text-gray-500'}>
-                    ✓ Lowercase letter
+                    ✓ Chữ thường
                   </p>
                   <p className={/[0-9]/.test(newPassword) ? 'text-green-600' : 'text-gray-500'}>
-                    ✓ Number
+                    ✓ Số
                   </p>
                   <p className={newPassword === confirmNewPassword && confirmNewPassword ? 'text-green-600' : 'text-gray-500'}>
-                    ✓ Passwords match
+                    ✓ Mật khẩu khớp
                   </p>
                 </div>
               </div>
@@ -458,7 +458,7 @@ export default function FirebasePhoneResetPasswordPage() {
               disabled={isLoading || !newPassword || newPassword !== confirmNewPassword}
               className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-gray-900 bg-blue-500 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoading ? 'Resetting password...' : 'Reset Password'}
+              {isLoading ? 'Đang đặt lại mật khẩu...' : 'Đặt lại mật khẩu'}
             </button>
 
             <button
@@ -470,7 +470,7 @@ export default function FirebasePhoneResetPasswordPage() {
               }}
               className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-grey-200 hover:bg-white"
             >
-              Back
+              Quay lại
             </button>
           </form>
         )}
@@ -478,7 +478,7 @@ export default function FirebasePhoneResetPasswordPage() {
         {/* Back to Login Link */}
         <p className="text-center text-sm text-gray-600">
           <Link href="/login" className="font-medium text-blue-600 hover:text-blue-500">
-            Back to login
+            Quay lại đăng nhập
           </Link>
         </p>
       </div>

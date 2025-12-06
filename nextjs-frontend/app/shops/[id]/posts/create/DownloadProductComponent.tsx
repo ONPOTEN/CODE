@@ -112,7 +112,7 @@ export const DownloadProductComponent: React.FC<DownloadProductComponentProps> =
 
   const addLinkFile = () => {
     if (!newLinkTitle.trim() || !newLinkUrl.trim()) {
-      alert('Please enter both link title and URL');
+      alert('Vui lòng nhập cả tiêu đề và URL liên kết');
       return;
     }
 
@@ -137,17 +137,17 @@ export const DownloadProductComponent: React.FC<DownloadProductComponentProps> =
   return (
     <div className="bg-grey-200 border border-green-200 rounded-lg p-6 space-y-6">
       <h3 className="text-lg font-semibold text-green-900 flex items-center gap-2">
-        📥 Download Product Fields
+        📥 Thông tin sản phẩm tải xuống
       </h3>
 
       <p className="text-sm text-gray-600">
-        Add product descriptions, categories, downloadable files and external links for your digital product.
+        Thêm mô tả sản phẩm, danh mục, tệp tải xuống và liên kết ngoài cho sản phẩm kỹ thuật số của bạn.
       </p>
 
       {/* Price */}
       <div>
         <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-2">
-          Price
+          Giá
         </label>
         <input
           type="number"
@@ -157,14 +157,14 @@ export const DownloadProductComponent: React.FC<DownloadProductComponentProps> =
           value={formData.price || ''}
           onChange={(e) => onFormDataChange('price', e.target.value)}
           className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
-          placeholder="Enter price"
+          placeholder="Nhập giá"
         />
       </div>
 
       {/* Sale Price */}
       <div>
         <label htmlFor="sale_price" className="block text-sm font-medium text-gray-700 mb-2">
-          Sale Price (Optional)
+          Giá khuyến mãi (Tùy chọn)
         </label>
         <input
           type="number"
@@ -174,11 +174,11 @@ export const DownloadProductComponent: React.FC<DownloadProductComponentProps> =
           value={formData.sale_price || ''}
           onChange={(e) => onFormDataChange('sale_price', e.target.value)}
           className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
-          placeholder="Enter sale price (leave empty for no discount)"
+          placeholder="Nhập giá khuyến mãi (để trống nếu không giảm giá)"
         />
         {formData.price && formData.sale_price && (
           <p className="text-sm text-green-600 mt-1">
-            Discount: {(((Number(formData.price) - Number(formData.sale_price)) / Number(formData.price)) * 100).toFixed(1)}%
+            Giảm giá: {(((Number(formData.price) - Number(formData.sale_price)) / Number(formData.price)) * 100).toFixed(1)}%
           </p>
         )}
       </div>
@@ -186,7 +186,7 @@ export const DownloadProductComponent: React.FC<DownloadProductComponentProps> =
       {/* Short Description */}
       <div>
         <label htmlFor="short_description" className="block text-sm font-medium text-gray-700 mb-2">
-          Short Description
+          Mô tả ngắn
         </label>
         <input
           type="text"
@@ -195,7 +195,7 @@ export const DownloadProductComponent: React.FC<DownloadProductComponentProps> =
           value={formData.short_description || ''}
           onChange={(e) => onFormDataChange('short_description', e.target.value)}
           className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
-          placeholder="Brief summary of the download product"
+          placeholder="Tóm tắt ngắn gọn về sản phẩm tải xuống"
           maxLength={255}
         />
         <p className="text-xs text-gray-500 mt-1">
@@ -206,7 +206,7 @@ export const DownloadProductComponent: React.FC<DownloadProductComponentProps> =
       {/* Detail Description */}
       <div>
         <label htmlFor="detail_description" className="block text-sm font-medium text-gray-700 mb-2">
-          Detail Description
+          Mô tả chi tiết
         </label>
         <textarea
           id="detail_description"
@@ -215,14 +215,14 @@ export const DownloadProductComponent: React.FC<DownloadProductComponentProps> =
           onChange={(e) => onFormDataChange('detail_description', e.target.value)}
           rows={5}
           className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
-          placeholder="Detailed information about the download product"
+          placeholder="Thông tin chi tiết về sản phẩm tải xuống"
         />
       </div>
 
       {/* Categories */}
       <div>
         <label htmlFor="categories" className="block text-sm font-medium text-gray-700 mb-2">
-          Categories (comma-separated)
+          Danh mục (phân cách bằng dấu phẩy)
         </label>
         <input
           type="text"
@@ -231,14 +231,14 @@ export const DownloadProductComponent: React.FC<DownloadProductComponentProps> =
           value={formData.categories || ''}
           onChange={(e) => onFormDataChange('categories', e.target.value)}
           className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
-          placeholder="e.g., Software, Templates, eBooks, Tools"
+          placeholder="Ví dụ: Phần mềm, Mẫu, Sách điện tử, Công cụ"
         />
       </div>
 
       {/* Main Image */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Main Product Image
+          Hình ảnh sản phẩm chính
         </label>
         {mainImagePreview ? (
           <div className="space-y-3">
@@ -263,7 +263,7 @@ export const DownloadProductComponent: React.FC<DownloadProductComponentProps> =
                 <svg className="w-6 h-6 text-green-600 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                 </svg>
-                <p className="text-xs text-green-600">Click to replace image</p>
+                <p className="text-xs text-green-600">Nhấp để thay đổi hình ảnh</p>
               </div>
               <input type="file" className="hidden" accept="image/*" onChange={handleMainImageChange} />
             </label>
@@ -274,8 +274,8 @@ export const DownloadProductComponent: React.FC<DownloadProductComponentProps> =
               <svg className="w-8 h-8 text-green-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
               </svg>
-              <p className="text-sm text-green-600 font-medium">Upload Main Image</p>
-              <p className="text-xs text-gray-500">PNG, JPG, GIF up to 5MB</p>
+              <p className="text-sm text-green-600 font-medium">Tải lên hình ảnh chính</p>
+              <p className="text-xs text-gray-500">PNG, JPG, GIF tối đa 5MB</p>
             </div>
             <input type="file" className="hidden" accept="image/*" onChange={handleMainImageChange} />
           </label>
@@ -285,7 +285,7 @@ export const DownloadProductComponent: React.FC<DownloadProductComponentProps> =
       {/* Other Images */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Additional Images
+          Hình ảnh bổ sung
         </label>
         {otherImagePreviews.length > 0 && (
           <div className="mb-4">
@@ -316,7 +316,7 @@ export const DownloadProductComponent: React.FC<DownloadProductComponentProps> =
             <svg className="w-6 h-6 text-green-600 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
             </svg>
-            <p className="text-xs text-green-600 font-medium">Click or drag to add more images</p>
+            <p className="text-xs text-green-600 font-medium">Nhấp hoặc kéo để thêm hình ảnh</p>
           </div>
           <input type="file" className="hidden" accept="image/*" multiple onChange={handleOtherImagesChange} />
         </label>
@@ -324,7 +324,7 @@ export const DownloadProductComponent: React.FC<DownloadProductComponentProps> =
 
       {/* Download File Section */}
       <div className="border border-green-300 rounded-lg p-4 bg-grey-200">
-        <h4 className="font-medium text-gray-900 mb-4">📁 Downloadable File</h4>
+        <h4 className="font-medium text-gray-900 mb-4">📁 Tệp tải xuống</h4>
 
         {/* File Upload Input */}
         {!downloadFile && (
@@ -346,8 +346,8 @@ export const DownloadProductComponent: React.FC<DownloadProductComponentProps> =
                     />
                   </svg>
                   <div>
-                    <p className="font-medium text-gray-900">Upload a file</p>
-                    <p className="text-xs text-gray-500">Click to select or drag and drop</p>
+                    <p className="font-medium text-gray-900">Tải lên tệp</p>
+                    <p className="text-xs text-gray-500">Nhấp để chọn hoặc kéo và thả</p>
                   </div>
                 </div>
                 <input
@@ -359,7 +359,7 @@ export const DownloadProductComponent: React.FC<DownloadProductComponentProps> =
               </label>
             </div>
             <p className="text-xs text-gray-500 text-center">
-              Supported: Any file type (zip, pdf, exe, etc.)
+              Hỗ trợ: Mọi loại tệp (zip, pdf, exe, v.v.)
             </p>
           </div>
         )}
@@ -383,14 +383,14 @@ export const DownloadProductComponent: React.FC<DownloadProductComponentProps> =
                   </svg>
                   <p className="font-medium text-gray-900">{downloadFile.name}</p>
                 </div>
-                <p className="text-xs text-gray-500">Size: {downloadFile.size}</p>
+                <p className="text-xs text-gray-500">Kích thước: {downloadFile.size}</p>
               </div>
               <button
                 type="button"
                 onClick={removeDownloadFile}
                 className="ml-2 px-3 py-1 bg-blue-500 text-gray-900 text-sm rounded hover:bg-blue-700 transition-colors flex-shrink-0"
               >
-                Remove
+                Xóa
               </button>
             </div>
             <label className="block">
@@ -399,20 +399,20 @@ export const DownloadProductComponent: React.FC<DownloadProductComponentProps> =
                 onClick={() => (document.querySelector('input[type="file"]') as HTMLInputElement)?.click()}
                 className="w-full px-4 py-2 text-green-600 border border-green-300 rounded-md hover:bg-grey-200 transition-colors font-medium"
               >
-                Replace File
+                Thay thế tệp
               </button>
             </label>
           </div>
         )}
 
         {!downloadFile && (
-          <p className="text-sm text-gray-500 italic text-center">No file selected.</p>
+          <p className="text-sm text-gray-500 italic text-center">Chưa chọn tệp nào.</p>
         )}
       </div>
 
       {/* External Links Section */}
       <div className="border border-green-300 rounded-lg p-4 bg-grey-200">
-        <h4 className="font-medium text-gray-900 mb-4">External Links</h4>
+        <h4 className="font-medium text-gray-900 mb-4">Liên kết ngoài</h4>
 
         {/* Add Link Form */}
         <div className="space-y-3 mb-4">
@@ -420,14 +420,14 @@ export const DownloadProductComponent: React.FC<DownloadProductComponentProps> =
             type="text"
             value={newLinkTitle}
             onChange={(e) => setNewLinkTitle(e.target.value)}
-            placeholder="Link title (e.g., Live Demo)"
+            placeholder="Tiêu đề liên kết (ví dụ: Demo trực tiếp)"
             className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
           />
           <input
             type="url"
             value={newLinkUrl}
             onChange={(e) => setNewLinkUrl(e.target.value)}
-            placeholder="Link URL (https://...)"
+            placeholder="URL liên kết (https://...)"
             className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
           />
           <button
@@ -435,7 +435,7 @@ export const DownloadProductComponent: React.FC<DownloadProductComponentProps> =
             onClick={addLinkFile}
             className="w-full px-4 py-2 bg-blue-500 text-gray-900 rounded-md hover:bg-blue-700 transition-colors"
           >
-            + Add External Link
+            + Thêm liên kết ngoài
           </button>
         </div>
 
@@ -453,7 +453,7 @@ export const DownloadProductComponent: React.FC<DownloadProductComponentProps> =
                   onClick={() => removeLinkFile(index)}
                   className="ml-2 px-3 py-1 bg-blue-500 text-gray-900 text-sm rounded hover:bg-blue-700 transition-colors"
                 >
-                  Remove
+                  Xóa
                 </button>
               </div>
             ))}
@@ -461,14 +461,14 @@ export const DownloadProductComponent: React.FC<DownloadProductComponentProps> =
         )}
 
         {linkFiles.length === 0 && (
-          <p className="text-sm text-gray-500 italic">No links added yet.</p>
+          <p className="text-sm text-gray-500 italic">Chưa thêm liên kết nào.</p>
         )}
       </div>
 
       {/* Summary */}
       <div className="bg-blue-500 border border-green-300 rounded p-3">
         <p className="text-sm text-green-900">
-          📊 Summary: {downloadFile ? `1 file (${downloadFile.size})` : '0 files'} + {linkFiles.length} link(s)
+          📊 Tổng kết: {downloadFile ? `1 tệp (${downloadFile.size})` : '0 tệp'} + {linkFiles.length} liên kết
         </p>
       </div>
     </div>

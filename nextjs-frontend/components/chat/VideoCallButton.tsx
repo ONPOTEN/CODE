@@ -30,7 +30,7 @@ export default function VideoCallButton({
             : 'bg-blue-600 hover:bg-blue-700 text-gray-900'
         }
       `}
-      title={`Start video call with ${conversation.other_user.name}`}
+      title={`Bắt đầu gọi video với ${conversation.other_user.name}`}
     >
       {/* Video Camera Icon */}
       <svg
@@ -48,7 +48,7 @@ export default function VideoCallButton({
         />
       </svg>
       <span className={`text-sm ${isHovering ? 'block' : 'hidden sm:block'}`}>
-        {isCallActive ? 'End Call' : 'Video Call'}
+        {isCallActive ? 'Kết thúc' : 'Gọi video'}
       </span>
     </button>
   );

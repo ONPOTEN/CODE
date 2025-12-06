@@ -10,7 +10,7 @@ import { CartProvider } from "@/contexts/CartContext";
 import { EngagementProviderWrapper } from "@/components/EngagementProviderWrapper";
 
 export const metadata: Metadata = {
-  title: "Threads - Marketplace",
+  title: "Centimet2 - Marketplace",
   description: "A modern marketplace for products and community engagement",
 };
 

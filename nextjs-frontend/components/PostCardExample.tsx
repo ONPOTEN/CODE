@@ -30,7 +30,7 @@ export function PostCardExample({ post, currentUserId }: PostCardExampleProps) {
   }, [post.id, engagement, fetchEngagementStats]);
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    return new Date(dateString).toLocaleDateString('vi-VN', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -102,12 +102,12 @@ export function PostCardExample({ post, currentUserId }: PostCardExampleProps) {
             <div className="flex gap-2">
               {engagement.likes.user_liked && (
                 <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
-                  You liked
+                  Bạn đã thích
                 </span>
               )}
               {engagement.dislikes.user_disliked && (
                 <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded">
-                  You disliked
+                  Bạn không thích
                 </span>
               )}
             </div>

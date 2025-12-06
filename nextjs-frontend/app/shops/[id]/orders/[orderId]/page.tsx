@@ -111,7 +111,7 @@ export default function ShopOrderDetailPage() {
             expectedOwnerId: shopOwnerId,
             actualUserId: userId,
           });
-          setError('You do not have permission to view this shop\'s orders');
+          setError('Bạn không có quyền xem đơn hàng của cửa hàng này');
           return;
         }
 
@@ -130,7 +130,7 @@ export default function ShopOrderDetailPage() {
 
         if (!orderDetail) {
           console.error('[ShopOrderDetail] Order not found in shop orders list');
-          setError('Order not found in your shop');
+          setError('Không tìm thấy đơn hàng trong cửa hàng của bạn');
           return;
         }
 
@@ -138,7 +138,7 @@ export default function ShopOrderDetailPage() {
 
         // Verify order belongs to this shop
         if (orderDetail.shop_id !== shopId) {
-          setError('This order does not belong to your shop');
+          setError('Đơn hàng này không thuộc về cửa hàng của bạn');
           return;
         }
 
@@ -203,7 +203,7 @@ export default function ShopOrderDetailPage() {
     try {
       await orders.updateStatus(orderId, selectedStatus as any);
       setOrder({ ...order, status: selectedStatus as any });
-      setUpdateMessage('Order status updated successfully');
+      setUpdateMessage('Đã cập nhật trạng thái đơn hàng thành công');
 
       // Clear message after 3 seconds
       setTimeout(() => setUpdateMessage(null), 3000);
@@ -239,13 +239,13 @@ export default function ShopOrderDetailPage() {
   const getStatusLabel = (status: string) => {
     switch (status) {
       case 'completed':
-        return 'Completed';
+        return 'Hoàn thành';
       case 'processing':
-        return 'Processing';
+        return 'Đang xử lý';
       case 'pending':
-        return 'Pending';
+        return 'Chờ xử lý';
       case 'cancelled':
-        return 'Cancelled';
+        return 'Đã hủy';
       default:
         return status;
     }
@@ -279,7 +279,7 @@ export default function ShopOrderDetailPage() {
                 />
               </svg>
             </div>
-            <p className="text-gray-600">Loading order details...</p>
+            <p className="text-gray-600">Đang tải chi tiết đơn hàng...</p>
           </div>
         </div>
       </div>
@@ -303,13 +303,13 @@ export default function ShopOrderDetailPage() {
                 d="M12 8v4m0 4v.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
               />
             </svg>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Error</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Lỗi</h2>
             <p className="text-gray-600 mb-6">{error}</p>
             <Link
               href={`/shops/${shopId}/orders`}
               className="inline-block bg-blue-500 hover:bg-blue-700 text-gray-900 font-medium py-2 px-6 rounded transition-colors"
             >
-              Back to Orders
+              Quay lại đơn hàng
             </Link>
           </div>
         </div>
@@ -330,13 +330,13 @@ export default function ShopOrderDetailPage() {
                 d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
               />
             </svg>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">Order Not Found</h3>
-            <p className="text-gray-600 mb-6">The order you're looking for could not be found.</p>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">Không tìm thấy đơn hàng</h3>
+            <p className="text-gray-600 mb-6">Không tìm thấy đơn hàng bạn đang tìm kiếm.</p>
             <Link
               href={`/shops/${shopId}/orders`}
               className="inline-block bg-blue-500 hover:bg-blue-700 text-gray-900 font-medium py-2 px-6 rounded transition-colors"
             >
-              Back to Orders
+              Quay lại đơn hàng
             </Link>
           </div>
         </div>
@@ -356,11 +356,11 @@ export default function ShopOrderDetailPage() {
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
-            Back to Orders
+            Quay lại đơn hàng
           </Link>
           <h1 className="text-3xl font-bold text-gray-900">{order.order_number}</h1>
           <p className="text-gray-600 mt-2">
-            Order Date: {new Date(order.created_at).toLocaleDateString('vi-VN')}
+            Ngày đặt hàng: {new Date(order.created_at).toLocaleDateString('vi-VN')}
           </p>
         </div>
 
@@ -369,7 +369,7 @@ export default function ShopOrderDetailPage() {
           <div className="lg:col-span-2 space-y-6">
             {/* Status Update Section */}
             <div className="bg-grey-200 rounded-lg shadow-md p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">Order Status</h2>
+              <h2 className="text-xl font-bold text-gray-900 mb-4">Trạng thái đơn hàng</h2>
               <div className="flex items-center gap-4">
                 <span className={`px-4 py-2 rounded-full font-semibold text-sm ${getStatusColor(order.status)}`}>
                   {getStatusLabel(order.status)}
@@ -379,17 +379,17 @@ export default function ShopOrderDetailPage() {
                   onChange={(e) => setSelectedStatus(e.target.value)}
                   className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="pending">Pending</option>
-                  <option value="processing">Processing</option>
-                  <option value="completed">Completed</option>
-                  <option value="cancelled">Cancelled</option>
+                  <option value="pending">Chờ xử lý</option>
+                  <option value="processing">Đang xử lý</option>
+                  <option value="completed">Hoàn thành</option>
+                  <option value="cancelled">Đã hủy</option>
                 </select>
                 <button
                   onClick={handleStatusUpdate}
                   disabled={statusLoading || selectedStatus === order.status}
                   className="px-4 py-2 bg-blue-500 hover:bg-blue-700 disabled:bg-blue-400 text-gray-900 rounded-md font-medium transition-colors"
                 >
-                  {statusLoading ? 'Updating...' : 'Update'}
+                  {statusLoading ? 'Đang cập nhật...' : 'Cập nhật'}
                 </button>
               </div>
               {updateMessage && (
@@ -401,7 +401,7 @@ export default function ShopOrderDetailPage() {
 
             {/* Order Items */}
             <div className="bg-grey-200 rounded-lg shadow-md p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">Order Items</h2>
+              <h2 className="text-xl font-bold text-gray-900 mb-4">Sản phẩm trong đơn</h2>
               <div className="space-y-4">
                 {order.items && order.items.length > 0 ? (
                   order.items.map((item, index) => (
@@ -409,7 +409,7 @@ export default function ShopOrderDetailPage() {
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex-1">
                           <h3 className="font-semibold text-gray-900">{item.product_name}</h3>
-                          <p className="text-sm text-gray-600 mt-1">Quantity: {item.quantity}</p>
+                          <p className="text-sm text-gray-600 mt-1">Số lượng: {item.quantity}</p>
                         </div>
                         <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getProductTypeColor(item.product_type)}`}>
                           {item.product_type}
@@ -419,7 +419,7 @@ export default function ShopOrderDetailPage() {
                       {/* Variant Options */}
                       {item.product_type === 'Biến thể' && item.variant_options && Object.keys(item.variant_options).length > 0 && (
                         <div className="mb-3 p-3 bg-white rounded">
-                          <p className="text-sm font-semibold text-gray-700 mb-2">Selected Options:</p>
+                          <p className="text-sm font-semibold text-gray-700 mb-2">Tùy chọn đã chọn:</p>
                           <div className="grid grid-cols-2 gap-2">
                             {Object.entries(item.variant_options).map(([key, value]) => (
                               <div key={key} className="text-sm">
@@ -440,7 +440,7 @@ export default function ShopOrderDetailPage() {
                               {item.download_files && (Array.isArray(item.download_files) ? item.download_files.length > 0 : (typeof item.download_files === 'object' ? Object.keys(item.download_files).length > 0 : !!item.download_files)) && (
                                 <div className="border border-green-300 rounded-lg p-4 bg-grey-200">
                                   <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2 text-sm">
-                                    <span>📁</span> Downloadable File
+                                    <span>📁</span> Tệp tải xuống
                                   </h4>
                                   <div className="space-y-2">
                                     {(Array.isArray(item.download_files) ? item.download_files : [item.download_files]).map((file: any, idx: number) => {
@@ -464,7 +464,7 @@ export default function ShopOrderDetailPage() {
                                             download
                                             className="ml-2 px-3 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600 transition-colors flex-shrink-0"
                                           >
-                                            Download
+                                            Tải xuống
                                           </a>
                                         </div>
                                       );
@@ -476,7 +476,7 @@ export default function ShopOrderDetailPage() {
                               {item.link_files && item.link_files.length > 0 && (
                                 <div className="border border-blue-300 rounded-lg p-4 bg-grey-200 mt-2">
                                   <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2 text-sm">
-                                    <span>🔗</span> External Links
+                                    <span>🔗</span> Liên kết ngoài
                                   </h4>
                                   <div className="space-y-2">
                                     {item.link_files.map((link: any, idx: number) => {
@@ -500,7 +500,7 @@ export default function ShopOrderDetailPage() {
                                             rel="noopener noreferrer"
                                             className="ml-2 px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600 transition-colors flex-shrink-0"
                                           >
-                                            Open
+                                            Mở
                                           </a>
                                         </div>
                                       );
@@ -524,7 +524,7 @@ export default function ShopOrderDetailPage() {
                                     <div className="border border-gray-300 rounded-lg p-3 bg-gray-50">
                                       <p className="text-sm text-gray-700 flex items-center gap-2 mb-2">
                                         <span>ℹ️</span>
-                                        No download files configured for this product.
+                                        Chưa có tệp tải xuống cho sản phẩm này.
                                       </p>
                                       {item.shop_post_id && (
                                         <Link
@@ -534,7 +534,7 @@ export default function ShopOrderDetailPage() {
                                           <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                           </svg>
-                                          Edit Product to Add Files
+                                          Sửa sản phẩm để thêm tệp
                                         </Link>
                                       )}
                                     </div>
@@ -549,7 +549,7 @@ export default function ShopOrderDetailPage() {
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
-                                Downloads will be available once the order is completed.
+                                Tải xuống sẽ khả dụng sau khi đơn hàng hoàn thành.
                               </p>
                             </div>
                           )}
@@ -565,7 +565,7 @@ export default function ShopOrderDetailPage() {
                     </div>
                   ))
                 ) : (
-                  <p className="text-gray-500">No items in this order</p>
+                  <p className="text-gray-500">Không có sản phẩm trong đơn hàng này</p>
                 )}
               </div>
             </div>
@@ -573,14 +573,14 @@ export default function ShopOrderDetailPage() {
             {/* Shipping Address */}
             {order.shipping_address && (
               <div className="bg-grey-200 rounded-lg shadow-md p-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">Shipping Address</h2>
+                <h2 className="text-xl font-bold text-gray-900 mb-4">Địa chỉ giao hàng</h2>
                 <div className="space-y-2 text-gray-700">
                   <p className="font-semibold">{order.shipping_address.full_name}</p>
                   <p>{order.shipping_address.address}</p>
                   <p>
                     {order.shipping_address.city}, {order.shipping_address.state} {order.shipping_address.postal_code}
                   </p>
-                  <p className="text-sm">Phone: {order.shipping_address.phone}</p>
+                  <p className="text-sm">Điện thoại: {order.shipping_address.phone}</p>
                   <p className="text-sm">Email: {order.shipping_address.email}</p>
                 </div>
               </div>
@@ -592,10 +592,10 @@ export default function ShopOrderDetailPage() {
             {/* Customer Info */}
             {order.customer && (
               <div className="bg-grey-200 rounded-lg shadow-md p-6">
-                <h3 className="text-lg font-bold text-gray-900 mb-4">Customer</h3>
+                <h3 className="text-lg font-bold text-gray-900 mb-4">Khách hàng</h3>
                 <div className="space-y-2">
                   <div>
-                    <p className="text-xs text-gray-500 uppercase">Name</p>
+                    <p className="text-xs text-gray-500 uppercase">Tên</p>
                     <p className="font-semibold text-gray-900">{order.customer.display_name || order.customer.name}</p>
                   </div>
                   <div>
@@ -603,7 +603,7 @@ export default function ShopOrderDetailPage() {
                     <p className="text-gray-700">{order.customer.user_email || order.customer.email}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500 uppercase">User ID</p>
+                    <p className="text-xs text-gray-500 uppercase">Mã người dùng</p>
                     <p className="text-gray-700">#{order.customer.id}</p>
                   </div>
                 </div>
@@ -612,32 +612,32 @@ export default function ShopOrderDetailPage() {
 
             {/* Order Summary */}
             <div className="bg-grey-200 rounded-lg shadow-md p-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-4">Order Summary</h3>
+              <h3 className="text-lg font-bold text-gray-900 mb-4">Tổng kết đơn hàng</h3>
               <div className="space-y-3">
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Subtotal:</span>
+                  <span className="text-gray-600">Tạm tính:</span>
                   <span className="text-gray-900">₫{(order.subtotal).toLocaleString('vi-VN')}</span>
                 </div>
                 {order.tax > 0 && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Tax:</span>
+                    <span className="text-gray-600">Thuế:</span>
                     <span className="text-gray-900">₫{(order.tax).toLocaleString('vi-VN')}</span>
                   </div>
                 )}
                 {order.shipping_fee > 0 && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Shipping:</span>
+                    <span className="text-gray-600">Phí vận chuyển:</span>
                     <span className="text-gray-900">₫{(order.shipping_fee).toLocaleString('vi-VN')}</span>
                   </div>
                 )}
                 {order.discount > 0 && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Discount:</span>
+                    <span className="text-gray-600">Giảm giá:</span>
                     <span className="text-red-600">-₫{(order.discount).toLocaleString('vi-VN')}</span>
                   </div>
                 )}
                 <div className="border-t border-gray-300 pt-3 flex justify-between">
-                  <span className="font-bold text-gray-900">Total:</span>
+                  <span className="font-bold text-gray-900">Tổng cộng:</span>
                   <span className="font-bold text-lg text-blue-600">₫{(order.total_amount).toLocaleString('vi-VN')}</span>
                 </div>
               </div>
@@ -645,7 +645,7 @@ export default function ShopOrderDetailPage() {
 
             {/* Order Timeline */}
             <div className="bg-grey-200 rounded-lg shadow-md p-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-4">Timeline</h3>
+              <h3 className="text-lg font-bold text-gray-900 mb-4">Lịch sử</h3>
               <div className="space-y-3 text-sm">
                 <div className="flex gap-3">
                   <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-gray-900 flex-shrink-0">
@@ -654,7 +654,7 @@ export default function ShopOrderDetailPage() {
                     </svg>
                   </div>
                   <div>
-                    <p className="font-semibold text-gray-900">Order Placed</p>
+                    <p className="font-semibold text-gray-900">Đã đặt hàng</p>
                     <p className="text-gray-600">{new Date(order.created_at).toLocaleDateString('vi-VN')}</p>
                   </div>
                 </div>
@@ -669,7 +669,7 @@ export default function ShopOrderDetailPage() {
                       </svg>
                     </div>
                     <div>
-                      <p className="font-semibold text-gray-900">Processing</p>
+                      <p className="font-semibold text-gray-900">Đang xử lý</p>
                       <p className="text-gray-600">{new Date(order.updated_at).toLocaleDateString('vi-VN')}</p>
                     </div>
                   </div>
@@ -683,7 +683,7 @@ export default function ShopOrderDetailPage() {
                       </svg>
                     </div>
                     <div>
-                      <p className="font-semibold text-gray-900">Delivered</p>
+                      <p className="font-semibold text-gray-900">Đã giao hàng</p>
                       <p className="text-gray-600">{new Date(order.updated_at).toLocaleDateString('vi-VN')}</p>
                     </div>
                   </div>

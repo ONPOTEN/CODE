@@ -40,7 +40,7 @@ export default function EditGroupPage() {
 
         // Check if current user is the group owner
         if (currentUser && fetchedGroup.group_owner_id !== currentUser.id) {
-          setError('You do not have permission to edit this group');
+          setError('Bạn không có quyền chỉnh sửa nhóm này');
           return;
         }
 
@@ -68,7 +68,7 @@ export default function EditGroupPage() {
         if (err instanceof ApiException) {
           setError(err.message);
         } else {
-          setError('Failed to load group. Please try again.');
+          setError('Không thể tải thông tin nhóm. Vui lòng thử lại.');
         }
         console.error('Error fetching group:', err);
       } finally {
@@ -138,7 +138,7 @@ export default function EditGroupPage() {
     e.preventDefault();
 
     if (!formData.group_name.trim()) {
-      setError('Group name is required');
+      setError('Tên nhóm là bắt buộc');
       return;
     }
 
@@ -172,12 +172,12 @@ export default function EditGroupPage() {
       const response = await groupsApi.updateWithFiles(groupId, submitData);
       console.log('[EditGroup] Update response:', response);
 
-      router.push(`/groups/${groupId}?message=Group updated successfully`);
+      router.push(`/groups/${groupId}?message=Cập nhật nhóm thành công`);
     } catch (err) {
       if (err instanceof ApiException) {
         setError(err.message);
       } else {
-        setError('Failed to update group. Please try again.');
+        setError('Không thể cập nhật nhóm. Vui lòng thử lại.');
       }
       console.error('Error updating group:', err);
     } finally {
@@ -198,7 +198,7 @@ export default function EditGroupPage() {
       <div className="min-h-screen bg-white">
         <div className="max-w-2xl mx-auto px-4 py-8">
           <Link href="/my-groups" className="text-blue-600 hover:text-blue-700 font-medium">
-            ← Back to My Groups
+            ← Quay lại Nhóm của tôi
           </Link>
           <div className="mt-8 p-4 bg-grey-200 border border-red-200 rounded-lg text-red-700">
             {error}
@@ -214,10 +214,10 @@ export default function EditGroupPage() {
         {/* Header */}
         <div className="mb-8">
           <Link href="/my-groups" className="text-blue-600 hover:text-blue-700 font-medium">
-            ← Back to My Groups
+            ← Quay lại Nhóm của tôi
           </Link>
-          <h1 className="text-3xl font-bold text-gray-900 mt-4">Edit Group</h1>
-          <p className="text-gray-600 mt-2">Update your group settings and preferences</p>
+          <h1 className="text-3xl font-bold text-gray-900 mt-4">Chỉnh sửa Nhóm</h1>
+          <p className="text-gray-600 mt-2">Cập nhật cài đặt và tùy chọn nhóm của bạn</p>
         </div>
 
         {/* Form */}
@@ -232,14 +232,14 @@ export default function EditGroupPage() {
             {/* Group Name */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Group Name *
+                Tên nhóm *
               </label>
               <input
                 type="text"
                 name="group_name"
                 value={formData.group_name}
                 onChange={handleInputChange}
-                placeholder="Enter group name"
+                placeholder="Nhập tên nhóm"
                 disabled={loading}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-blue-500"
               />
@@ -248,13 +248,13 @@ export default function EditGroupPage() {
             {/* Description */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Description
+                Mô tả
               </label>
               <textarea
                 name="description"
                 value={formData.description}
                 onChange={handleInputChange}
-                placeholder="Describe your group (optional)"
+                placeholder="Mô tả nhóm của bạn (tùy chọn)"
                 rows={4}
                 disabled={loading}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-blue-500 resize-none"
@@ -265,7 +265,7 @@ export default function EditGroupPage() {
             {/* Visibility */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Visibility
+                Chế độ hiển thị
               </label>
               <select
                 name="visibility"
@@ -274,8 +274,8 @@ export default function EditGroupPage() {
                 disabled={loading}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-blue-500"
               >
-                <option value="public">Public - Anyone can join</option>
-                <option value="private">Private - Invite only</option>
+                <option value="public">Công khai - Bất kỳ ai cũng có thể tham gia</option>
+                <option value="private">Riêng tư - Chỉ được mời</option>
               </select>
             </div>
 
@@ -291,11 +291,11 @@ export default function EditGroupPage() {
                   className="w-4 h-4 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
                 />
                 <span className="text-sm font-medium text-gray-700">
-                  Require admin approval for new members
+                  Yêu cầu quản trị viên phê duyệt thành viên mới
                 </span>
               </label>
               <p className="text-sm text-gray-500 mt-2 ml-7">
-                When enabled, new members must be approved by an admin or moderator before joining the group.
+                Khi bật, thành viên mới phải được quản trị viên hoặc người kiểm duyệt phê duyệt trước khi tham gia nhóm.
               </p>
             </div>
 
@@ -311,18 +311,18 @@ export default function EditGroupPage() {
                   className="w-4 h-4 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
                 />
                 <span className="text-sm font-medium text-gray-700">
-                  Require admin approval for new posts
+                  Yêu cầu quản trị viên phê duyệt bài viết mới
                 </span>
               </label>
               <p className="text-sm text-gray-500 mt-2 ml-7">
-                When enabled, new posts must be approved by an admin or moderator before appearing in the group.
+                Khi bật, bài viết mới phải được quản trị viên hoặc người kiểm duyệt phê duyệt trước khi xuất hiện trong nhóm.
               </p>
             </div>
 
             {/* Avatar Upload */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Group Avatar
+                Ảnh đại diện nhóm
               </label>
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
                 <input
@@ -339,8 +339,8 @@ export default function EditGroupPage() {
                 >
                   {avatarPreview ? (
                     <div className="flex flex-col items-center">
-                      <img src={avatarPreview} alt="Avatar preview" className="w-24 h-24 rounded-full object-cover mb-2" />
-                      <p className="text-sm text-blue-600">Click to change</p>
+                      <img src={avatarPreview} alt="Xem trước ảnh đại diện" className="w-24 h-24 rounded-full object-cover mb-2" />
+                      <p className="text-sm text-blue-600">Nhấn để thay đổi</p>
                     </div>
                   ) : (
                     <>
@@ -357,7 +357,7 @@ export default function EditGroupPage() {
                           d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
                         />
                       </svg>
-                      <p className="text-sm text-gray-600">Click to upload avatar</p>
+                      <p className="text-sm text-gray-600">Nhấn để tải lên ảnh đại diện</p>
                     </>
                   )}
                 </label>
@@ -367,7 +367,7 @@ export default function EditGroupPage() {
             {/* Cover Image Upload */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Cover Image
+                Ảnh bìa
               </label>
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
                 <input
@@ -384,8 +384,8 @@ export default function EditGroupPage() {
                 >
                   {coverPreview ? (
                     <div className="flex flex-col items-center">
-                      <img src={coverPreview} alt="Cover preview" className="w-full max-h-32 object-cover rounded mb-2" />
-                      <p className="text-sm text-blue-600">Click to change</p>
+                      <img src={coverPreview} alt="Xem trước ảnh bìa" className="w-full max-h-32 object-cover rounded mb-2" />
+                      <p className="text-sm text-blue-600">Nhấn để thay đổi</p>
                     </div>
                   ) : (
                     <>
@@ -402,7 +402,7 @@ export default function EditGroupPage() {
                           d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
                         />
                       </svg>
-                      <p className="text-sm text-gray-600">Click to upload cover image</p>
+                      <p className="text-sm text-gray-600">Nhấn để tải lên ảnh bìa</p>
                     </>
                   )}
                 </label>
@@ -415,7 +415,7 @@ export default function EditGroupPage() {
                 href="/my-groups"
                 className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-white font-medium transition-colors"
               >
-                Cancel
+                Hủy
               </Link>
               <button
                 type="submit"
@@ -425,10 +425,10 @@ export default function EditGroupPage() {
                 {loading ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    Updating...
+                    Đang cập nhật...
                   </>
                 ) : (
-                  'Update Group'
+                  'Cập nhật Nhóm'
                 )}
               </button>
             </div>

@@ -51,7 +51,7 @@ export default function MyPostsPage() {
       if (err instanceof ApiException) {
         setError(err.message);
       } else {
-        setError('Failed to load data');
+        setError('Không thể tải dữ liệu');
       }
       console.error('Error fetching data:', err);
     } finally {
@@ -60,7 +60,7 @@ export default function MyPostsPage() {
   };
 
   const handleDeletePost = async (postId: number) => {
-    if (!confirm('Are you sure you want to delete this post? This action cannot be undone.')) return;
+    if (!confirm('Bạn có chắc muốn xóa bài viết này không? Hành động này không thể hoàn tác.')) return;
 
     try {
       setDeletingId(postId);
@@ -70,14 +70,14 @@ export default function MyPostsPage() {
       await fetchData();
     } catch (err) {
       console.error('Error deleting post:', err);
-      setError('Failed to delete post');
+      setError('Không thể xóa bài viết');
     } finally {
       setDeletingId(null);
     }
   };
 
   const handleLeaveGroup = async () => {
-    if (!confirm('Are you sure you want to leave this group?')) return;
+    if (!confirm('Bạn có chắc muốn rời khỏi nhóm này không?')) return;
 
     try {
       setIsLeavingGroup(true);
@@ -85,7 +85,7 @@ export default function MyPostsPage() {
       router.push('/groups');
     } catch (err) {
       console.error('Error leaving group:', err);
-      setError('Failed to leave group');
+      setError('Không thể rời nhóm');
       setIsLeavingGroup(false);
     }
   };
@@ -103,7 +103,7 @@ export default function MyPostsPage() {
       <div className="min-h-screen bg-white">
         <div className="max-w-4xl mx-auto px-4 py-8">
           <Link href={`/groups/${groupId}`} className="text-blue-600 hover:text-blue-700 font-medium">
-            ← Back to Group
+            ← Quay lại nhóm
           </Link>
           <div className="mt-8 p-4 bg-grey-200 border border-red-200 rounded-lg text-red-700">
             {error}
@@ -117,9 +117,9 @@ export default function MyPostsPage() {
     return (
       <div className="min-h-screen bg-white px-4 py-8">
         <div className="max-w-4xl mx-auto text-center py-12">
-          <p className="text-gray-500 text-lg">Group not found</p>
+          <p className="text-gray-500 text-lg">Không tìm thấy nhóm</p>
           <Link href="/groups" className="mt-4 inline-block px-4 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-700">
-            Back to Groups
+            Quay lại danh sách nhóm
           </Link>
         </div>
       </div>
@@ -133,18 +133,18 @@ export default function MyPostsPage() {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <Link href={`/groups/${groupId}`} className="text-blue-600 hover:text-blue-700 font-medium">
-              ← Back to {group.group_name}
+              ← Quay lại {group.group_name}
             </Link>
             <button
               onClick={handleLeaveGroup}
               disabled={isLeavingGroup}
               className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLeavingGroup ? 'Leaving...' : 'Leave Group'}
+              {isLeavingGroup ? 'Đang rời...' : 'Rời nhóm'}
             </button>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mt-4">My Posts</h1>
-          <p className="text-gray-600 mt-2">Manage your posts in this group</p>
+          <h1 className="text-3xl font-bold text-gray-900 mt-4">Bài viết của tôi</h1>
+          <p className="text-gray-600 mt-2">Quản lý bài viết của bạn trong nhóm này</p>
         </div>
 
         {error && (
@@ -160,13 +160,13 @@ export default function MyPostsPage() {
               <svg className="w-12 h-12 mx-auto mb-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
               </svg>
-              <p className="text-gray-500 text-lg">No posts yet</p>
-              <p className="text-gray-600 mt-2">Create your first post to get started!</p>
+              <p className="text-gray-500 text-lg">Chưa có bài viết nào</p>
+              <p className="text-gray-600 mt-2">Tạo bài viết đầu tiên để bắt đầu!</p>
               <Link
                 href={`/groups/${groupId}/create-post`}
                 className="mt-4 inline-block px-6 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-700 font-medium transition-colors"
               >
-                Create Post
+                Tạo bài viết
               </Link>
             </div>
           ) : (
@@ -196,7 +196,7 @@ export default function MyPostsPage() {
                           {post.post_status?.charAt(0).toUpperCase() + post.post_status?.slice(1) || 'Draft'}
                         </span>
                         <p className="text-xs text-gray-500">
-                          {new Date(post.post_date).toLocaleDateString('en-US', {
+                          {new Date(post.post_date).toLocaleDateString('vi-VN', {
                             year: 'numeric',
                             month: 'short',
                             day: 'numeric',
@@ -214,7 +214,7 @@ export default function MyPostsPage() {
                           onClick={() => router.push(`/groups/${groupId}/posts/${post.id}/edit`)}
                           className="px-4 py-2 bg-blue-500 text-blue-600 rounded-lg hover:bg-blue-500 font-medium transition-colors whitespace-nowrap"
                         >
-                          Edit
+                          Sửa
                         </button>
                       )}
                       <button
@@ -222,7 +222,7 @@ export default function MyPostsPage() {
                         disabled={deletingId === post.id}
                         className="px-4 py-2 bg-blue-500 text-red-600 rounded-lg hover:bg-blue-500 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                       >
-                        {deletingId === post.id ? 'Deleting...' : 'Delete'}
+                        {deletingId === post.id ? 'Đang xóa...' : 'Xóa'}
                       </button>
                     </div>
                   </div>

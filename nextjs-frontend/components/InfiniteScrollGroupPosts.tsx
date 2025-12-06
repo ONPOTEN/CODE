@@ -115,6 +115,18 @@ export default function InfiniteScrollGroupPosts({
   const [hasMore, setHasMore] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<number | null>(null);
+  const [editingPost, setEditingPost] = useState<GroupPost | null>(null);
+  const [editFormData, setEditFormData] = useState({ title: '', content: '' });
+  const [editLoading, setEditLoading] = useState(false);
+  const [editImages, setEditImages] = useState<File[]>([]);
+  const [editImagePreviews, setEditImagePreviews] = useState<string[]>([]);
+  const [existingImages, setExistingImages] = useState<string[]>([]);
+  const [editVideo, setEditVideo] = useState<File | null>(null);
+  const [editVideoPreview, setEditVideoPreview] = useState<string | null>(null);
+  const [existingVideo, setExistingVideo] = useState<string | null>(null);
+  const [removeExistingVideo, setRemoveExistingVideo] = useState(false);
+  const [videoError, setVideoError] = useState<string | null>(null);
+  const editFileInputRef = useRef<HTMLInputElement>(null);
   const observerTarget = useRef<HTMLDivElement>(null);
   const menuRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
   const userCache = useRef<Map<number, User>>(new Map());
@@ -274,6 +286,176 @@ export default function InfiniteScrollGroupPosts({
     router.push(`/group-posts/${postId}`);
   };
 
+  const handleEditPost = (post: GroupPost) => {
+    setOpenMenuId(null);
+    setEditingPost(post);
+    setEditFormData({
+      title: post.post_title || '',
+      content: post.post_content || '',
+    });
+    setExistingImages(post.images || []);
+    setEditImages([]);
+    setEditImagePreviews([]);
+    setExistingVideo((post as any).video || null);
+    setEditVideo(null);
+    setEditVideoPreview(null);
+    setRemoveExistingVideo(false);
+    setVideoError(null);
+  };
+
+  const handleEditImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    // Limit to 10 images total
+    const totalImages = existingImages.length + editImages.length + files.length;
+    if (totalImages > 10) {
+      alert('Maximum 10 images allowed');
+      return;
+    }
+
+    setEditImages((prev) => [...prev, ...files]);
+
+    // Create previews
+    files.forEach((file) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setEditImagePreviews((prev) => [...prev, reader.result as string]);
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const removeExistingImage = (index: number) => {
+    setExistingImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const removeNewImage = (index: number) => {
+    setEditImages((prev) => prev.filter((_, i) => i !== index));
+    setEditImagePreviews((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleEditVideoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('video/') && !file.name.endsWith('.mp4')) {
+      setVideoError('Chỉ hỗ trợ file video MP4');
+      return;
+    }
+
+    // Validate file size (max 100MB)
+    const maxSize = 100 * 1024 * 1024;
+    if (file.size > maxSize) {
+      setVideoError('Video không được vượt quá 100MB');
+      return;
+    }
+
+    // Clear previous video preview
+    if (editVideoPreview) {
+      URL.revokeObjectURL(editVideoPreview);
+    }
+
+    setEditVideo(file);
+    setEditVideoPreview(URL.createObjectURL(file));
+    setVideoError(null);
+    // If adding a new video, mark existing for removal
+    if (existingVideo) {
+      setRemoveExistingVideo(true);
+    }
+  };
+
+  const removeNewVideo = () => {
+    if (editVideoPreview) {
+      URL.revokeObjectURL(editVideoPreview);
+    }
+    setEditVideo(null);
+    setEditVideoPreview(null);
+  };
+
+  const handleRemoveExistingVideo = () => {
+    setExistingVideo(null);
+    setRemoveExistingVideo(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingPost) return;
+
+    try {
+      setEditLoading(true);
+
+      // Use FormData if there are new images, video changes, or if images were removed
+      const hasImageChanges = editImages.length > 0 || existingImages.length !== (editingPost.images?.length || 0);
+      const hasVideoChanges = editVideo !== null || removeExistingVideo;
+
+      if (hasImageChanges || hasVideoChanges) {
+        const formData = new FormData();
+        formData.append('post_title', editFormData.title);
+        formData.append('post_content', editFormData.content);
+
+        // Add existing images URLs
+        existingImages.forEach((url, index) => {
+          formData.append(`existing_images[${index}]`, url);
+        });
+
+        // Add new images
+        editImages.forEach((file) => {
+          formData.append('images[]', file);
+        });
+
+        // Add video if provided
+        if (editVideo) {
+          formData.append('video', editVideo);
+        }
+
+        // Add remove_video flag if needed
+        if (removeExistingVideo && !editVideo) {
+          formData.append('remove_video', '1');
+        }
+
+        await groupPosts.updateWithFiles(editingPost.id, formData);
+      } else {
+        await groupPosts.update(editingPost.id, {
+          post_title: editFormData.title,
+          post_content: editFormData.content,
+        });
+      }
+
+      // Update post in the list
+      const updatedImages = [...existingImages, ...editImagePreviews];
+      setPostsList((prev) =>
+        prev.map((p) =>
+          p.id === editingPost.id
+            ? { ...p, post_title: editFormData.title, post_content: editFormData.content, images: updatedImages.length > 0 ? updatedImages : p.images }
+            : p
+        )
+      );
+      setEditingPost(null);
+      setEditImages([]);
+      setEditImagePreviews([]);
+      setExistingImages([]);
+      // Clean up video state
+      if (editVideoPreview) {
+        URL.revokeObjectURL(editVideoPreview);
+      }
+      setEditVideo(null);
+      setEditVideoPreview(null);
+      setExistingVideo(null);
+      setRemoveExistingVideo(false);
+      setVideoError(null);
+    } catch (err) {
+      if (err instanceof ApiException) {
+        alert(`Failed to update post: ${err.message}`);
+      } else {
+        alert('Failed to update post');
+      }
+      console.error('Update error:', err);
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
   const handleScrollToComments = (postId: number) => {
     setOpenMenuId(null);
     router.push(`/group-posts/${postId}?scrollToComments=true`);
@@ -389,6 +571,12 @@ export default function InfiniteScrollGroupPosts({
                                   View
                                 </button>
                                 <button
+                                  onClick={() => handleEditPost(post)}
+                                  className="w-full px-3 md:px-4 py-2 text-left text-xs md:text-sm text-blue-600 hover:bg-blue-50"
+                                >
+                                  Edit
+                                </button>
+                                <button
                                   onClick={() => handleDeletePost(post.id)}
                                   className="w-full px-3 md:px-4 py-2 text-left text-xs md:text-sm text-red-600 hover:bg-red-50"
                                 >
@@ -466,6 +654,218 @@ export default function InfiniteScrollGroupPosts({
             </div>
           )}
         </div>
+
+        {/* Edit Modal */}
+        {editingPost && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg p-4 md:p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+              <h2 className="text-lg md:text-xl font-bold mb-4">Edit Post</h2>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                  <input
+                    type="text"
+                    value={editFormData.title}
+                    onChange={(e) => setEditFormData({ ...editFormData, title: e.target.value })}
+                    className="w-full px-3 py-2 text-sm md:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Post title (optional)"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Content</label>
+                  <textarea
+                    value={editFormData.content}
+                    onChange={(e) => setEditFormData({ ...editFormData, content: e.target.value })}
+                    rows={6}
+                    className="w-full px-3 py-2 text-sm md:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                    placeholder="What's on your mind?"
+                  />
+                </div>
+
+                {/* Image Upload Section */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Images</label>
+
+                  {/* Existing Images */}
+                  {existingImages.length > 0 && (
+                    <div className="mb-3">
+                      <p className="text-xs text-gray-500 mb-2">Current images:</p>
+                      <div className="grid grid-cols-4 gap-2">
+                        {existingImages.map((url, index) => (
+                          <div key={`existing-${index}`} className="relative group">
+                            <img
+                              src={url}
+                              alt={`Existing ${index + 1}`}
+                              className="w-full h-16 md:h-20 object-cover rounded-lg"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => removeExistingImage(index)}
+                              className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* New Image Previews */}
+                  {editImagePreviews.length > 0 && (
+                    <div className="mb-3">
+                      <p className="text-xs text-gray-500 mb-2">New images:</p>
+                      <div className="grid grid-cols-4 gap-2">
+                        {editImagePreviews.map((preview, index) => (
+                          <div key={`new-${index}`} className="relative group">
+                            <img
+                              src={preview}
+                              alt={`New ${index + 1}`}
+                              className="w-full h-16 md:h-20 object-cover rounded-lg"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => removeNewImage(index)}
+                              className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Upload Button */}
+                  <input
+                    type="file"
+                    ref={editFileInputRef}
+                    onChange={handleEditImageSelect}
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => editFileInputRef.current?.click()}
+                    disabled={existingImages.length + editImages.length >= 10}
+                    className="w-full px-3 py-2 border-2 border-dashed border-gray-300 rounded-lg text-sm text-gray-600 hover:border-blue-400 hover:text-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    Add Images ({existingImages.length + editImages.length}/10)
+                  </button>
+                </div>
+
+                {/* Video Upload Section */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Video (MP4, tối đa 100MB)</label>
+
+                  {videoError && (
+                    <div className="bg-red-100 border border-red-400 text-red-700 px-3 py-2 rounded mb-3 text-sm">
+                      {videoError}
+                    </div>
+                  )}
+
+                  {/* Existing Video */}
+                  {existingVideo && !removeExistingVideo && (
+                    <div className="mb-3">
+                      <p className="text-xs text-gray-500 mb-2">Current video:</p>
+                      <div className="relative">
+                        <video
+                          src={existingVideo}
+                          className="w-full max-h-48 object-contain rounded-lg bg-black"
+                          controls
+                        />
+                        <button
+                          type="button"
+                          onClick={handleRemoveExistingVideo}
+                          className="absolute top-2 right-2 w-6 h-6 bg-black bg-opacity-70 text-white rounded-full flex items-center justify-center text-sm hover:bg-opacity-90"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* New Video Preview */}
+                  {editVideoPreview && (
+                    <div className="mb-3">
+                      <p className="text-xs text-gray-500 mb-2">New video:</p>
+                      <div className="relative">
+                        <video
+                          src={editVideoPreview}
+                          className="w-full max-h-48 object-contain rounded-lg bg-black"
+                          controls
+                        />
+                        <button
+                          type="button"
+                          onClick={removeNewVideo}
+                          className="absolute top-2 right-2 w-6 h-6 bg-black bg-opacity-70 text-white rounded-full flex items-center justify-center text-sm hover:bg-opacity-90"
+                        >
+                          ×
+                        </button>
+                        <div className="absolute bottom-2 left-2 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded">
+                          {editVideo?.name} ({((editVideo?.size || 0) / 1024 / 1024).toFixed(1)} MB)
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Video Upload Input */}
+                  {!editVideoPreview && (
+                    <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
+                      <div className="flex flex-col items-center justify-center py-4">
+                        <span className="text-2xl mb-1">🎬</span>
+                        <p className="text-sm text-gray-500">
+                          <span className="font-semibold">Click to upload video</span>
+                        </p>
+                        <p className="text-xs text-gray-500">MP4 (max 100MB)</p>
+                      </div>
+                      <input
+                        type="file"
+                        className="hidden"
+                        onChange={handleEditVideoSelect}
+                        accept="video/mp4,.mp4"
+                      />
+                    </label>
+                  )}
+                </div>
+              </div>
+              <div className="mt-4 md:mt-6 flex flex-col-reverse sm:flex-row justify-end gap-2">
+                <button
+                  onClick={() => {
+                    setEditingPost(null);
+                    setEditImages([]);
+                    setEditImagePreviews([]);
+                    setExistingImages([]);
+                    // Clean up video state
+                    if (editVideoPreview) {
+                      URL.revokeObjectURL(editVideoPreview);
+                    }
+                    setEditVideo(null);
+                    setEditVideoPreview(null);
+                    setExistingVideo(null);
+                    setRemoveExistingVideo(false);
+                    setVideoError(null);
+                  }}
+                  disabled={editLoading}
+                  className="w-full sm:w-auto px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg text-sm md:text-base disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveEdit}
+                  disabled={editLoading}
+                  className="w-full sm:w-auto px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm md:text-base disabled:opacity-50"
+                >
+                  {editLoading ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </section>
     </GroupEngagementProvider>
   );

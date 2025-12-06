@@ -59,7 +59,7 @@ class GroupMessageController extends Controller
         }
 
         $validated = $request->validate([
-            'message' => 'required|string|max:5000',
+            'message' => 'required|string|max:65000', // Increased to support multiple image URLs
         ]);
 
         $message = GroupMessage::create([
@@ -96,7 +96,7 @@ class GroupMessageController extends Controller
         }
 
         $validated = $request->validate([
-            'message' => 'required|string|max:5000',
+            'message' => 'required|string|max:65000', // Increased to support multiple image URLs
         ]);
 
         $message->update(['message' => $validated['message']]);

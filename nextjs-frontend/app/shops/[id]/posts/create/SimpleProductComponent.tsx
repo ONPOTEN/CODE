@@ -69,13 +69,13 @@ export const SimpleProductComponent: React.FC<SimpleProductComponentProps> = ({
   return (
     <div className="bg-grey-200 border border-blue-200 rounded-lg p-6 space-y-4">
       <h3 className="text-lg font-semibold text-blue-900 flex items-center gap-2">
-        🛍️ Simple Product Fields
+        🛍️ Thông tin sản phẩm đơn giản
       </h3>
 
       {/* Price */}
       <div>
         <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-2">
-          Price
+          Giá
         </label>
         <input
           type="number"
@@ -85,14 +85,14 @@ export const SimpleProductComponent: React.FC<SimpleProductComponentProps> = ({
           value={formData.price || ''}
           onChange={(e) => onFormDataChange('price', e.target.value)}
           className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-          placeholder="Enter price"
+          placeholder="Nhập giá"
         />
       </div>
 
       {/* Sale Price */}
       <div>
         <label htmlFor="sale_price" className="block text-sm font-medium text-gray-700 mb-2">
-          Sale Price (Optional)
+          Giá khuyến mãi (Tùy chọn)
         </label>
         <input
           type="number"
@@ -102,11 +102,11 @@ export const SimpleProductComponent: React.FC<SimpleProductComponentProps> = ({
           value={formData.sale_price || ''}
           onChange={(e) => onFormDataChange('sale_price', e.target.value)}
           className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-          placeholder="Enter sale price (leave empty for no discount)"
+          placeholder="Nhập giá khuyến mãi (để trống nếu không giảm giá)"
         />
         {formData.price && formData.sale_price && (
           <p className="text-sm text-green-600 mt-1">
-            Discount: {(((Number(formData.price) - Number(formData.sale_price)) / Number(formData.price)) * 100).toFixed(1)}%
+            Giảm giá: {(((Number(formData.price) - Number(formData.sale_price)) / Number(formData.price)) * 100).toFixed(1)}%
           </p>
         )}
       </div>
@@ -114,7 +114,7 @@ export const SimpleProductComponent: React.FC<SimpleProductComponentProps> = ({
       {/* Short Description */}
       <div>
         <label htmlFor="short_description" className="block text-sm font-medium text-gray-700 mb-2">
-          Short Description
+          Mô tả ngắn
         </label>
         <input
           type="text"
@@ -123,7 +123,7 @@ export const SimpleProductComponent: React.FC<SimpleProductComponentProps> = ({
           value={formData.short_description || ''}
           onChange={(e) => onFormDataChange('short_description', e.target.value)}
           className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-          placeholder="Brief summary of the product"
+          placeholder="Tóm tắt ngắn gọn về sản phẩm"
           maxLength={255}
         />
         <p className="text-xs text-gray-500 mt-1">
@@ -134,7 +134,7 @@ export const SimpleProductComponent: React.FC<SimpleProductComponentProps> = ({
       {/* Detail Description */}
       <div>
         <label htmlFor="detail_description" className="block text-sm font-medium text-gray-700 mb-2">
-          Detail Description
+          Mô tả chi tiết
         </label>
         <textarea
           id="detail_description"
@@ -143,14 +143,14 @@ export const SimpleProductComponent: React.FC<SimpleProductComponentProps> = ({
           onChange={(e) => onFormDataChange('detail_description', e.target.value)}
           rows={5}
           className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-          placeholder="Detailed information about the product"
+          placeholder="Thông tin chi tiết về sản phẩm"
         />
       </div>
 
       {/* Categories */}
       <div>
         <label htmlFor="categories" className="block text-sm font-medium text-gray-700 mb-2">
-          Categories (comma-separated)
+          Danh mục (phân cách bằng dấu phẩy)
         </label>
         <input
           type="text"
@@ -159,14 +159,14 @@ export const SimpleProductComponent: React.FC<SimpleProductComponentProps> = ({
           value={formData.categories || ''}
           onChange={(e) => onFormDataChange('categories', e.target.value)}
           className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-          placeholder="e.g., Electronics, Gadgets, Tech"
+          placeholder="Ví dụ: Điện tử, Thiết bị, Công nghệ"
         />
       </div>
 
       {/* Main Image */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Main Product Image
+          Hình ảnh sản phẩm chính
         </label>
         {mainImagePreview ? (
           <div className="space-y-3">
@@ -191,7 +191,7 @@ export const SimpleProductComponent: React.FC<SimpleProductComponentProps> = ({
                 <svg className="w-6 h-6 text-blue-600 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                 </svg>
-                <p className="text-xs text-blue-600">Click to replace image</p>
+                <p className="text-xs text-blue-600">Nhấp để thay đổi hình ảnh</p>
               </div>
               <input type="file" className="hidden" accept="image/*" onChange={handleMainImageChange} />
             </label>
@@ -202,8 +202,8 @@ export const SimpleProductComponent: React.FC<SimpleProductComponentProps> = ({
               <svg className="w-8 h-8 text-blue-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
               </svg>
-              <p className="text-sm text-blue-600 font-medium">Upload Main Image</p>
-              <p className="text-xs text-gray-500">PNG, JPG, GIF up to 5MB</p>
+              <p className="text-sm text-blue-600 font-medium">Tải lên hình ảnh chính</p>
+              <p className="text-xs text-gray-500">PNG, JPG, GIF tối đa 5MB</p>
             </div>
             <input type="file" className="hidden" accept="image/*" onChange={handleMainImageChange} />
           </label>
@@ -213,7 +213,7 @@ export const SimpleProductComponent: React.FC<SimpleProductComponentProps> = ({
       {/* Other Images */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Additional Images
+          Hình ảnh bổ sung
         </label>
         {otherImagePreviews.length > 0 && (
           <div className="mb-4">
@@ -244,7 +244,7 @@ export const SimpleProductComponent: React.FC<SimpleProductComponentProps> = ({
             <svg className="w-6 h-6 text-blue-600 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
             </svg>
-            <p className="text-xs text-blue-600 font-medium">Click or drag to add more images</p>
+            <p className="text-xs text-blue-600 font-medium">Nhấp hoặc kéo để thêm hình ảnh</p>
           </div>
           <input type="file" className="hidden" accept="image/*" multiple onChange={handleOtherImagesChange} />
         </label>

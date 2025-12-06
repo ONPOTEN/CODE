@@ -91,7 +91,7 @@ export default function ShopOrdersPage() {
             expectedOwnerId: shopOwnerId,
             actualUserId: userId,
           });
-          setError('You do not have permission to view this shop\'s orders');
+          setError('Bạn không có quyền xem đơn hàng của cửa hàng này');
           return;
         }
 
@@ -139,13 +139,13 @@ export default function ShopOrdersPage() {
   const getStatusLabel = (status: string) => {
     switch (status) {
       case 'completed':
-        return 'Completed';
+        return 'Hoàn thành';
       case 'processing':
-        return 'Processing';
+        return 'Đang xử lý';
       case 'pending':
-        return 'Pending';
+        return 'Chờ xử lý';
       case 'cancelled':
-        return 'Cancelled';
+        return 'Đã hủy';
       default:
         return status;
     }
@@ -171,11 +171,11 @@ export default function ShopOrdersPage() {
 
   const handleBulkStatusUpdate = async (newStatus: string) => {
     if (selectedOrders.size === 0) {
-      alert('Please select at least one order');
+      alert('Vui lòng chọn ít nhất một đơn hàng');
       return;
     }
 
-    if (!confirm(`Update ${selectedOrders.size} order(s) to ${newStatus}?`)) {
+    if (!confirm(`Cập nhật ${selectedOrders.size} đơn hàng sang trạng thái ${newStatus}?`)) {
       return;
     }
 
@@ -196,9 +196,9 @@ export default function ShopOrdersPage() {
       const ordersData = await apiRequest<any>(orderUrl);
       setOrders(ordersData.data || ordersData);
       setSelectedOrders(new Set());
-      alert('Orders updated successfully');
+      alert('Đã cập nhật đơn hàng thành công');
     } catch (err) {
-      alert('Failed to update orders');
+      alert('Không thể cập nhật đơn hàng');
       console.error('Update error:', err);
     } finally {
       setIsLoading(false);
@@ -220,7 +220,7 @@ export default function ShopOrdersPage() {
                 />
               </svg>
             </div>
-            <p className="text-gray-600">Loading orders...</p>
+            <p className="text-gray-600">Đang tải đơn hàng...</p>
           </div>
         </div>
       </div>
@@ -244,13 +244,13 @@ export default function ShopOrdersPage() {
                 d="M12 8v4m0 4v.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
               />
             </svg>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Error</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Lỗi</h2>
             <p className="text-gray-600 mb-6">{error}</p>
             <Link
               href="/my-shops"
               className="inline-block bg-blue-500 hover:bg-blue-700 text-gray-900 font-medium py-2 px-6 rounded transition-colors"
             >
-              Back to My Shops
+              Quay lại cửa hàng của tôi
             </Link>
           </div>
         </div>
@@ -267,12 +267,12 @@ export default function ShopOrdersPage() {
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
-            Back to My Shops
+            Quay lại cửa hàng của tôi
           </Link>
           <h1 className="text-3xl font-bold text-gray-900">
-            {shop?.name ? `${shop.name} - Orders` : 'Shop Orders'}
+            {shop?.name ? `${shop.name} - Đơn hàng` : 'Đơn hàng cửa hàng'}
           </h1>
-          <p className="text-gray-600 mt-2">Manage and track all orders for your shop</p>
+          <p className="text-gray-600 mt-2">Quản lý và theo dõi tất cả đơn hàng của cửa hàng</p>
         </div>
 
         {/* Filters and Actions */}
@@ -281,7 +281,7 @@ export default function ShopOrdersPage() {
             {/* Status Filter */}
             <div>
               <label htmlFor="filterStatus" className="block text-sm font-medium text-gray-700 mb-2">
-                Filter by Status
+                Lọc theo trạng thái
               </label>
               <select
                 id="filterStatus"
@@ -289,11 +289,11 @@ export default function ShopOrdersPage() {
                 onChange={(e) => setFilterStatus(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <option value="">All Orders</option>
-                <option value="pending">Pending</option>
-                <option value="processing">Processing</option>
-                <option value="completed">Completed</option>
-                <option value="cancelled">Cancelled</option>
+                <option value="">Tất cả đơn hàng</option>
+                <option value="pending">Chờ xử lý</option>
+                <option value="processing">Đang xử lý</option>
+                <option value="completed">Hoàn thành</option>
+                <option value="cancelled">Đã hủy</option>
               </select>
             </div>
 
@@ -301,26 +301,26 @@ export default function ShopOrdersPage() {
             {selectedOrders.size > 0 && (
               <div className="md:col-span-2">
                 <p className="text-sm font-medium text-gray-700 mb-2">
-                  {selectedOrders.size} order(s) selected
+                  Đã chọn {selectedOrders.size} đơn hàng
                 </p>
                 <div className="flex gap-2">
                   <button
                     onClick={() => handleBulkStatusUpdate('processing')}
                     className="px-4 py-2 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded transition-colors text-sm font-medium"
                   >
-                    Mark Processing
+                    Đang xử lý
                   </button>
                   <button
                     onClick={() => handleBulkStatusUpdate('completed')}
                     className="px-4 py-2 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded transition-colors text-sm font-medium"
                   >
-                    Mark Completed
+                    Hoàn thành
                   </button>
                   <button
                     onClick={() => handleBulkStatusUpdate('cancelled')}
                     className="px-4 py-2 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded transition-colors text-sm font-medium"
                   >
-                    Mark Cancelled
+                    Đã hủy
                   </button>
                 </div>
               </div>
@@ -339,8 +339,8 @@ export default function ShopOrdersPage() {
                 d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
               />
             </svg>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">No Orders</h3>
-            <p className="text-gray-600">Your shop doesn't have any orders yet.</p>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">Chưa có đơn hàng</h3>
+            <p className="text-gray-600">Cửa hàng của bạn chưa có đơn hàng nào.</p>
           </div>
         ) : (
           <div className="bg-grey-200 rounded-lg shadow-md overflow-hidden">
@@ -357,25 +357,25 @@ export default function ShopOrdersPage() {
                       />
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Order Number
+                      Mã đơn hàng
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Customer
+                      Khách hàng
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Items
+                      Sản phẩm
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Total Amount
+                      Tổng tiền
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
+                      Trạng thái
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Date
+                      Ngày
                     </th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
+                      Thao tác
                     </th>
                   </tr>
                 </thead>
@@ -394,11 +394,11 @@ export default function ShopOrdersPage() {
                         <div className="text-sm font-semibold text-gray-900">{order.order_number}</div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="text-sm text-gray-900">{order.customer?.display_name || 'Customer'}</div>
+                        <div className="text-sm text-gray-900">{order.customer?.display_name || 'Khách hàng'}</div>
                         <div className="text-xs text-gray-500">{order.customer?.user_email}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm text-gray-600">{order.items?.length || 0} item(s)</span>
+                        <span className="text-sm text-gray-600">{order.items?.length || 0} sản phẩm</span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="text-sm font-semibold text-gray-900">
@@ -418,7 +418,7 @@ export default function ShopOrdersPage() {
                           href={`/shops/${shopId}/orders/${order.id}`}
                           className="text-blue-600 hover:text-blue-900"
                         >
-                          View Details
+                          Xem chi tiết
                         </Link>
                       </td>
                     </tr>
@@ -433,23 +433,23 @@ export default function ShopOrdersPage() {
         {orders.length > 0 && (
           <div className="grid md:grid-cols-4 gap-4 mt-6">
             <div className="bg-grey-200 rounded-lg shadow-md p-6">
-              <p className="text-gray-600 text-sm">Total Orders</p>
+              <p className="text-gray-600 text-sm">Tổng đơn hàng</p>
               <p className="text-3xl font-bold text-gray-900">{orders.length}</p>
             </div>
             <div className="bg-grey-200 rounded-lg shadow-md p-6">
-              <p className="text-gray-600 text-sm">Pending</p>
+              <p className="text-gray-600 text-sm">Chờ xử lý</p>
               <p className="text-3xl font-bold text-yellow-600">
                 {orders.filter((o) => o.status === 'pending').length}
               </p>
             </div>
             <div className="bg-grey-200 rounded-lg shadow-md p-6">
-              <p className="text-gray-600 text-sm">Processing</p>
+              <p className="text-gray-600 text-sm">Đang xử lý</p>
               <p className="text-3xl font-bold text-blue-600">
                 {orders.filter((o) => o.status === 'processing').length}
               </p>
             </div>
             <div className="bg-grey-200 rounded-lg shadow-md p-6">
-              <p className="text-gray-600 text-sm">Completed</p>
+              <p className="text-gray-600 text-sm">Hoàn thành</p>
               <p className="text-3xl font-bold text-green-600">
                 {orders.filter((o) => o.status === 'completed').length}
               </p>

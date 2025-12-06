@@ -39,7 +39,7 @@ export default function FirebaseSignupPage() {
     }
 
     if (formData.password.length < 6) {
-      alert('Password must be at least 6 characters');
+      alert('Mật khẩu phải có ít nhất 6 ký tự');
       return;
     }
 
@@ -57,12 +57,12 @@ export default function FirebaseSignupPage() {
         {/* Header */}
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Create your account
+            Tạo tài khoản
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Already have an account?{' '}
+            Đã có tài khoản?{' '}
             <Link href="/firebase-login" className="font-medium text-blue-600 hover:text-blue-500">
-              Sign in
+              Đăng nhập
             </Link>
           </p>
         </div>
@@ -79,7 +79,7 @@ export default function FirebaseSignupPage() {
           {/* Display Name */}
           <div>
             <label htmlFor="displayName" className="block text-sm font-medium text-gray-700">
-              Full Name
+              Họ và tên
             </label>
             <input
               id="displayName"
@@ -88,7 +88,7 @@ export default function FirebaseSignupPage() {
               autoComplete="name"
               required
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-              placeholder="John Doe"
+              placeholder="Nguyễn Văn A"
               value={formData.displayName}
               onChange={handleChange}
               disabled={isLoading}
@@ -98,7 +98,7 @@ export default function FirebaseSignupPage() {
           {/* Email */}
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-              Email address
+              Địa chỉ Email
             </label>
             <input
               id="email"
@@ -107,7 +107,7 @@ export default function FirebaseSignupPage() {
               autoComplete="email"
               required
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-              placeholder="you@example.com"
+              placeholder="email@example.com"
               value={formData.email}
               onChange={handleChange}
               disabled={isLoading}
@@ -117,7 +117,7 @@ export default function FirebaseSignupPage() {
           {/* Password */}
           <div className="relative">
             <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-              Password
+              Mật khẩu
             </label>
             <div className="mt-1 relative">
               <input
@@ -141,13 +141,13 @@ export default function FirebaseSignupPage() {
                 {showPassword ? '👁️' : '👁️‍🗨️'}
               </button>
             </div>
-            <p className="mt-1 text-xs text-gray-500">Minimum 6 characters</p>
+            <p className="mt-1 text-xs text-gray-500">Tối thiểu 6 ký tự</p>
           </div>
 
           {/* Confirm Password */}
           <div className="relative">
             <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
-              Confirm Password
+              Xác nhận mật khẩu
             </label>
             <div className="mt-1 relative">
               <input
@@ -174,7 +174,7 @@ export default function FirebaseSignupPage() {
               </button>
             </div>
             {!passwordMatch && (
-              <p className="mt-1 text-xs text-red-600">Passwords do not match</p>
+              <p className="mt-1 text-xs text-red-600">Mật khẩu không khớp</p>
             )}
           </div>
 
@@ -184,14 +184,14 @@ export default function FirebaseSignupPage() {
             disabled={isLoading || !passwordMatch}
             className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-gray-900 bg-blue-500 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isLoading ? 'Creating account...' : 'Create account'}
+            {isLoading ? 'Đang tạo tài khoản...' : 'Tạo tài khoản'}
           </button>
         </form>
 
         {/* Sign in link */}
         <p className="text-center text-sm text-gray-600">
           <Link href="/firebase-login" className="font-medium text-blue-600 hover:text-blue-500">
-            Back to login
+            Quay lại đăng nhập
           </Link>
         </p>
       </div>

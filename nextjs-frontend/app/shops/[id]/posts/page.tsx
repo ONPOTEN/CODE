@@ -41,31 +41,31 @@ export default function ShopPostsPage() {
       setPosts(postsData.data || []);
     } catch (error) {
       console.error('Error fetching shop posts:', error);
-      alert('Failed to load shop posts');
+      alert('Không thể tải bài viết cửa hàng');
     } finally {
       setLoading(false);
     }
   };
 
   const handleDelete = async (postId: number, postTitle: string) => {
-    if (!confirm(`Are you sure you want to delete "${postTitle}"?`)) {
+    if (!confirm(`Bạn có chắc chắn muốn xóa "${postTitle}" không?`)) {
       return;
     }
 
     try {
       await shopPosts.delete(shopId, postId);
       setPosts((prev) => prev.filter((post) => post.id !== postId));
-      alert('Post deleted successfully!');
+      alert('Đã xóa bài viết thành công!');
     } catch (error) {
       console.error('Error deleting post:', error);
-      alert('Failed to delete post');
+      alert('Không thể xóa bài viết');
     }
   };
 
   if (loading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-gray-600">Loading...</div>
+        <div className="text-gray-600">Đang tải...</div>
       </div>
     );
   }
@@ -73,7 +73,7 @@ export default function ShopPostsPage() {
   if (!shop) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-red-600">Shop not found</div>
+        <div className="text-red-600">Không tìm thấy cửa hàng</div>
       </div>
     );
   }
@@ -86,14 +86,14 @@ export default function ShopPostsPage() {
           <div className="flex justify-between items-center mb-4">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">{shop.name}</h1>
-              <p className="text-gray-600 mt-2">Manage your shop posts and pages</p>
+              <p className="text-gray-600 mt-2">Quản lý bài viết và trang của cửa hàng</p>
             </div>
             {isOwner && (
               <button
                 onClick={() => router.push(`/shops/${shopId}/posts/create`)}
                 className="bg-blue-500 text-gray-900 px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
               >
-                Create New Post/Page
+                Tạo bài viết/Trang mới
               </button>
             )}
           </div>
@@ -108,7 +108,7 @@ export default function ShopPostsPage() {
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              All Products
+              Tất cả sản phẩm
             </button>
             <button
               onClick={() => setProductTypeView('simple')}
@@ -118,7 +118,7 @@ export default function ShopPostsPage() {
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              🛍️ Simple
+              🛍️ Đơn giản
             </button>
             <button
               onClick={() => setProductTypeView('variant')}
@@ -128,7 +128,7 @@ export default function ShopPostsPage() {
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              🎨 Variant
+              🎨 Biến thể
             </button>
             <button
               onClick={() => setProductTypeView('download')}
@@ -138,36 +138,36 @@ export default function ShopPostsPage() {
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              📥 Download
+              📥 Tải xuống
             </button>
           </div>
 
           {/* Filters */}
           <div className="flex gap-4 mt-4">
             <div>
-              <label className="text-sm font-medium text-gray-700 mr-2">Type:</label>
+              <label className="text-sm font-medium text-gray-700 mr-2">Loại:</label>
               <select
                 value={filter}
                 onChange={(e) => setFilter(e.target.value as 'all' | 'post' | 'page')}
                 className="border border-gray-300 rounded-md px-3 py-1"
               >
-                <option value="all">All</option>
-                <option value="post">Posts</option>
-                <option value="page">Pages</option>
+                <option value="all">Tất cả</option>
+                <option value="post">Bài viết</option>
+                <option value="page">Trang</option>
               </select>
             </div>
 
             {isOwner && (
               <div>
-                <label className="text-sm font-medium text-gray-700 mr-2">Status:</label>
+                <label className="text-sm font-medium text-gray-700 mr-2">Trạng thái:</label>
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value as 'all' | 'draft' | 'published')}
                   className="border border-gray-300 rounded-md px-3 py-1"
                 >
-                  <option value="all">All</option>
-                  <option value="draft">Draft</option>
-                  <option value="published">Published</option>
+                  <option value="all">Tất cả</option>
+                  <option value="draft">Bản nháp</option>
+                  <option value="published">Đã xuất bản</option>
                 </select>
               </div>
             )}
@@ -186,13 +186,13 @@ export default function ShopPostsPage() {
           <>
             {posts.length === 0 ? (
               <div className="bg-grey-200 rounded-lg shadow-md p-12 text-center">
-                <p className="text-gray-500 text-lg">No posts found</p>
+                <p className="text-gray-500 text-lg">Không tìm thấy bài viết</p>
                 {isOwner && (
                   <button
                     onClick={() => router.push(`/shops/${shopId}/posts/create`)}
                     className="mt-4 text-blue-600 hover:text-blue-700 font-medium"
                   >
-                    Create your first post
+                    Tạo bài viết đầu tiên
                   </button>
                 )}
               </div>
@@ -226,9 +226,9 @@ export default function ShopPostsPage() {
                         )}
 
                         <div className="flex gap-4 text-sm text-gray-500">
-                          <span>Views: {post.view_count}</span>
-                          <span>Created: {new Date(post.created_at).toLocaleDateString()}</span>
-                          {post.author && <span>By: {post.author.name || post.author.username}</span>}
+                          <span>Lượt xem: {post.view_count}</span>
+                          <span>Tạo ngày: {new Date(post.created_at).toLocaleDateString('vi-VN')}</span>
+                          {post.author && <span>Bởi: {post.author.name || post.author.username}</span>}
                         </div>
                       </div>
 
@@ -238,13 +238,13 @@ export default function ShopPostsPage() {
                             onClick={() => router.push(`/shops/${shopId}/posts/${post.id}/edit`)}
                             className="px-4 py-2 text-blue-600 hover:bg-grey-200 rounded-md transition-colors"
                           >
-                            Edit
+                            Sửa
                           </button>
                           <button
                             onClick={() => handleDelete(post.id, post.title)}
                             className="px-4 py-2 text-red-600 hover:bg-grey-200 rounded-md transition-colors"
                           >
-                            Delete
+                            Xóa
                           </button>
                         </div>
                       )}

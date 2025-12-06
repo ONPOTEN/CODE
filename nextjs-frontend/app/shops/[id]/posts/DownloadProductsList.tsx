@@ -102,7 +102,7 @@ export const DownloadProductsList: React.FC<DownloadProductsListProps> = ({ shop
   if (loading) {
     return (
       <div className="bg-grey-200 border border-green-200 rounded-lg p-8 text-center">
-        <p className="text-green-900">Loading download products...</p>
+        <p className="text-green-900">Đang tải sản phẩm tải xuống...</p>
       </div>
     );
   }
@@ -110,13 +110,13 @@ export const DownloadProductsList: React.FC<DownloadProductsListProps> = ({ shop
   if (error) {
     return (
       <div className="bg-grey-200 border border-red-200 rounded-lg p-8 text-center">
-        <p className="text-red-900 font-medium">Error loading download products</p>
+        <p className="text-red-900 font-medium">Lỗi khi tải sản phẩm tải xuống</p>
         <p className="text-red-700 text-sm mt-2">{error}</p>
         <button
           onClick={fetchDownloadProducts}
           className="mt-4 px-4 py-2 bg-blue-500 text-gray-900 rounded-md hover:bg-blue-700 transition-colors"
         >
-          Retry
+          Thử lại
         </button>
       </div>
     );
@@ -126,10 +126,10 @@ export const DownloadProductsList: React.FC<DownloadProductsListProps> = ({ shop
     <div className="bg-grey-200 border border-green-200 rounded-lg p-6 space-y-6">
       <div>
         <h3 className="text-lg font-semibold text-green-900 flex items-center gap-2 mb-4">
-          📥 Download Products (Tải xuống)
+          📥 Sản phẩm tải xuống
         </h3>
         <p className="text-sm text-gray-600">
-          Browse and filter digital products with downloadable files and external links.
+          Duyệt và lọc sản phẩm kỹ thuật số với tệp tải xuống và liên kết ngoài.
         </p>
       </div>
 
@@ -137,22 +137,22 @@ export const DownloadProductsList: React.FC<DownloadProductsListProps> = ({ shop
       <div className="bg-grey-200 rounded-lg p-4 border border-green-300 space-y-3">
         <input
           type="text"
-          placeholder="Search download products..."
+          placeholder="Tìm kiếm sản phẩm tải xuống..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
         />
 
         <div>
-          <label className="text-sm font-medium text-gray-700 mr-3">Status:</label>
+          <label className="text-sm font-medium text-gray-700 mr-3">Trạng thái:</label>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as 'all' | 'draft' | 'published')}
             className="border border-gray-300 rounded-md px-3 py-2 focus:ring-green-500 focus:border-green-500"
           >
-            <option value="all">All</option>
-            <option value="published">Published</option>
-            <option value="draft">Draft</option>
+            <option value="all">Tất cả</option>
+            <option value="published">Đã xuất bản</option>
+            <option value="draft">Bản nháp</option>
           </select>
         </div>
       </div>
@@ -160,7 +160,7 @@ export const DownloadProductsList: React.FC<DownloadProductsListProps> = ({ shop
       {/* Products Count */}
       <div className="bg-blue-500 border border-green-300 rounded p-3">
         <p className="text-sm text-green-900">
-          📊 Found {filteredProducts.length} download product{filteredProducts.length !== 1 ? 's' : ''}
+          📊 Tìm thấy {filteredProducts.length} sản phẩm tải xuống
         </p>
       </div>
 
@@ -168,14 +168,14 @@ export const DownloadProductsList: React.FC<DownloadProductsListProps> = ({ shop
       {filteredProducts.length === 0 ? (
         <div className="bg-grey-200 rounded-lg p-8 text-center border border-green-300">
           <p className="text-gray-500 text-lg">
-            {products.length === 0 ? 'No download products yet' : 'No products match your filters'}
+            {products.length === 0 ? 'Chưa có sản phẩm tải xuống' : 'Không có sản phẩm phù hợp với bộ lọc'}
           </p>
           {products.length > 0 && searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
               className="mt-3 text-green-600 hover:text-green-700 font-medium"
             >
-              Clear search
+              Xóa tìm kiếm
             </button>
           )}
         </div>
@@ -209,21 +209,21 @@ export const DownloadProductsList: React.FC<DownloadProductsListProps> = ({ shop
                 {/* Download Info if available */}
                 {(product as any).download_files && (
                   <div className="text-xs text-green-600 font-medium">
-                    📁 Downloadable file available
+                    📁 Có tệp tải xuống
                   </div>
                 )}
 
                 {/* Other Images Count if available */}
                 {(product as any).other_images && (product as any).other_images.length > 0 && (
                   <div className="text-xs text-green-600 font-medium">
-                    🖼️ {(product as any).other_images.length} more image(s)
+                    🖼️ {(product as any).other_images.length} hình ảnh khác
                   </div>
                 )}
 
                 {/* External Links Info if available */}
                 {(product as any).link_files && (product as any).link_files.length > 0 && (
                   <div className="text-xs text-green-600 font-medium">
-                    🔗 {(product as any).link_files.length} link(s) available
+                    🔗 {(product as any).link_files.length} liên kết
                   </div>
                 )}
 
@@ -247,9 +247,9 @@ export const DownloadProductsList: React.FC<DownloadProductsListProps> = ({ shop
 
                 {/* Meta Info */}
                 <div className="text-xs text-gray-500 pt-2 border-t border-gray-300 mb-3">
-                  <p>Views: {product.view_count}</p>
-                  <p>Created: {new Date(product.created_at).toLocaleDateString()}</p>
-                  {product.author && <p>By: {product.author.name || product.author.username}</p>}
+                  <p>Lượt xem: {product.view_count}</p>
+                  <p>Ngày tạo: {new Date(product.created_at).toLocaleDateString('vi-VN')}</p>
+                  {product.author && <p>Bởi: {product.author.name || product.author.username}</p>}
                 </div>
 
                 {/* Buttons Container */}
@@ -262,13 +262,13 @@ export const DownloadProductsList: React.FC<DownloadProductsListProps> = ({ shop
                         : 'bg-grey-2000 hover:bg-blue-500 text-gray-900'
                     }`}
                   >
-                    {addedToCartId === product.id ? '✓ Added to Cart' : 'Add to Cart'}
+                    {addedToCartId === product.id ? '✓ Đã thêm vào giỏ' : 'Thêm vào giỏ'}
                   </button>
                   <Link
                     href={`/shops/${shopId}/posts/${product.id}`}
                     className="block w-full px-4 py-2 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-md font-medium text-center transition-colors"
                   >
-                    View Details
+                    Xem chi tiết
                   </Link>
                 </div>
               </div>

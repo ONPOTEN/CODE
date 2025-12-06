@@ -27,12 +27,12 @@ export default function ShopsPage() {
     const now = new Date();
     const secondsAgo = Math.floor((now.getTime() - date.getTime()) / 1000);
 
-    if (secondsAgo < 60) return 'just now';
-    if (secondsAgo < 3600) return `${Math.floor(secondsAgo / 60)}m ago`;
-    if (secondsAgo < 86400) return `${Math.floor(secondsAgo / 3600)}h ago`;
-    if (secondsAgo < 604800) return `${Math.floor(secondsAgo / 86400)}d ago`;
-    if (secondsAgo < 2592000) return `${Math.floor(secondsAgo / 604800)}w ago`;
-    return `${Math.floor(secondsAgo / 2592000)}mo ago`;
+    if (secondsAgo < 60) return 'vừa xong';
+    if (secondsAgo < 3600) return `${Math.floor(secondsAgo / 60)} phút trước`;
+    if (secondsAgo < 86400) return `${Math.floor(secondsAgo / 3600)} giờ trước`;
+    if (secondsAgo < 604800) return `${Math.floor(secondsAgo / 86400)} ngày trước`;
+    if (secondsAgo < 2592000) return `${Math.floor(secondsAgo / 604800)} tuần trước`;
+    return `${Math.floor(secondsAgo / 2592000)} tháng trước`;
   };
 
   const fetchShops = useCallback(async (pageNum: number, search?: string) => {
@@ -87,7 +87,7 @@ export default function ShopsPage() {
       if (err instanceof ApiException) {
         setError(err.message);
       } else {
-        setError('Failed to fetch shops');
+        setError('Không thể tải danh sách cửa hàng');
       }
       console.error('Error fetching shops:', err);
     } finally {
@@ -120,7 +120,7 @@ export default function ShopsPage() {
   };
 
   const handleDelete = async (shopId: number, shopName: string) => {
-    if (!confirm(`Are you sure you want to delete "${shopName}"?`)) {
+    if (!confirm(`Bạn có chắc chắn muốn xóa "${shopName}" không?`)) {
       return;
     }
 
@@ -128,12 +128,12 @@ export default function ShopsPage() {
       await shops.delete(shopId);
       setShopsList((prev) => prev.filter((shop) => shop.id !== shopId));
       setOpenMenuId(null);
-      alert('Shop deleted successfully!');
+      alert('Đã xóa cửa hàng thành công!');
     } catch (err) {
       if (err instanceof ApiException) {
-        alert(`Failed to delete shop: ${err.message}`);
+        alert(`Không thể xóa cửa hàng: ${err.message}`);
       } else {
-        alert('Failed to delete shop');
+        alert('Không thể xóa cửa hàng');
       }
       console.error('Delete error:', err);
     }
@@ -205,7 +205,7 @@ export default function ShopsPage() {
         </div>
         <section className="w-full px-2 md:px-4 py-6 md:py-12">
           <div className="bg-red-50 border border-red-200 rounded-lg p-4 md:p-6 max-w-4xl mx-auto">
-            <h3 className="text-base md:text-lg font-semibold text-red-900 mb-2">Error Loading Shops</h3>
+            <h3 className="text-base md:text-lg font-semibold text-red-900 mb-2">Lỗi khi tải cửa hàng</h3>
             <p className="text-sm md:text-base text-red-700">{error}</p>
           </div>
         </section>
@@ -232,7 +232,7 @@ export default function ShopsPage() {
             type="text"
             value={searchInput}
             onChange={handleSearchChange}
-            placeholder="Search shops by name, description, location..."
+            placeholder="Tìm kiếm cửa hàng theo tên, mô tả, địa điểm..."
             className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900 placeholder-gray-500"
           />
           {searchInput && (
@@ -248,8 +248,8 @@ export default function ShopsPage() {
         </div>
         {searchQuery && (
           <p className="mt-2 text-sm text-gray-600">
-            Searching for: <span className="font-medium">"{searchQuery}"</span>
-            {!loading && ` - ${shopsList.length} result${shopsList.length !== 1 ? 's' : ''} found`}
+            Đang tìm kiếm: <span className="font-medium">"{searchQuery}"</span>
+            {!loading && ` - Tìm thấy ${shopsList.length} kết quả`}
           </p>
         )}
       </div>
@@ -264,7 +264,7 @@ export default function ShopsPage() {
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
-            <span>Create New Shop</span>
+            <span>Tạo cửa hàng mới</span>
           </Link>
         </div>
       )}
@@ -279,7 +279,7 @@ export default function ShopsPage() {
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
             </svg>
-            <span>Admin Panel</span>
+            <span>Quản trị viên</span>
           </Link>
         </div>
       )}
@@ -293,9 +293,9 @@ export default function ShopsPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <div>
-                <h3 className="font-semibold text-yellow-900 mb-1">Shop Pending Approval</h3>
+                <h3 className="font-semibold text-yellow-900 mb-1">Cửa hàng đang chờ duyệt</h3>
                 <p className="text-yellow-800 text-sm">
-                  You have one or more shops waiting for admin approval. They will appear in the public listing once approved.
+                  Bạn có một hoặc nhiều cửa hàng đang chờ quản trị viên phê duyệt. Chúng sẽ xuất hiện trong danh sách công khai sau khi được duyệt.
                 </p>
               </div>
             </div>
@@ -317,19 +317,19 @@ export default function ShopsPage() {
               </svg>
               {searchQuery ? (
                 <>
-                  <p className="text-lg">No shops found for "{searchQuery}"</p>
-                  <p className="text-sm mt-2">Try a different search term</p>
+                  <p className="text-lg">Không tìm thấy cửa hàng nào cho "{searchQuery}"</p>
+                  <p className="text-sm mt-2">Thử từ khóa tìm kiếm khác</p>
                   <button
                     onClick={handleClearSearch}
                     className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
                   >
-                    Clear Search
+                    Xóa tìm kiếm
                   </button>
                 </>
               ) : (
                 <>
-                  <p className="text-lg">No shops available yet.</p>
-                  <p className="text-sm mt-2">Be the first to create a shop!</p>
+                  <p className="text-lg">Chưa có cửa hàng nào.</p>
+                  <p className="text-sm mt-2">Hãy là người đầu tiên tạo cửa hàng!</p>
                 </>
               )}
             </div>
@@ -405,13 +405,13 @@ export default function ShopsPage() {
                                 onClick={() => handleEditShop(shop.id)}
                                 className="w-full px-3 md:px-4 py-2 text-left text-xs md:text-sm text-gray-700 hover:bg-gray-100"
                               >
-                                Edit
+                                Sửa
                               </button>
                               <button
                                 onClick={() => handleDelete(shop.id, shop.name)}
                                 className="w-full px-3 md:px-4 py-2 text-left text-xs md:text-sm text-red-600 hover:bg-red-50"
                               >
-                                Delete
+                                Xóa
                               </button>
                             </div>
                           )}
@@ -500,7 +500,7 @@ export default function ShopsPage() {
                         href={`/shops/${shop.id}`}
                         className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 font-medium text-sm"
                       >
-                        View Shop
+                        Xem cửa hàng
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                         </svg>
@@ -525,7 +525,7 @@ export default function ShopsPage() {
           {/* No more shops message */}
           {!hasMore && shopsList.length > 0 && (
             <div className="text-center py-8 text-gray-500">
-              <p className="text-sm">You've reached the end of the shops</p>
+              <p className="text-sm">Bạn đã xem hết danh sách cửa hàng</p>
             </div>
           )}
 

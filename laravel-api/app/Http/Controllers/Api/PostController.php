@@ -722,4 +722,256 @@ class PostController extends Controller
             ], 500);
         }
     }
+
+    // ============================================
+    // ADMIN ONLY METHODS
+    // ============================================
+
+    /**
+     * ADMIN ONLY: Get all posts with filtering and pagination
+     */
+    public function adminIndex(Request $request): AnonymousResourceCollection
+    {
+        $query = WpPost::with(['author', 'meta']);
+
+        // Filter by status
+        if ($request->has('status')) {
+            $query->where('post_status', $request->input('status'));
+        }
+
+        // Filter by type
+        if ($request->has('type')) {
+            $query->where('post_type', $request->input('type'));
+        }
+
+        // Filter by author
+        if ($request->has('author_id')) {
+            $query->where('post_author', $request->input('author_id'));
+        }
+
+        // Search
+        if ($request->has('search')) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('post_title', 'like', "%{$search}%")
+                  ->orWhere('post_content', 'like', "%{$search}%");
+            });
+        }
+
+        // Order by
+        $orderBy = $request->input('order_by', 'post_date');
+        $order = $request->input('order', 'desc');
+        $query->orderBy($orderBy, $order);
+
+        $perPage = min($request->input('per_page', 15), 100);
+        $posts = $query->paginate($perPage);
+
+        return PostResource::collection($posts);
+    }
+
+    /**
+     * ADMIN ONLY: Get a single post by ID
+     */
+    public function adminShow(Request $request, $id): PostResource
+    {
+        $post = WpPost::with(['author', 'meta', 'comments' => function ($query) {
+            $query->orderBy('comment_date', 'desc');
+        }])->findOrFail($id);
+
+        return new PostResource($post);
+    }
+
+    /**
+     * ADMIN ONLY: Create a new post
+     */
+    public function adminStore(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'content' => 'required|string',
+            'excerpt' => 'nullable|string',
+            'type' => 'nullable|string|in:post,page,product',
+            'status' => 'nullable|string|in:publish,draft,pending,trash',
+            'author_id' => 'nullable|integer|exists:wp_users,ID',
+            'wall_id' => 'nullable|integer|exists:wp_users,ID',
+        ]);
+
+        $user = $request->user();
+        $authorId = $validated['author_id'] ?? $user->ID;
+
+        // Generate slug from title
+        $slug = Str::slug($validated['title']);
+        $originalSlug = $slug;
+        $counter = 1;
+
+        while (WpPost::where('post_name', $slug)->exists()) {
+            $slug = $originalSlug . '-' . $counter;
+            $counter++;
+        }
+
+        $now = now();
+
+        $post = WpPost::create([
+            'post_author' => $authorId,
+            'post_date' => $now,
+            'post_date_gmt' => $now,
+            'post_content' => $validated['content'],
+            'post_title' => $validated['title'],
+            'post_excerpt' => $validated['excerpt'] ?? '',
+            'post_status' => $validated['status'] ?? 'draft',
+            'post_name' => $slug,
+            'post_type' => $validated['type'] ?? 'post',
+            'post_modified' => $now,
+            'post_modified_gmt' => $now,
+            'guid' => '',
+            'comment_status' => 'open',
+            'ping_status' => 'open',
+            'post_password' => '',
+            'to_ping' => '',
+            'pinged' => '',
+            'post_content_filtered' => '',
+            'post_parent' => 0,
+            'menu_order' => 0,
+            'post_mime_type' => '',
+            'comment_count' => 0,
+            'wall_id' => $validated['wall_id'] ?? $authorId,
+        ]);
+
+        \Log::info('[PostController::adminStore] Post created by admin', [
+            'created_by' => $user->ID,
+            'post_id' => $post->ID,
+            'title' => $post->post_title,
+        ]);
+
+        return response()->json([
+            'message' => 'Post created successfully',
+            'post' => new PostResource($post->load(['author', 'meta'])),
+        ], 201);
+    }
+
+    /**
+     * ADMIN ONLY: Update any post
+     */
+    public function adminUpdate(Request $request, $id): JsonResponse
+    {
+        $post = WpPost::findOrFail($id);
+
+        $validated = $request->validate([
+            'title' => 'nullable|string|max:255',
+            'content' => 'nullable|string',
+            'excerpt' => 'nullable|string',
+            'type' => 'nullable|string|in:post,page,product',
+            'status' => 'nullable|string|in:publish,draft,pending,trash',
+            'visibility' => 'nullable|string|in:public,private',
+        ]);
+
+        $now = now();
+
+        if (isset($validated['title'])) {
+            $post->post_title = $validated['title'];
+
+            // Regenerate slug if title changed
+            $slug = Str::slug($validated['title']);
+            $originalSlug = $slug;
+            $counter = 1;
+
+            while (WpPost::where('post_name', $slug)->where('ID', '!=', $id)->exists()) {
+                $slug = $originalSlug . '-' . $counter;
+                $counter++;
+            }
+            $post->post_name = $slug;
+        }
+
+        if (isset($validated['content'])) {
+            $post->post_content = $validated['content'];
+        }
+
+        if (isset($validated['excerpt'])) {
+            $post->post_excerpt = $validated['excerpt'];
+        }
+
+        if (isset($validated['type'])) {
+            $post->post_type = $validated['type'];
+        }
+
+        if (isset($validated['status'])) {
+            $post->post_status = $validated['status'];
+        }
+
+        if (isset($validated['visibility'])) {
+            $post->visibility = $validated['visibility'];
+        }
+
+        $post->post_modified = $now;
+        $post->post_modified_gmt = $now;
+        $post->save();
+
+        \Log::info('[PostController::adminUpdate] Post updated by admin', [
+            'updated_by' => $request->user()->ID,
+            'post_id' => $post->ID,
+            'fields_updated' => array_keys($validated),
+        ]);
+
+        return response()->json([
+            'message' => 'Post updated successfully',
+            'post' => new PostResource($post->load(['author', 'meta'])),
+        ]);
+    }
+
+    /**
+     * ADMIN ONLY: Delete any post
+     */
+    public function adminDestroy(Request $request, $id): JsonResponse
+    {
+        $post = WpPost::findOrFail($id);
+
+        $title = $post->post_title;
+        $authorId = $post->post_author;
+
+        // Delete associated images
+        $imageMeta = $post->meta()->where('meta_key', 'like', '_post_image_%')->get();
+        foreach ($imageMeta as $meta) {
+            \Storage::disk('s3')->delete($meta->meta_value);
+            $meta->delete();
+        }
+
+        // Delete thumbnail
+        $thumbnailMeta = $post->meta()->where('meta_key', '_thumbnail_path')->first();
+        if ($thumbnailMeta) {
+            \Storage::disk('s3')->delete($thumbnailMeta->meta_value);
+            $thumbnailMeta->delete();
+        }
+
+        // Delete all meta
+        $post->meta()->delete();
+
+        // Delete comments
+        $post->comments()->delete();
+
+        // Delete likes, dislikes, shares
+        $post->likes()->delete();
+        $post->dislikes()->delete();
+        $post->shares()->delete();
+
+        // Delete share walls
+        $post->shareWalls()->delete();
+
+        // Delete post
+        $post->delete();
+
+        \Log::info('[PostController::adminDestroy] Post deleted by admin', [
+            'deleted_by' => $request->user()->ID,
+            'post_id' => $id,
+            'title' => $title,
+            'original_author_id' => $authorId,
+        ]);
+
+        return response()->json([
+            'message' => 'Post deleted successfully',
+            'deleted_post' => [
+                'id' => $id,
+                'title' => $title,
+            ],
+        ]);
+    }
 }

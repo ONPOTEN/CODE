@@ -37,6 +37,11 @@ export default function EditShopPostPage() {
   const [newImagePreviews, setNewImagePreviews] = useState<string[]>([]);
   const [existingImages, setExistingImages] = useState<string[]>([]);
   const [imagesToRemove, setImagesToRemove] = useState<string[]>([]);
+  const [selectedVideo, setSelectedVideo] = useState<File | null>(null);
+  const [videoPreview, setVideoPreview] = useState<string | null>(null);
+  const [existingVideo, setExistingVideo] = useState<string | null>(null);
+  const [removeExistingVideo, setRemoveExistingVideo] = useState(false);
+  const [videoError, setVideoError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -71,9 +76,13 @@ export default function EditShopPostPage() {
       });
       // Set existing images from the post
       setExistingImages(postData.featured_images || []);
+      // Set existing video if available
+      if ((postData as any).video) {
+        setExistingVideo((postData as any).video);
+      }
     } catch (error) {
       console.error('Error fetching post:', error);
-      alert('Failed to load post');
+      alert('Không thể tải bài viết');
       router.push(`/shops/${shopId}/posts`);
     } finally {
       setLoading(false);
@@ -115,16 +124,60 @@ export default function EditShopPostPage() {
     setImagesToRemove((prev) => [...prev, imagePath]);
   };
 
+  const handleVideoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('video/') && !file.name.endsWith('.mp4')) {
+      setVideoError('Chỉ hỗ trợ file video MP4');
+      return;
+    }
+
+    // Validate file size (max 100MB)
+    const maxSize = 100 * 1024 * 1024;
+    if (file.size > maxSize) {
+      setVideoError('Video không được vượt quá 100MB');
+      return;
+    }
+
+    // Clear previous video preview
+    if (videoPreview) {
+      URL.revokeObjectURL(videoPreview);
+    }
+
+    setSelectedVideo(file);
+    setVideoPreview(URL.createObjectURL(file));
+    setVideoError(null);
+    // If adding a new video, mark existing for removal
+    if (existingVideo) {
+      setRemoveExistingVideo(true);
+    }
+  };
+
+  const removeNewVideo = () => {
+    if (videoPreview) {
+      URL.revokeObjectURL(videoPreview);
+    }
+    setSelectedVideo(null);
+    setVideoPreview(null);
+  };
+
+  const handleRemoveExistingVideo = () => {
+    setExistingVideo(null);
+    setRemoveExistingVideo(true);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!user) {
-      alert('You must be logged in to edit posts');
+      alert('Bạn phải đăng nhập để sửa bài viết');
       return;
     }
 
     if (!formData.title.trim()) {
-      alert('Please enter a title');
+      alert('Vui lòng nhập tiêu đề');
       return;
     }
 
@@ -224,6 +277,16 @@ export default function EditShopPostPage() {
         submitData.append('remove_images[]', imagePath);
       });
 
+      // Append video if provided
+      if (selectedVideo) {
+        submitData.append('video', selectedVideo);
+      }
+
+      // Append remove_video flag if needed
+      if (removeExistingVideo && !selectedVideo) {
+        submitData.append('remove_video', '1');
+      }
+
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/shops/${shopId}/posts/${postId}`, {
         method: 'POST',
         headers: {
@@ -234,38 +297,38 @@ export default function EditShopPostPage() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to update post');
+        throw new Error('Không thể cập nhật bài viết');
       }
 
-      alert('Post updated successfully!');
+      alert('Cập nhật bài viết thành công!');
       router.push(`/shops/${shopId}/posts`);
     } catch (error) {
       console.error('Error updating post:', error);
-      alert('Failed to update post');
+      alert('Không thể cập nhật bài viết');
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async () => {
-    if (!confirm(`Are you sure you want to delete "${post?.title}"?`)) {
+    if (!confirm(`Bạn có chắc chắn muốn xóa "${post?.title}" không?`)) {
       return;
     }
 
     try {
       await shopPosts.delete(shopId, postId);
-      alert('Post deleted successfully!');
+      alert('Xóa bài viết thành công!');
       router.push(`/shops/${shopId}/posts`);
     } catch (error) {
       console.error('Error deleting post:', error);
-      alert('Failed to delete post');
+      alert('Không thể xóa bài viết');
     }
   };
 
   if (loading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-gray-600">Loading...</div>
+        <div className="text-gray-600">Đang tải...</div>
       </div>
     );
   }
@@ -273,7 +336,7 @@ export default function EditShopPostPage() {
   if (!post) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-red-600">Post not found</div>
+        <div className="text-red-600">Không tìm thấy bài viết</div>
       </div>
     );
   }
@@ -283,12 +346,12 @@ export default function EditShopPostPage() {
       <div className="max-w-4xl mx-auto px-4">
         <div className="bg-grey-200 rounded-lg shadow-md p-6">
           <div className="flex justify-between items-center mb-6">
-            <h1 className="text-3xl font-bold text-gray-900">Edit {post.type === 'post' ? 'Post' : 'Page'}</h1>
+            <h1 className="text-3xl font-bold text-gray-900">Sửa {post.type === 'post' ? 'Bài viết' : 'Trang'}</h1>
             <button
               onClick={handleDelete}
               className="px-4 py-2 bg-blue-500 text-gray-900 rounded-md hover:bg-blue-700 transition-colors"
             >
-              Delete
+              Xóa
             </button>
           </div>
 
@@ -296,7 +359,7 @@ export default function EditShopPostPage() {
             {/* Title */}
             <div>
               <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
-                Title *
+                Tiêu đề *
               </label>
               <input
                 type="text"
@@ -306,7 +369,7 @@ export default function EditShopPostPage() {
                 onChange={handleChange}
                 required
                 className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Enter title"
+                placeholder="Nhập tiêu đề"
               />
             </div>
 
@@ -314,7 +377,7 @@ export default function EditShopPostPage() {
             {/* Type */}
             <div>
               <label htmlFor="type" className="block text-sm font-medium text-gray-700 mb-2">
-                Type *
+                Loại *
               </label>
               <select
                 id="type"
@@ -323,15 +386,15 @@ export default function EditShopPostPage() {
                 onChange={handleChange}
                 className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
               >
-                <option value="post">Post</option>
-                <option value="page">Page</option>
+                <option value="post">Bài viết</option>
+                <option value="page">Trang</option>
               </select>
             </div>
 
             {/* Status */}
             <div>
               <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
-                Status *
+                Trạng thái *
               </label>
               <select
                 id="status"
@@ -340,9 +403,89 @@ export default function EditShopPostPage() {
                 onChange={handleChange}
                 className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
               >
-                <option value="draft">Draft</option>
-                <option value="published">Published</option>
+                <option value="draft">Bản nháp</option>
+                <option value="published">Đã xuất bản</option>
               </select>
+            </div>
+
+            {/* Video Upload */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Video (MP4, tối đa 100MB)
+              </label>
+
+              {videoError && (
+                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-3">
+                  {videoError}
+                </div>
+              )}
+
+              {/* Existing Video */}
+              {existingVideo && !removeExistingVideo && (
+                <div className="mb-4">
+                  <p className="text-sm text-gray-600 mb-2">Video hiện tại:</p>
+                  <div className="relative">
+                    <video
+                      src={existingVideo}
+                      className="w-full max-h-60 object-contain rounded-lg bg-black"
+                      controls
+                    />
+                    <button
+                      type="button"
+                      className="absolute top-2 right-2 bg-black bg-opacity-70 text-white rounded-full w-8 h-8 text-lg flex items-center justify-center hover:bg-opacity-90"
+                      onClick={handleRemoveExistingVideo}
+                      disabled={saving}
+                    >
+                      ×
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* New Video Preview */}
+              {videoPreview && (
+                <div className="mb-4">
+                  <p className="text-sm text-gray-600 mb-2">Video mới:</p>
+                  <div className="relative">
+                    <video
+                      src={videoPreview}
+                      className="w-full max-h-60 object-contain rounded-lg bg-black"
+                      controls
+                    />
+                    <button
+                      type="button"
+                      className="absolute top-2 right-2 bg-black bg-opacity-70 text-white rounded-full w-8 h-8 text-lg flex items-center justify-center hover:bg-opacity-90"
+                      onClick={removeNewVideo}
+                      disabled={saving}
+                    >
+                      ×
+                    </button>
+                    <div className="absolute bottom-2 left-2 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded">
+                      {selectedVideo?.name} ({((selectedVideo?.size || 0) / 1024 / 1024).toFixed(1)} MB)
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Video Upload Input */}
+              {!videoPreview && (
+                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
+                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                    <span className="text-3xl mb-2">🎬</span>
+                    <p className="text-sm text-gray-500">
+                      <span className="font-semibold">Nhấn để tải video</span>
+                    </p>
+                    <p className="text-xs text-gray-500">MP4 (tối đa 100MB)</p>
+                  </div>
+                  <input
+                    type="file"
+                    className="hidden"
+                    onChange={handleVideoChange}
+                    accept="video/mp4,.mp4"
+                    disabled={saving}
+                  />
+                </label>
+              )}
             </div>
 
             {/* Product Type Components */}
@@ -370,9 +513,9 @@ export default function EditShopPostPage() {
             {/* Post Info */}
             <div className="bg-white p-4 rounded-md">
               <div className="text-sm text-gray-600 space-y-1">
-                <p>Views: {post.view_count}</p>
-                <p>Created: {new Date(post.created_at).toLocaleDateString()}</p>
-                <p>Last Updated: {new Date(post.updated_at).toLocaleDateString()}</p>
+                <p>Lượt xem: {post.view_count}</p>
+                <p>Ngày tạo: {new Date(post.created_at).toLocaleDateString('vi-VN')}</p>
+                <p>Cập nhật lần cuối: {new Date(post.updated_at).toLocaleDateString('vi-VN')}</p>
               </div>
             </div>
 
@@ -383,14 +526,14 @@ export default function EditShopPostPage() {
                 disabled={saving}
                 className="px-6 py-2 bg-blue-500 text-gray-900 rounded-md hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed transition-colors"
               >
-                {saving ? 'Saving...' : 'Save Changes'}
+                {saving ? 'Đang lưu...' : 'Lưu thay đổi'}
               </button>
               <button
                 type="button"
                 onClick={() => router.push(`/shops/${shopId}/posts`)}
                 className="px-6 py-2 bg-blue-500 text-gray-700 rounded-md hover:bg-blue-300 transition-colors"
               >
-                Cancel
+                Hủy
               </button>
             </div>
           </form>

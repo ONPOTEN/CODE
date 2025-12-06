@@ -45,7 +45,7 @@ export default function MyOrdersPage() {
         const response = await orders.myOrders({ status: filterStatus || undefined });
         setOrdersList(response.data || response);
       } catch (err) {
-        let errorMsg = 'Failed to fetch orders';
+        let errorMsg = 'Không thể tải đơn hàng';
         if (err instanceof ApiException) {
           errorMsg = err.message;
         } else if (err instanceof Error) {
@@ -81,13 +81,13 @@ export default function MyOrdersPage() {
   const getStatusLabel = (status: string) => {
     switch (status) {
       case 'completed':
-        return 'Completed';
+        return 'Hoàn thành';
       case 'processing':
-        return 'Processing';
+        return 'Đang xử lý';
       case 'pending':
-        return 'Pending';
+        return 'Chờ xử lý';
       case 'cancelled':
-        return 'Cancelled';
+        return 'Đã hủy';
       default:
         return status;
     }
@@ -96,7 +96,7 @@ export default function MyOrdersPage() {
   if (authLoading || isLoading) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <p>Loading...</p>
+        <p>Đang tải...</p>
       </div>
     );
   }
@@ -109,14 +109,14 @@ export default function MyOrdersPage() {
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-6xl mx-auto">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold">My Orders</h1>
+          <h1 className="text-3xl font-bold">Đơn hàng của tôi</h1>
         </div>
 
         {/* Filter */}
         <div className="bg-grey-200 rounded-lg shadow-sm p-4 mb-6">
           <div>
             <label htmlFor="filterStatus" className="block text-sm font-medium text-gray-700 mb-2">
-              Filter by Status
+              Lọc theo trạng thái
             </label>
             <select
               id="filterStatus"
@@ -124,11 +124,11 @@ export default function MyOrdersPage() {
               onChange={(e) => setFilterStatus(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="">All Statuses</option>
-              <option value="pending">Pending</option>
-              <option value="processing">Processing</option>
-              <option value="completed">Completed</option>
-              <option value="cancelled">Cancelled</option>
+              <option value="">Tất cả trạng thái</option>
+              <option value="pending">Chờ xử lý</option>
+              <option value="processing">Đang xử lý</option>
+              <option value="completed">Hoàn thành</option>
+              <option value="cancelled">Đã hủy</option>
             </select>
           </div>
         </div>
@@ -141,12 +141,12 @@ export default function MyOrdersPage() {
 
         {ordersList.length === 0 ? (
           <div className="bg-grey-200 rounded-lg shadow-sm p-8 text-center">
-            <p className="text-gray-600 mb-4">You haven't placed any orders yet.</p>
+            <p className="text-gray-600 mb-4">Bạn chưa có đơn hàng nào.</p>
             <Link
               href="/san-pham"
               className="inline-block bg-blue-500 hover:bg-blue-700 text-gray-900 font-medium py-2 px-6 rounded transition-colors"
             >
-              Start Shopping
+              Bắt đầu mua sắm
             </Link>
           </div>
         ) : (
@@ -156,22 +156,22 @@ export default function MyOrdersPage() {
                 <thead className="bg-white">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Order Number
+                      Mã đơn hàng
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Items
+                      Sản phẩm
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Total Amount
+                      Tổng tiền
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
+                      Trạng thái
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Date
+                      Ngày
                     </th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
+                      Thao tác
                     </th>
                   </tr>
                 </thead>
@@ -182,7 +182,7 @@ export default function MyOrdersPage() {
                         <div className="text-sm font-medium text-gray-900">{order.order_number}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm text-gray-600">{order.items_count} item(s)</span>
+                        <span className="text-sm text-gray-600">{order.items_count} sản phẩm</span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="text-sm font-medium text-gray-900">
@@ -202,7 +202,7 @@ export default function MyOrdersPage() {
                           href={`/my-orders/${order.id}`}
                           className="text-blue-600 hover:text-blue-900"
                         >
-                          View Details
+                          Xem chi tiết
                         </Link>
                       </td>
                     </tr>
@@ -214,7 +214,7 @@ export default function MyOrdersPage() {
         )}
 
         <div className="mt-6 text-center text-sm text-gray-600">
-          Total: {ordersList.length} order{ordersList.length !== 1 ? 's' : ''}
+          Tổng cộng: {ordersList.length} đơn hàng
         </div>
       </div>
     </div>

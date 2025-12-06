@@ -118,7 +118,7 @@ export default function ConversationDetailPage() {
   if (isLoading || loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-gray-600">Loading conversation...</div>
+        <div className="text-gray-600">Đang tải cuộc trò chuyện...</div>
       </div>
     );
   }
@@ -130,9 +130,9 @@ export default function ConversationDetailPage() {
   if (!conversation) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
-        <p className="text-gray-600 mb-4">Conversation not found</p>
+        <p className="text-gray-600 mb-4">Không tìm thấy cuộc trò chuyện</p>
         <Link href="/messages" className="text-blue-600 hover:text-blue-700">
-          Back to Messages
+          Quay lại Tin nhắn
         </Link>
       </div>
     );
@@ -152,7 +152,7 @@ export default function ConversationDetailPage() {
           </Link>
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
-              {isShopRoom ? '🏪 Shop Message' : conversation.other_user.name}
+              {isShopRoom ? '🏪 Tin nhắn cửa hàng' : conversation.other_user.name}
             </h1>
             {isShopRoom && (
               <p className="text-sm text-gray-600 mt-1">{conversation.other_user.name}</p>

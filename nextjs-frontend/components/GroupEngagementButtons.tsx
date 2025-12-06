@@ -24,7 +24,7 @@ interface GroupEngagementButtonsProps {
 
 export function GroupEngagementButtons({
   postId,
-  postTitle = 'Check out this post',
+  postTitle = 'Xem bài viết này',
   className = '',
   showLabels = true,
   compact = false,
@@ -109,7 +109,7 @@ export function GroupEngagementButtons({
       await handleSocialShare(platform, postId, postTitle, '', '');
 
       if (platform === 'direct') {
-        setToastMessage('Link copied to clipboard!');
+        setToastMessage('Đã sao chép liên kết!');
         setShowToast(true);
       }
     } catch (error) {
@@ -120,8 +120,8 @@ export function GroupEngagementButtons({
   const isLikeLoading = likeLoading.has(postId);
   const isDislikeLoading = dislikeLoading.has(postId);
 
-  const baseButtonClasses = `transition-all duration-200 flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium ${
-    compact ? 'px-2 py-1 text-xs' : ''
+  const baseButtonClasses = `transition-all duration-200 flex items-center gap-2 rounded-lg font-medium ${
+    compact ? 'px-2 py-1 text-xs' : 'px-3 py-2 text-sm'
   }`;
 
   return (
@@ -136,14 +136,14 @@ export function GroupEngagementButtons({
             ? 'bg-blue-100 text-blue-600 hover:bg-blue-200'
             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
         } disabled:opacity-50 disabled:cursor-not-allowed`}
-        title="Like this post"
+        title="Thích bài viết"
       >
-        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 18 18">
-          <path d="M1.34375 7.53125L1.34375 7.54043C1.34374 8.04211 1.34372 8.76295 1.6611 9.65585C1.9795 10.5516 2.60026 11.5779 3.77681 12.7544C5.59273 14.5704 7.58105 16.0215 8.33387 16.5497C8.73525 16.8313 9.26573 16.8313 9.66705 16.5496C10.4197 16.0213 12.4074 14.5703 14.2232 12.7544C15.3997 11.5779 16.0205 10.5516 16.3389 9.65585C16.6563 8.76296 16.6563 8.04211 16.6562 7.54043V7.53125C16.6562 5.23466 15.0849 3.25 12.6562 3.25C11.5214 3.25 10.6433 3.78244 9.99228 4.45476C9.59009 4.87012 9.26356 5.3491 9 5.81533C8.73645 5.3491 8.40991 4.87012 8.00772 4.45476C7.35672 3.78244 6.47861 3.25 5.34375 3.25C2.9151 3.25 1.34375 5.23466 1.34375 7.53125Z" />
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
         </svg>
         <span className="flex items-center gap-1">
           {isLikeLoading ? '...' : engagement.likes.count}
-          {showLabels && <span className="hidden sm:inline">Like</span>}
+          
         </span>
       </button>
 
@@ -156,14 +156,15 @@ export function GroupEngagementButtons({
             ? 'bg-red-100 text-red-600 hover:bg-red-200'
             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
         } disabled:opacity-50 disabled:cursor-not-allowed`}
-        title="Dislike this post"
+        title="Không thích bài viết"
       >
-        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M2.808 1.393l18.384 18.385-1.414 1.414-3.747-3.747L12 21.485 3.52 12.993c-2.04-2.284-2.028-5.753.034-8.023L1.393 2.808l1.415-1.415zm17.435 3.364c2.262 2.268 2.34 5.88.236 8.236l-1.635 1.636L7.26 3.046c1.67-.207 3.408.288 4.741 1.483 2.349-2.109 5.979-2.039 8.242.228z"/>
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M1 1l22 22" />
         </svg>
         <span className="flex items-center gap-1">
           {isDislikeLoading ? '...' : engagement.dislikes.count}
-          {showLabels && <span className="hidden sm:inline">Dislike</span>}
+          
         </span>
       </button>
 
@@ -171,13 +172,14 @@ export function GroupEngagementButtons({
       <button
         onClick={handleShareClick}
         className={`${baseButtonClasses} bg-gray-100 text-gray-700 hover:bg-gray-200`}
-        title={isAuthenticated ? 'Share this post' : 'Login to share this post'}
+        title={isAuthenticated ? 'Chia sẻ bài viết' : 'Đăng nhập để chia sẻ bài viết'}
       >
-        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 18 18">
-          <path d="M15.6097 4.09082L6.65039 9.11104" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.25" fill="none"></path><path d="M7.79128 14.439C8.00463 15.3275 8.11131 15.7718 8.33426 15.932C8.52764 16.071 8.77617 16.1081 9.00173 16.0318C9.26179 15.9438 9.49373 15.5501 9.95761 14.7628L15.5444 5.2809C15.8883 4.69727 16.0603 4.40546 16.0365 4.16566C16.0159 3.95653 15.9071 3.76612 15.7374 3.64215C15.5428 3.5 15.2041 3.5 14.5267 3.5H3.71404C2.81451 3.5 2.36474 3.5 2.15744 3.67754C1.97758 3.83158 1.88253 4.06254 1.90186 4.29856C1.92415 4.57059 2.24363 4.88716 2.88259 5.52032L6.11593 8.7243C6.26394 8.87097 6.33795 8.94431 6.39784 9.02755C6.451 9.10144 6.4958 9.18101 6.53142 9.26479C6.57153 9.35916 6.59586 9.46047 6.64451 9.66309L7.79128 14.439Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.25"></path>
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 18 18">
+          <path d="M15.6097 4.09082L6.65039 9.11104" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.25" />
+          <path d="M7.79128 14.439C8.00463 15.3275 8.11131 15.7718 8.33426 15.932C8.52764 16.071 8.77617 16.1081 9.00173 16.0318C9.26179 15.9438 9.49373 15.5501 9.95761 14.7628L15.5444 5.2809C15.8883 4.69727 16.0603 4.40546 16.0365 4.16566C16.0159 3.95653 15.9071 3.76612 15.7374 3.64215C15.5428 3.5 15.2041 3.5 14.5267 3.5H3.71404C2.81451 3.5 2.36474 3.5 2.15744 3.67754C1.97758 3.83158 1.88253 4.06254 1.90186 4.29856C1.92415 4.57059 2.24363 4.88716 2.88259 5.52032L6.11593 8.7243C6.26394 8.87097 6.33795 8.94431 6.39784 9.02755C6.451 9.10144 6.4958 9.18101 6.53142 9.26479C6.57153 9.35916 6.59586 9.46047 6.64451 9.66309L7.79128 14.439Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.25" />
         </svg>
         <span className="flex items-center gap-1">
-          {showLabels && <span className="hidden sm:inline">Share</span>}
+          
         </span>
       </button>
 
@@ -194,14 +196,14 @@ export function GroupEngagementButtons({
           }
         }}
         className={`${baseButtonClasses} bg-gray-100 text-gray-700 hover:bg-gray-200`}
-        title="View comments"
+        title="Xem bình luận"
       >
-        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 18 18">
-          <path d="M15.376 13.2177L16.2861 16.7955L12.7106 15.8848C12.6781 15.8848 12.6131 15.8848 12.5806 15.8848C11.3779 16.5678 9.94767 16.8931 8.41995 16.7955C4.94194 16.5353 2.08152 13.7381 1.72397 10.2578C1.2689 5.63919 5.13697 1.76863 9.75264 2.22399C13.2307 2.58177 16.0261 5.41151 16.2861 8.92429C16.4161 10.453 16.0586 11.8841 15.376 13.0876C15.376 13.1526 15.376 13.1852 15.376 13.2177Z" stroke="currentColor" strokeLinejoin="round" strokeWidth="1.25" fill="none"></path>
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
         </svg>
         <span className="flex items-center gap-1">
           {engagement.comments.count}
-          {showLabels && <span className="hidden sm:inline">Comment</span>}
+          {showLabels && <span className="hidden sm:inline">Bình luận</span>}
         </span>
       </button>
 
@@ -252,7 +254,7 @@ export function GroupEngagementButtons({
               onClick={() => handleShare('direct')}
               className="w-full text-left px-4 py-2 hover:bg-white rounded flex items-center gap-2 border-t border-gray-300 mt-2 pt-2"
             >
-              <span>🔗</span> Direct Link
+              <span>🔗</span> Sao chép liên kết
             </button>
           </div>
         </div>

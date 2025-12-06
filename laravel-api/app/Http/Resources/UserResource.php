@@ -14,15 +14,17 @@ class UserResource extends JsonResource
         $friendshipData = $this->getFriendshipStatus($currentUser);
         $isOwnProfile = $currentUser && $currentUser->ID == $this->ID;
         $isFriend = $friendshipData['is_friend'];
+        $isAdmin = $currentUser && $currentUser->role === 'admin';
 
         // Determine what fields should be visible based on privacy settings
-        $shouldShowEmail = $isOwnProfile || $this->email_public || $isFriend;
-        $shouldShowHobby = $isOwnProfile || $this->hobby_public || $isFriend;
-        $shouldShowCompany = $isOwnProfile || $this->company_public || $isFriend;
-        $shouldShowOccupation = $isOwnProfile || $this->occupation_public || $isFriend;
-        $shouldShowMainOccupation = $isOwnProfile || $this->main_occupation_public || $isFriend;
-        $shouldShowLocation = $isOwnProfile || $this->location_public || $isFriend;
-        $shouldShowPhone = $isOwnProfile || $this->phone_public || $isFriend;
+        // Admins can always see all fields
+        $shouldShowEmail = $isAdmin || $isOwnProfile || $this->email_public || $isFriend;
+        $shouldShowHobby = $isAdmin || $isOwnProfile || $this->hobby_public || $isFriend;
+        $shouldShowCompany = $isAdmin || $isOwnProfile || $this->company_public || $isFriend;
+        $shouldShowOccupation = $isAdmin || $isOwnProfile || $this->occupation_public || $isFriend;
+        $shouldShowMainOccupation = $isAdmin || $isOwnProfile || $this->main_occupation_public || $isFriend;
+        $shouldShowLocation = $isAdmin || $isOwnProfile || $this->location_public || $isFriend;
+        $shouldShowPhone = $isAdmin || $isOwnProfile || $this->phone_public || $isFriend;
 
         return [
             'id' => $this->ID,

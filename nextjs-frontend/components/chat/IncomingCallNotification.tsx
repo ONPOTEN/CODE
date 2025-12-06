@@ -76,7 +76,7 @@ export default function IncomingCallNotification({
 
           {/* Message */}
           <h2 className="text-center text-2xl font-bold text-gray-900 mb-2">
-            Incoming Video Call
+            Cuộc gọi video đến
           </h2>
           <p className="text-center text-gray-600 mb-6">
             <span className="font-semibold">{conversation.other_user.name}</span>
@@ -98,7 +98,7 @@ export default function IncomingCallNotification({
               >
                 <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z" />
               </svg>
-              Reject
+              Từ chối
             </button>
             <button
               onClick={onAccept}
@@ -112,7 +112,7 @@ export default function IncomingCallNotification({
               >
                 <path d="M15.5 1h-8C6.12 1 5 2.12 5 3.5v17C5 21.88 6.12 23 7.5 23h8c1.38 0 2.5-1.12 2.5-2.5v-17C18 2.12 16.88 1 15.5 1zm-4 21c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm4.5-4H7V4h8v14z" />
               </svg>
-              Accept
+              Chấp nhận
             </button>
           </div>
         </div>

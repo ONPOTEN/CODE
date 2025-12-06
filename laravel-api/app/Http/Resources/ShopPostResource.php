@@ -72,6 +72,7 @@ class ShopPostResource extends JsonResource
             'id' => $this->id,
             'shop_id' => $this->shop_id,
             'user_id' => $this->user_id,
+            'category_id' => $this->category_id,
             'title' => $this->title,
             'slug' => $this->slug,
             'content' => $this->content,
@@ -96,6 +97,13 @@ class ShopPostResource extends JsonResource
             'updated_at' => $this->updated_at?->toIso8601String(),
             'shop' => new ShopResource($this->whenLoaded('shop')),
             'author' => new UserResource($this->whenLoaded('author')),
+            'category' => $this->whenLoaded('category', function () {
+                return $this->category ? [
+                    'id' => $this->category->id,
+                    'name' => $this->category->name,
+                    'slug' => $this->category->slug,
+                ] : null;
+            }),
         ];
     }
 }

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\ChatController;
 use App\Http\Controllers\Api\CommentController;
 use App\Http\Controllers\Api\EngagementController;
@@ -16,11 +17,14 @@ use App\Http\Controllers\Api\QRCodeController;
 use App\Http\Controllers\Api\RoomController;
 use App\Http\Controllers\Api\S3Controller;
 use App\Http\Controllers\Api\ShopController;
+use App\Http\Controllers\Api\StaticPageController;
 use App\Http\Controllers\Api\ShopPaymentSettingController;
 use App\Http\Controllers\Api\ShopPostController;
+use App\Http\Controllers\Api\ShopPostEngagementController;
 use App\Http\Controllers\Api\ShopMessageController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\WallPostModerationController;
+use App\Http\Controllers\ShareImageController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -37,6 +41,12 @@ Route::prefix('v1')->group(function () {
     Route::post('/auth/test-reset-endpoint', [AuthController::class, 'testResetEndpoint']);
     Route::post('/auth/reset-password-by-phone', [AuthController::class, 'resetPasswordByPhone']);
     Route::post('/auth/setup-password-by-phone', [AuthController::class, 'setupPasswordByPhone']);
+
+    // Facebook OAuth
+    Route::post('/auth/facebook-login', [AuthController::class, 'facebookLogin']);
+
+    // Google OAuth
+    Route::post('/auth/google-login', [AuthController::class, 'googleLogin']);
 
     // Debug endpoints
     Route::get('/debug/users-with-phone', [AuthController::class, 'debugUsersWithPhone']);
@@ -64,6 +74,9 @@ Route::prefix('v1')->group(function () {
     Route::get('/posts/{postId}/likes', [EngagementController::class, 'getPostLikes'])->where('postId', '[0-9]+');
     Route::get('/posts/{postId}/shares', [EngagementController::class, 'getPostShares'])->where('postId', '[0-9]+');
 
+    // Share Image (public)
+    Route::get('/share-image/{postId}', [ShareImageController::class, 'getUrl'])->where('postId', '[0-9]+');
+
     // Users
     Route::get('/users', [UserController::class, 'index']);
     Route::get('/users/search', [UserController::class, 'search']);
@@ -86,11 +99,23 @@ Route::prefix('v1')->group(function () {
     Route::get('/shops/{shopId}/posts', [ShopPostController::class, 'index'])->where('shopId', '[0-9]+');
     Route::get('/shops/{shopId}/posts/{id}', [ShopPostController::class, 'show'])->where(['shopId' => '[0-9]+', 'id' => '[0-9]+']);
 
+    // Shop Post Engagement (public - read only)
+    Route::get('/shop-posts/{postId}/engagement', [ShopPostEngagementController::class, 'getStats'])->where('postId', '[0-9]+');
+    Route::get('/shop-posts/{postId}/comments', [ShopPostEngagementController::class, 'getComments'])->where('postId', '[0-9]+');
+
+    // Categories (public)
+    Route::get('/categories', [CategoryController::class, 'index']);
+    Route::get('/categories/{id}', [CategoryController::class, 'show'])->where('id', '[0-9]+');
+    Route::get('/categories/slug/{slug}', [CategoryController::class, 'bySlug']);
+
     // Groups (public)
     Route::get('/groups', [GroupController::class, 'index']);
     Route::get('/groups/popular', [GroupController::class, 'popular']);
     Route::get('/groups/{group}', [GroupController::class, 'show']);
     Route::get('/users/{userId}/groups', [GroupController::class, 'userGroups'])->where('userId', '[0-9]+');
+
+    // Static Pages (public)
+    Route::get('/pages/{slug}', [StaticPageController::class, 'show']);
 
     // Group Posts (public)
     Route::get('/group-posts', [GroupPostController::class, 'index']);
@@ -115,6 +140,7 @@ Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
 
     // S3 (authenticated)
     Route::post('/s3/presigned-url', [S3Controller::class, 'generatePresignedUrl']);
+    Route::post('/s3/upload', [S3Controller::class, 'uploadFile']);
     Route::delete('/s3/delete-object', [S3Controller::class, 'deleteObject']);
 
     // Posts (authenticated)
@@ -124,6 +150,7 @@ Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
     Route::delete('/posts/{id}', [PostController::class, 'destroy'])->where('id', '[0-9]+');
     Route::post('/posts/{id}/share-to-wall', [PostController::class, 'shareToWall'])->where('id', '[0-9]+');
     Route::delete('/posts/{id}/shared-wall', [PostController::class, 'deleteSharedPost'])->where('id', '[0-9]+');
+    Route::delete('/posts/{id}/share-image-cache', [ShareImageController::class, 'invalidateCache'])->where('id', '[0-9]+');
 
     // Comments (authenticated)
     Route::post('/posts/{postId}/comments', [CommentController::class, 'storeComment'])->where('postId', '[0-9]+');
@@ -262,6 +289,15 @@ Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
     Route::put('/group-posts/{postId}/comments/{commentId}', [GroupCommentController::class, 'update'])->where(['postId' => '[0-9]+', 'commentId' => '[0-9]+']);
     Route::delete('/group-posts/{postId}/comments/{commentId}', [GroupCommentController::class, 'destroy'])->where(['postId' => '[0-9]+', 'commentId' => '[0-9]+']);
 
+    // Shop Post Engagement (authenticated)
+    Route::prefix('shop-posts')->group(function () {
+        Route::post('/{postId}/like', [ShopPostEngagementController::class, 'like'])->where('postId', '[0-9]+');
+        Route::post('/{postId}/dislike', [ShopPostEngagementController::class, 'dislike'])->where('postId', '[0-9]+');
+        Route::post('/{postId}/share', [ShopPostEngagementController::class, 'share'])->where('postId', '[0-9]+');
+        Route::post('/{postId}/comments', [ShopPostEngagementController::class, 'addComment'])->where('postId', '[0-9]+');
+        Route::delete('/{postId}/comments/{commentId}', [ShopPostEngagementController::class, 'deleteComment'])->where(['postId' => '[0-9]+', 'commentId' => '[0-9]+']);
+    });
+
     // Wall Post Moderation (authenticated - for current user's wall)
     Route::prefix('wall-posts')->group(function () {
         Route::get('/', [WallPostModerationController::class, 'index']);
@@ -292,8 +328,12 @@ Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
         Route::post('/admin/shops/{id}/approve', [ShopController::class, 'approve'])->where('id', '[0-9]+');
         Route::post('/admin/shops/{id}/reject', [ShopController::class, 'reject'])->where('id', '[0-9]+');
 
-        // User role management
+        // User management (CRUD)
         Route::get('/admin/users', [UserController::class, 'getAllUsersWithRoles']);
+        Route::post('/admin/users', [UserController::class, 'adminCreateUser']);
+        Route::get('/admin/users/{userId}', [UserController::class, 'adminGetUser'])->where('userId', '[0-9]+');
+        Route::put('/admin/users/{userId}', [UserController::class, 'adminUpdateUser'])->where('userId', '[0-9]+');
+        Route::delete('/admin/users/{userId}', [UserController::class, 'adminDeleteUser'])->where('userId', '[0-9]+');
         Route::put('/admin/users/{userId}/role', [UserController::class, 'updateUserRole'])->where('userId', '[0-9]+');
         Route::post('/admin/users/roles/bulk-update', [UserController::class, 'bulkUpdateRoles']);
 
@@ -305,7 +345,40 @@ Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
         Route::post('/admin/group-posts/{postId}/comments/{commentId}/approve', [GroupCommentController::class, 'approve'])->where(['postId' => '[0-9]+', 'commentId' => '[0-9]+']);
         Route::post('/admin/group-posts/{postId}/comments/{commentId}/reject', [GroupCommentController::class, 'reject'])->where(['postId' => '[0-9]+', 'commentId' => '[0-9]+']);
 
-        // Group Post Comment moderation (admin only)
+        // Post management (CRUD) - WpPost
+        Route::get('/admin/posts', [PostController::class, 'adminIndex']);
+        Route::post('/admin/posts', [PostController::class, 'adminStore']);
+        Route::get('/admin/posts/{id}', [PostController::class, 'adminShow'])->where('id', '[0-9]+');
+        Route::put('/admin/posts/{id}', [PostController::class, 'adminUpdate'])->where('id', '[0-9]+');
+        Route::delete('/admin/posts/{id}', [PostController::class, 'adminDestroy'])->where('id', '[0-9]+');
+
+        // Group Post management (CRUD)
+        Route::get('/admin/group-posts', [GroupPostController::class, 'adminIndex']);
+        Route::post('/admin/group-posts', [GroupPostController::class, 'adminStore']);
+        Route::get('/admin/group-posts/{id}', [GroupPostController::class, 'adminShow'])->where('id', '[0-9]+');
+        Route::put('/admin/group-posts/{id}', [GroupPostController::class, 'adminUpdate'])->where('id', '[0-9]+');
+        Route::delete('/admin/group-posts/{id}', [GroupPostController::class, 'adminDestroy'])->where('id', '[0-9]+');
+
+        // Shop Post management (CRUD)
+        Route::get('/admin/shop-posts', [ShopPostController::class, 'adminIndex']);
+        Route::post('/admin/shop-posts', [ShopPostController::class, 'adminStore']);
+        Route::get('/admin/shop-posts/{id}', [ShopPostController::class, 'adminShow'])->where('id', '[0-9]+');
+        Route::put('/admin/shop-posts/{id}', [ShopPostController::class, 'adminUpdate'])->where('id', '[0-9]+');
+        Route::delete('/admin/shop-posts/{id}', [ShopPostController::class, 'adminDestroy'])->where('id', '[0-9]+');
+
+        // Category management (CRUD)
+        Route::get('/admin/categories', [CategoryController::class, 'adminIndex']);
+        Route::post('/admin/categories', [CategoryController::class, 'store']);
+        Route::get('/admin/categories/{id}', [CategoryController::class, 'show'])->where('id', '[0-9]+');
+        Route::put('/admin/categories/{id}', [CategoryController::class, 'update'])->where('id', '[0-9]+');
+        Route::delete('/admin/categories/{id}', [CategoryController::class, 'destroy'])->where('id', '[0-9]+');
+        Route::post('/admin/categories/reorder', [CategoryController::class, 'reorder']);
+        Route::post('/admin/categories/generate-slug', [CategoryController::class, 'generateSlug']);
+
+        // Static Pages management (CRUD)
+        Route::get('/admin/pages', [StaticPageController::class, 'index']);
+        Route::get('/admin/pages/{slug}', [StaticPageController::class, 'show']);
+        Route::put('/admin/pages/{slug}', [StaticPageController::class, 'update']);
     });
 
     // Group Post moderation - group owner/admin/moderator approve or reject posts

@@ -41,6 +41,8 @@ class WpUser extends Authenticatable
         'location_public',
         'phone_public',
         'firebase_uid',
+        'facebook_id',
+        'google_id',
         'auth_method',
         'last_login_at',
         'email_verified_at',

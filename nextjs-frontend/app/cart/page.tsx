@@ -31,9 +31,9 @@ export default function CartPage() {
       <div className="bg-grey-200 border-b border-gray-300 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-gray-900">Shopping Cart</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Giỏ hàng</h1>
             <Link href="/" className="text-blue-600 hover:text-blue-700 font-medium">
-              Continue Shopping
+              Tiếp tục mua sắm
             </Link>
           </div>
         </div>
@@ -57,8 +57,8 @@ export default function CartPage() {
                 d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
               />
             </svg>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Your cart is empty</h2>
-            <p className="text-gray-600 mb-6">Add some products to get started!</p>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Giỏ hàng của bạn đang trống</h2>
+            <p className="text-gray-600 mb-6">Thêm sản phẩm để bắt đầu!</p>
             <Link
               href="/"
               className="inline-flex items-center px-6 py-3 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-lg font-medium transition-colors"
@@ -66,7 +66,7 @@ export default function CartPage() {
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>
-              Start Shopping
+              Bắt đầu mua sắm
             </Link>
           </div>
         ) : (
@@ -87,7 +87,7 @@ export default function CartPage() {
                   <div className="flex-1">
                     <h3 className="text-lg font-semibold text-gray-900">{item.title}</h3>
                     <p className="text-sm text-gray-600">
-                      Type: <span className="font-medium">{item.product_type}</span>
+                      Loại: <span className="font-medium">{item.product_type}</span>
                     </p>
                     {item.attributes && Object.keys(item.attributes).length > 0 && (
                       <div className="text-sm text-gray-600 mt-1">
@@ -104,7 +104,7 @@ export default function CartPage() {
 
                     {/* Quantity Control */}
                     <div className="flex items-center gap-3 mt-4">
-                      <label className="text-sm font-medium text-gray-700">Qty:</label>
+                      <label className="text-sm font-medium text-gray-700">SL:</label>
                       <div className="flex items-center border border-gray-300 rounded-lg">
                         <button
                           onClick={() =>
@@ -137,7 +137,7 @@ export default function CartPage() {
                         </button>
                       </div>
                       <span className="text-sm text-gray-600 ml-4">
-                        Subtotal: ${(item.price * item.quantity).toFixed(2)}
+                        Tạm tính: ${(item.price * item.quantity).toFixed(2)}
                       </span>
                     </div>
                   </div>
@@ -148,7 +148,7 @@ export default function CartPage() {
                       onClick={() => removeFromCart(item.postId, item.shopId, item.attributes)}
                       className="text-red-600 hover:text-red-700 font-medium text-sm"
                     >
-                      Remove
+                      Xóa
                     </button>
                   </div>
                 </div>
@@ -158,12 +158,12 @@ export default function CartPage() {
             {/* Cart Summary */}
             <div className="lg:col-span-1">
               <div className="bg-grey-200 rounded-lg shadow-md p-6 sticky top-20 space-y-6">
-                <h2 className="text-xl font-bold text-gray-900">Order Summary</h2>
+                <h2 className="text-xl font-bold text-gray-900">Tóm tắt đơn hàng</h2>
 
                 {/* Items Count */}
                 <div className="space-y-2">
                   <div className="flex justify-between text-gray-600">
-                    <span>Items ({itemCount})</span>
+                    <span>Sản phẩm ({itemCount})</span>
                     <span>${totalPrice.toFixed(2)}</span>
                   </div>
                 </div>
@@ -174,7 +174,7 @@ export default function CartPage() {
                 {/* Totals */}
                 <div className="space-y-4">
                   <div className="flex justify-between text-lg font-bold text-gray-900">
-                    <span>Total:</span>
+                    <span>Tổng cộng:</span>
                     <span className="text-green-600">${totalPrice.toFixed(2)}</span>
                   </div>
 
@@ -191,7 +191,7 @@ export default function CartPage() {
                         d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
                       />
                     </svg>
-                    Proceed to Checkout
+                    Tiến hành thanh toán
                   </button>
 
                   {/* Continue Shopping Button */}
@@ -199,26 +199,26 @@ export default function CartPage() {
                     onClick={() => router.back()}
                     className="w-full px-6 py-3 bg-blue-500 hover:bg-blue-300 text-gray-900 rounded-lg font-semibold transition-colors"
                   >
-                    Continue Shopping
+                    Tiếp tục mua sắm
                   </button>
 
                   {/* Clear Cart Button */}
                   <button
                     onClick={() => {
-                      if (confirm('Are you sure you want to clear your cart?')) {
+                      if (confirm('Bạn có chắc chắn muốn xóa giỏ hàng?')) {
                         clearCart();
                       }
                     }}
                     className="w-full px-6 py-2 text-red-600 hover:text-red-700 font-medium text-sm border border-red-300 rounded-lg transition-colors"
                   >
-                    Clear Cart
+                    Xóa giỏ hàng
                   </button>
                 </div>
 
                 {/* Additional Info */}
                 <div className="bg-grey-200 border border-blue-200 rounded-lg p-4">
                   <p className="text-xs text-gray-600">
-                    <span className="font-semibold">Note:</span> Shipping, taxes, and other fees will be calculated at checkout.
+                    <span className="font-semibold">Lưu ý:</span> Phí vận chuyển, thuế và các khoản phí khác sẽ được tính khi thanh toán.
                   </p>
                 </div>
               </div>

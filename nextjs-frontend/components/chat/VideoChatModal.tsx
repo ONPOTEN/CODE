@@ -181,12 +181,12 @@ export default function VideoChatModal({
               connectionStatus === 'error' ? 'bg-red-600' :
               'bg-gray-600'
             }`}>
-              {callActive ? `🟢 Call Active - ${callDuration}` :
-               connectionStatus === 'connected' ? '🔗 Connected' :
-               connectionStatus === 'connecting' ? '⏳ Connecting...' :
-               connectionStatus === 'calling' ? '📞 Calling...' :
-               connectionStatus === 'error' ? '❌ Error' :
-               'Ready'}
+              {callActive ? `🟢 Đang gọi - ${callDuration}` :
+               connectionStatus === 'connected' ? '🔗 Đã kết nối' :
+               connectionStatus === 'connecting' ? '⏳ Đang kết nối...' :
+               connectionStatus === 'calling' ? '📞 Đang gọi...' :
+               connectionStatus === 'error' ? '❌ Lỗi' :
+               'Sẵn sàng'}
             </div>
           </div>
 
@@ -202,7 +202,7 @@ export default function VideoChatModal({
                 className="w-full h-full object-cover"
               />
               <div className="absolute bottom-2 left-2 bg-black bg-opacity-60 text-gray-900 text-xs px-2 py-1 rounded">
-                You
+                Bạn
               </div>
             </div>
 
@@ -225,7 +225,7 @@ export default function VideoChatModal({
                   {callActive ? (
                     <div className="text-center">
                       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-3" />
-                      <p className="text-gray-600 text-sm">Waiting for video...</p>
+                      <p className="text-gray-600 text-sm">Đang chờ video...</p>
                     </div>
                   ) : (
                     <div className="text-center">
@@ -233,7 +233,7 @@ export default function VideoChatModal({
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                       </svg>
                       <p className="text-gray-600 text-sm">
-                        {connectionStatus === 'connected' ? 'Ready to call' : 'Connecting...'}
+                        {connectionStatus === 'connected' ? 'Sẵn sàng gọi' : 'Đang kết nối...'}
                       </p>
                     </div>
                   )}
@@ -252,7 +252,7 @@ export default function VideoChatModal({
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z" />
                 </svg>
-                Start Call
+                Bắt đầu gọi
               </button>
             )}
 
@@ -264,7 +264,7 @@ export default function VideoChatModal({
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M16.72 5.71L19.71 8.7c.39.39.39 1.02 0 1.41l-2.34 2.34c-.39.39-.39 1.02 0 1.41l2.34 2.34c.39.39.39 1.02 0 1.41l-2.99 2.99c-.39.39-1.02.39-1.41 0l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-2.34 2.34c-.39.39-1.02.39-1.41 0l-2.99-2.99c-.39-.39-.39-1.02 0-1.41l2.34-2.34c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-.39-1.02 0-1.41l2.99-2.99c.39-.39 1.02-.39 1.41 0l2.34 2.34c.39.39 1.02.39 1.41 0l2.34-2.34c.39-.39 1.02-.39 1.41 0z" />
                 </svg>
-                End Call
+                Kết thúc
               </button>
             )}
 
@@ -272,7 +272,7 @@ export default function VideoChatModal({
               onClick={handleCloseModal}
               className="bg-gray-600 hover:bg-gray-700 text-gray-900 font-bold py-2 px-6 rounded-full transition-all"
             >
-              Close
+              Đóng
             </button>
           </div>
         </div>

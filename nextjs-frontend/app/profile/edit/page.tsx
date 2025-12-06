@@ -74,9 +74,9 @@ export default function EditProfilePage() {
           console.log('[Profile Edit] Fresh user data received:', response);
           console.log('[Profile Edit] Response has data property?', 'data' in response);
           // Extract data from response if it's wrapped in a data object
-          const userData = response && typeof response === 'object' && 'data' in response
+          const userData = (response && typeof response === 'object' && 'data' in response
             ? response.data
-            : response;
+            : response) as any;
           console.log('[Profile Edit] Extracted userData:', userData);
           console.log('[Profile Edit] userData.occupation:', userData?.occupation);
           console.log('[Profile Edit] userData.main_occupation:', userData?.main_occupation);
@@ -136,8 +136,8 @@ export default function EditProfilePage() {
       setCompanyPublic(freshUserData.company_public !== false);
 	  setOccupationPublic(freshUserData.occupation_public !== false);
       setMainOccupationPublic(freshUserData.main_occupation_public !== false);
-      setLocationPublic(user.location_public !== false);
-      setPhonePublic(user.phone_public !== false);
+      setLocationPublic(freshUserData.location_public !== false);
+      setPhonePublic(freshUserData.phone_public !== false);
       setIsInitialized(true);
       console.log('[Profile Edit] Form fields initialized with occupation:', freshUserData.occupation, 'main_occupation:', freshUserData.main_occupation);
     }
@@ -152,20 +152,20 @@ export default function EditProfilePage() {
     // Validate username if it has changed
     if (username !== user?.username) {
       if (!username.trim()) {
-        setUsernameError('Username cannot be empty');
+        setUsernameError('Tên đăng nhập không được để trống');
         return;
       }
       if (username.length < 3) {
-        setUsernameError('Username must be at least 3 characters');
+        setUsernameError('Tên đăng nhập phải có ít nhất 3 ký tự');
         return;
       }
       if (username.length > 60) {
-        setUsernameError('Username cannot exceed 60 characters');
+        setUsernameError('Tên đăng nhập không được vượt quá 60 ký tự');
         return;
       }
       // Check for valid characters (alphanumeric, underscore, hyphen)
       if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
-        setUsernameError('Username can only contain letters, numbers, underscores, and hyphens');
+        setUsernameError('Tên đăng nhập chỉ được chứa chữ cái, số, gạch dưới và gạch ngang');
         return;
       }
     }
@@ -262,7 +262,7 @@ export default function EditProfilePage() {
         if (err.message.includes('user_login') || err.message.includes('username')) {
           setUsernameError(err.message);
         } else if (err.message.includes('user_email') || err.message.includes('email')) {
-          setProfileError(`Email error: ${err.message}`);
+          setProfileError(`Lỗi email: ${err.message}`);
         } else if (err.errors) {
           // Handle validation errors from API
           const firstErrorKey = Object.keys(err.errors)[0];
@@ -275,7 +275,7 @@ export default function EditProfilePage() {
         console.error('[Profile Edit] Error message:', err.message);
         setProfileError(err.message);
       } else {
-        setProfileError('Failed to update profile');
+        setProfileError('Cập nhật hồ sơ thất bại');
       }
       console.error('Error updating profile:', err);
     } finally {
@@ -296,11 +296,11 @@ export default function EditProfilePage() {
     });
 
     if (file.size > maxSize) {
-      return `File size must not exceed 2MB (current: ${(file.size / 1024 / 1024).toFixed(2)}MB)`;
+      return `Kích thước file không được vượt quá 2MB (hiện tại: ${(file.size / 1024 / 1024).toFixed(2)}MB)`;
     }
 
     if (!validTypes.includes(file.type)) {
-      return `Invalid file type: ${file.type}. Only JPEG, PNG, and GIF are allowed.`;
+      return `Loại file không hợp lệ: ${file.type}. Chỉ chấp nhận JPEG, PNG và GIF.`;
     }
 
     return null;
@@ -335,7 +335,7 @@ export default function EditProfilePage() {
         setShowAvatarCropper(true);
       };
       reader.onerror = () => {
-        setAvatarError('Failed to read file');
+        setAvatarError('Không thể đọc file');
         setAvatarFile(null);
       };
       reader.readAsDataURL(file);
@@ -393,14 +393,14 @@ export default function EditProfilePage() {
           const avatarErrors = Array.isArray(err.errors.avatar)
             ? err.errors.avatar.join(', ')
             : err.errors.avatar;
-          setAvatarError(`Validation error: ${avatarErrors}`);
+          setAvatarError(`Lỗi xác thực: ${avatarErrors}`);
         } else {
           setAvatarError(err.message);
         }
       } else if (err instanceof Error) {
         setAvatarError(err.message);
       } else {
-        setAvatarError('Failed to upload avatar');
+        setAvatarError('Tải ảnh đại diện thất bại');
       }
     } finally {
       setAvatarLoading(false);
@@ -413,7 +413,7 @@ export default function EditProfilePage() {
     setAvatarSuccess(false);
 
     if (!avatarFile) {
-      setAvatarError('Please select an image file');
+      setAvatarError('Vui lòng chọn một file ảnh');
       return;
     }
 
@@ -460,14 +460,14 @@ export default function EditProfilePage() {
           const avatarErrors = Array.isArray(err.errors.avatar)
             ? err.errors.avatar.join(', ')
             : err.errors.avatar;
-          setAvatarError(`Validation error: ${avatarErrors}`);
+          setAvatarError(`Lỗi xác thực: ${avatarErrors}`);
         } else {
           setAvatarError(err.message);
         }
       } else if (err instanceof Error) {
         setAvatarError(err.message);
       } else {
-        setAvatarError('Failed to upload avatar');
+        setAvatarError('Tải ảnh đại diện thất bại');
       }
     } finally {
       setAvatarLoading(false);
@@ -480,12 +480,12 @@ export default function EditProfilePage() {
     setPasswordSuccess(false);
 
     if (newPassword !== confirmPassword) {
-      setPasswordError('New passwords do not match');
+      setPasswordError('Mật khẩu mới không khớp');
       return;
     }
 
     if (newPassword.length < 8) {
-      setPasswordError('Password must be at least 8 characters long');
+      setPasswordError('Mật khẩu phải có ít nhất 8 ký tự');
       return;
     }
 
@@ -506,7 +506,7 @@ export default function EditProfilePage() {
       if (err instanceof ApiException) {
         setPasswordError(err.message);
       } else {
-        setPasswordError('Failed to update password');
+        setPasswordError('Cập nhật mật khẩu thất bại');
       }
       console.error('Error updating password:', err);
     } finally {
@@ -533,7 +533,7 @@ export default function EditProfilePage() {
       <div className="max-w-3xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Edit Profile</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Chỉnh sửa hồ sơ</h1>
           <Link
             href="/profile"
             className="inline-flex items-center px-4 py-2 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-lg font-medium transition-colors"
@@ -541,7 +541,7 @@ export default function EditProfilePage() {
             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            Back to Profile
+            Quay lại hồ sơ
           </Link>
         </div>
 
@@ -551,12 +551,12 @@ export default function EditProfilePage() {
             <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
             </svg>
-            Profile Information
+            Thông tin hồ sơ
           </h2>
 
           {profileSuccess && (
             <div className="mb-4 bg-grey-200 border border-green-200 rounded-lg p-4">
-              <p className="text-green-800 font-medium">Profile updated successfully!</p>
+              <p className="text-green-800 font-medium">Cập nhật hồ sơ thành công!</p>
             </div>
           )}
 
@@ -570,9 +570,9 @@ export default function EditProfilePage() {
             <div className="space-y-4">
               <div>
                 <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
-                  Username
+                  Tên đăng nhập
                   {username !== user?.username && (
-                    <span className="text-amber-600 text-xs ml-2">● Changed</span>
+                    <span className="text-amber-600 text-xs ml-2">● Đã thay đổi</span>
                   )}
                 </label>
                 <input
@@ -585,20 +585,20 @@ export default function EditProfilePage() {
                       ? 'border-red-300 focus:ring-red-500 bg-grey-200'
                       : 'border-gray-300 focus:ring-blue-500'
                   }`}
-                  placeholder="Enter your username"
+                  placeholder="Nhập tên đăng nhập của bạn"
                   required
                 />
                 {usernameError && (
                   <p className="mt-1 text-sm text-red-600">{usernameError}</p>
                 )}
                 <p className="mt-1 text-xs text-gray-500">
-                  3-60 characters. Letters, numbers, underscores, and hyphens only.
+                  3-60 ký tự. Chỉ được dùng chữ cái, số, gạch dưới và gạch ngang.
                 </p>
               </div>
 
               <div>
                 <label htmlFor="displayName" className="block text-sm font-medium text-gray-700 mb-1">
-                  Display Name
+                  Tên hiển thị
                 </label>
                 <input
                   type="text"
@@ -612,7 +612,7 @@ export default function EditProfilePage() {
 
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                  Email Address
+                  Địa chỉ Email
                 </label>
                 <input
                   type="email"
@@ -631,21 +631,21 @@ export default function EditProfilePage() {
                     className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                   />
                   <label htmlFor="emailPublic" className="ml-2 text-sm text-gray-600">
-                    Make email public (visible to non-friends)
+                    Công khai email (hiển thị với người không phải bạn bè)
                   </label>
                 </div>
               </div>
 
               <div>
                 <label htmlFor="hobby" className="block text-sm font-medium text-gray-700 mb-1">
-                  Hobby
+                  Sở thích
                 </label>
                 <input
                   type="text"
                   id="hobby"
                   value={hobby}
                   onChange={(e) => setHobby(e.target.value)}
-                  placeholder="What do you like to do?"
+                  placeholder="Bạn thích làm gì?"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                 />
                 <div className="mt-2 flex items-center">
@@ -657,21 +657,21 @@ export default function EditProfilePage() {
                     className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                   />
                   <label htmlFor="hobbyPublic" className="ml-2 text-sm text-gray-600">
-                    Make hobby public (visible to non-friends)
+                    Công khai sở thích (hiển thị với người không phải bạn bè)
                   </label>
                 </div>
               </div>
 
               <div>
                 <label htmlFor="company" className="block text-sm font-medium text-gray-700 mb-1">
-                  Company
+                  Công ty
                 </label>
                 <input
                   type="text"
                   id="company"
                   value={company}
                   onChange={(e) => setCompany(e.target.value)}
-                  placeholder="Where do you work?"
+                  placeholder="Bạn làm việc ở đâu?"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                 />
                 <div className="mt-2 flex items-center">
@@ -683,7 +683,7 @@ export default function EditProfilePage() {
                     className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                   />
                   <label htmlFor="companyPublic" className="ml-2 text-sm text-gray-600">
-                    Make company public (visible to non-friends)
+                    Công khai công ty (hiển thị với người không phải bạn bè)
                   </label>
                 </div>
               </div>
@@ -697,7 +697,7 @@ export default function EditProfilePage() {
                   id="occupation"
                   value={occupation}
                   onChange={(e) => setOccupation(e.target.value)}
-                  placeholder="What is your occupation?"
+                  placeholder="Nghề nghiệp của bạn là gì?"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                 />
                 <div className="mt-2 flex items-center">
@@ -709,7 +709,7 @@ export default function EditProfilePage() {
                     className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                   />
                   <label htmlFor="occupationPublic" className="ml-2 text-sm text-gray-600">
-                    Make occupation public (visible to non-friends)
+                    Công khai nghề nghiệp (hiển thị với người không phải bạn bè)
                   </label>
                 </div>
               </div>
@@ -723,7 +723,7 @@ export default function EditProfilePage() {
                   id="mainOccupation"
                   value={mainOccupation}
                   onChange={(e) => setMainOccupation(e.target.value)}
-                  placeholder="What is your main occupation?"
+                  placeholder="Nghề nghiệp chính của bạn là gì?"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                 />
                 <div className="mt-2 flex items-center">
@@ -735,21 +735,21 @@ export default function EditProfilePage() {
                     className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                   />
                   <label htmlFor="mainOccupationPublic" className="ml-2 text-sm text-gray-600">
-                    Make main occupation public (visible to non-friends)
+                    Công khai nghề nghiệp chính (hiển thị với người không phải bạn bè)
                   </label>
                 </div>
               </div>
 
               <div>
                 <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-1">
-                  Location
+                  Địa điểm
                 </label>
                 <input
                   type="text"
                   id="location"
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
-                  placeholder="Where are you based?"
+                  placeholder="Bạn ở đâu?"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                 />
                 <div className="mt-2 flex items-center">
@@ -761,14 +761,14 @@ export default function EditProfilePage() {
                     className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                   />
                   <label htmlFor="locationPublic" className="ml-2 text-sm text-gray-600">
-                    Make location public (visible to non-friends)
+                    Công khai địa điểm (hiển thị với người không phải bạn bè)
                   </label>
                 </div>
               </div>
 
               <div>
                 <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-                  Phone Number (cannot be changed)
+                  Số điện thoại (không thể thay đổi)
                 </label>
                 <input
                   type="tel"
@@ -778,7 +778,7 @@ export default function EditProfilePage() {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-blue-500 text-gray-600 cursor-not-allowed"
                 />
                 <p className="mt-1 text-xs text-gray-500">
-                  Phone number is locked for security. Contact support to change your phone number.
+                  Số điện thoại bị khóa vì lý do bảo mật. Liên hệ hỗ trợ để thay đổi số điện thoại.
                 </p>
                 <div className="mt-3 flex items-center">
                   <input
@@ -789,7 +789,7 @@ export default function EditProfilePage() {
                     className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                   />
                   <label htmlFor="phonePublic" className="ml-2 text-sm text-gray-600">
-                    Make phone public (visible to non-friends)
+                    Công khai số điện thoại (hiển thị với người không phải bạn bè)
                   </label>
                 </div>
               </div>
@@ -797,7 +797,7 @@ export default function EditProfilePage() {
               {/* Role field - Read-only, only admins can change roles */}
               <div>
                 <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1">
-                  Role
+                  Vai trò
                 </label>
                 <input
                   type="text"
@@ -807,13 +807,13 @@ export default function EditProfilePage() {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-blue-500 text-gray-600 cursor-not-allowed capitalize"
                 />
                 <p className="mt-1 text-xs text-gray-500">
-                  Your role cannot be changed. Contact an administrator if you need role changes.
+                  Vai trò của bạn không thể thay đổi. Liên hệ quản trị viên nếu bạn cần thay đổi vai trò.
                 </p>
               </div>
 
               <div>
                 <label htmlFor="profileVisibility" className="block text-sm font-medium text-gray-700 mb-1">
-                  Profile Visibility
+                  Chế độ hiển thị hồ sơ
                 </label>
                 <select
                   id="profileVisibility"
@@ -821,11 +821,11 @@ export default function EditProfilePage() {
                   onChange={(e) => setProfileVisibility(e.target.value)}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                 >
-                  <option value="public">Public - Anyone can view my profile</option>
-                  <option value="private">Private - Only friends can view my profile</option>
+                  <option value="public">Công khai - Bất kỳ ai cũng có thể xem hồ sơ của tôi</option>
+                  <option value="private">Riêng tư - Chỉ bạn bè mới có thể xem hồ sơ của tôi</option>
                 </select>
                 <p className="mt-1 text-xs text-gray-500">
-                  {profileVisibility === 'public' ? 'Your profile is visible to everyone' : 'Your profile is only visible to your friends'}
+                  {profileVisibility === 'public' ? 'Hồ sơ của bạn hiển thị với tất cả mọi người' : 'Hồ sơ của bạn chỉ hiển thị với bạn bè'}
                 </p>
               </div>
 
@@ -834,7 +834,7 @@ export default function EditProfilePage() {
                 disabled={profileLoading}
                 className="w-full bg-blue-500 hover:bg-blue-700 text-gray-900 font-medium py-3 px-6 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {profileLoading ? 'Updating...' : 'Update Profile Information'}
+                {profileLoading ? 'Đang cập nhật...' : 'Cập nhật thông tin hồ sơ'}
               </button>
             </div>
           </form>
@@ -846,12 +846,12 @@ export default function EditProfilePage() {
             <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
-            Profile Avatar
+            Ảnh đại diện
           </h2>
 
           {avatarSuccess && (
             <div className="mb-4 bg-grey-200 border border-green-200 rounded-lg p-4">
-              <p className="text-green-800 font-medium">Avatar uploaded successfully!</p>
+              <p className="text-green-800 font-medium">Tải ảnh đại diện thành công!</p>
             </div>
           )}
 
@@ -881,7 +881,7 @@ export default function EditProfilePage() {
 
                 <div className="flex-1">
                   <label htmlFor="avatar" className="block text-sm font-medium text-gray-700 mb-2">
-                    Choose Avatar Image
+                    Chọn ảnh đại diện
                   </label>
                   <input
                     type="file"
@@ -890,7 +890,7 @@ export default function EditProfilePage() {
                     onChange={handleAvatarChange}
                     className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-grey-200 file:text-blue-700 hover:file:bg-blue-500"
                   />
-                  <p className="mt-1 text-xs text-gray-500">JPG, PNG, or GIF (max. 2MB)</p>
+                  <p className="mt-1 text-xs text-gray-500">JPG, PNG hoặc GIF (tối đa 2MB)</p>
                 </div>
               </div>
 
@@ -899,7 +899,7 @@ export default function EditProfilePage() {
                 disabled={avatarLoading || !avatarFile}
                 className="w-full bg-blue-500 hover:bg-blue-700 text-gray-900 font-medium py-3 px-6 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {avatarLoading ? 'Uploading...' : 'Upload Avatar'}
+                {avatarLoading ? 'Đang tải lên...' : 'Tải lên ảnh đại diện'}
               </button>
             </div>
           </form>
@@ -911,12 +911,12 @@ export default function EditProfilePage() {
             <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
             </svg>
-            Change Password
+            Đổi mật khẩu
           </h2>
 
           {passwordSuccess && (
             <div className="mb-4 bg-grey-200 border border-green-200 rounded-lg p-4">
-              <p className="text-green-800 font-medium">Password updated successfully!</p>
+              <p className="text-green-800 font-medium">Cập nhật mật khẩu thành công!</p>
             </div>
           )}
 
@@ -930,7 +930,7 @@ export default function EditProfilePage() {
             <div className="space-y-4">
               <div>
                 <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                  Current Password
+                  Mật khẩu hiện tại
                 </label>
                 <input
                   type="password"
@@ -944,7 +944,7 @@ export default function EditProfilePage() {
 
               <div>
                 <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                  New Password
+                  Mật khẩu mới
                 </label>
                 <input
                   type="password"
@@ -955,12 +955,12 @@ export default function EditProfilePage() {
                   required
                   minLength={8}
                 />
-                <p className="text-xs text-gray-500 mt-1">Must be at least 8 characters long</p>
+                <p className="text-xs text-gray-500 mt-1">Phải có ít nhất 8 ký tự</p>
               </div>
 
               <div>
                 <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                  Confirm New Password
+                  Xác nhận mật khẩu mới
                 </label>
                 <input
                   type="password"
@@ -978,7 +978,7 @@ export default function EditProfilePage() {
                 disabled={passwordLoading}
                 className="w-full bg-blue-500 hover:bg-blue-700 text-gray-900 font-medium py-3 px-6 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {passwordLoading ? 'Updating...' : 'Change Password'}
+                {passwordLoading ? 'Đang cập nhật...' : 'Đổi mật khẩu'}
               </button>
             </div>
           </form>

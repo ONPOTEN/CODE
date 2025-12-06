@@ -16,12 +16,12 @@ export default function ShopsFeedPage() {
     const now = new Date();
     const secondsAgo = Math.floor((now.getTime() - date.getTime()) / 1000);
 
-    if (secondsAgo < 60) return 'just now';
-    if (secondsAgo < 3600) return `${Math.floor(secondsAgo / 60)}m ago`;
-    if (secondsAgo < 86400) return `${Math.floor(secondsAgo / 3600)}h ago`;
-    if (secondsAgo < 604800) return `${Math.floor(secondsAgo / 86400)}d ago`;
-    if (secondsAgo < 2592000) return `${Math.floor(secondsAgo / 604800)}w ago`;
-    return `${Math.floor(secondsAgo / 2592000)}mo ago`;
+    if (secondsAgo < 60) return 'vừa xong';
+    if (secondsAgo < 3600) return `${Math.floor(secondsAgo / 60)} phút trước`;
+    if (secondsAgo < 86400) return `${Math.floor(secondsAgo / 3600)} giờ trước`;
+    if (secondsAgo < 604800) return `${Math.floor(secondsAgo / 86400)} ngày trước`;
+    if (secondsAgo < 2592000) return `${Math.floor(secondsAgo / 604800)} tuần trước`;
+    return `${Math.floor(secondsAgo / 2592000)} tháng trước`;
   };
 
   const formatPrice = (price: number | string | undefined): string => {
@@ -71,7 +71,7 @@ export default function ShopsFeedPage() {
         if (err instanceof ApiException) {
           setError(err.message);
         } else {
-          setError('Failed to fetch products');
+          setError('Không thể tải sản phẩm');
         }
         console.error('Error fetching products:', err);
       } finally {
@@ -168,7 +168,7 @@ export default function ShopsFeedPage() {
                 {product.price_range}
               </span>
             ) : (
-              <span className="text-gray-500 text-sm">Contact for price</span>
+              <span className="text-gray-500 text-sm">Liên hệ để biết giá</span>
             )}
           </div>
 
@@ -202,7 +202,7 @@ export default function ShopsFeedPage() {
         </div>
         <section className="w-full px-4 py-6">
           <div className="bg-red-50 border border-red-200 rounded-lg p-4 max-w-4xl mx-auto">
-            <h3 className="text-lg font-semibold text-red-900 mb-2">Error Loading Products</h3>
+            <h3 className="text-lg font-semibold text-red-900 mb-2">Lỗi khi tải sản phẩm</h3>
             <p className="text-red-700">{error}</p>
           </div>
         </section>

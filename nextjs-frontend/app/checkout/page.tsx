@@ -101,21 +101,21 @@ export default function CheckoutPage() {
     const newErrors: Record<string, string> = {};
 
     // Validate shipping address for all payment methods
-    if (!formData.full_name.trim()) newErrors.full_name = 'Full name is required';
-    if (!formData.email.trim()) newErrors.email = 'Email is required';
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) newErrors.email = 'Invalid email';
-    if (!formData.phone.trim()) newErrors.phone = 'Phone is required';
-    if (!formData.address.trim()) newErrors.address = 'Address is required';
-    if (!formData.city.trim()) newErrors.city = 'City is required';
-    if (!formData.state.trim()) newErrors.state = 'State is required';
-    if (!formData.postal_code.trim()) newErrors.postal_code = 'Postal code is required';
+    if (!formData.full_name.trim()) newErrors.full_name = 'Họ tên là bắt buộc';
+    if (!formData.email.trim()) newErrors.email = 'Email là bắt buộc';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) newErrors.email = 'Email không hợp lệ';
+    if (!formData.phone.trim()) newErrors.phone = 'Điện thoại là bắt buộc';
+    if (!formData.address.trim()) newErrors.address = 'Địa chỉ là bắt buộc';
+    if (!formData.city.trim()) newErrors.city = 'Thành phố là bắt buộc';
+    if (!formData.state.trim()) newErrors.state = 'Tỉnh/Thành là bắt buộc';
+    if (!formData.postal_code.trim()) newErrors.postal_code = 'Mã bưu điện là bắt buộc';
 
     // Validate payment method-specific fields
     if (paymentMethod === 'bank_transfer') {
-      if (!formData.bank_name.trim()) newErrors.bank_name = 'Bank name is required';
-      if (!formData.account_number.trim()) newErrors.account_number = 'Account number is required';
-      if (!formData.account_holder.trim()) newErrors.account_holder = 'Account holder name is required';
-      if (!formData.transfer_reference.trim()) newErrors.transfer_reference = 'Transfer reference is required';
+      if (!formData.bank_name.trim()) newErrors.bank_name = 'Tên ngân hàng là bắt buộc';
+      if (!formData.account_number.trim()) newErrors.account_number = 'Số tài khoản là bắt buộc';
+      if (!formData.account_holder.trim()) newErrors.account_holder = 'Tên chủ tài khoản là bắt buộc';
+      if (!formData.transfer_reference.trim()) newErrors.transfer_reference = 'Mã tham chiếu chuyển khoản là bắt buộc';
     }
 
     setErrors(newErrors);
@@ -128,7 +128,7 @@ export default function CheckoutPage() {
     if (!validateForm()) return;
 
     if (items.length === 0) {
-      setErrorMessage('Your cart is empty');
+      setErrorMessage('Giỏ hàng của bạn đang trống');
       return;
     }
 
@@ -140,7 +140,7 @@ export default function CheckoutPage() {
       const orderItems = items.map((item) => ({
         shop_post_id: item.postId,
         quantity: item.quantity,
-        variant_options: item.attributes || {},
+        variant_options: item.attributes && Object.keys(item.attributes).length > 0 ? item.attributes : null,
       }));
 
       // Prepare shipping address
@@ -173,7 +173,6 @@ export default function CheckoutPage() {
         shipping_fee: 0,
         discount: 0,
         total_amount: totalPrice,
-        notes: '',
         shipping_address: shippingAddress,
         payment_method: paymentMethod,
         bank_transfer_details: bankTransferDetails,
@@ -192,9 +191,18 @@ export default function CheckoutPage() {
     } catch (error) {
       console.error('Order creation failed:', error);
 
-      let errorMsg = 'Failed to place order. Please try again.';
+      let errorMsg = 'Không thể đặt hàng. Vui lòng thử lại.';
       if (error instanceof ApiException) {
         errorMsg = error.message;
+        // Log validation errors for debugging
+        if (error.errors) {
+          console.error('Validation errors:', error.errors);
+          // Show first validation error if available
+          const firstErrorKey = Object.keys(error.errors)[0];
+          if (firstErrorKey && error.errors[firstErrorKey]?.[0]) {
+            errorMsg = error.errors[firstErrorKey][0];
+          }
+        }
       } else if (error instanceof Error) {
         errorMsg = error.message;
       }
@@ -217,13 +225,13 @@ export default function CheckoutPage() {
               d="M12 9v2m0 4v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
             />
           </svg>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Cart is Empty</h2>
-          <p className="text-gray-600 mb-6">Please add items to your cart before checking out.</p>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Giỏ hàng trống</h2>
+          <p className="text-gray-600 mb-6">Vui lòng thêm sản phẩm vào giỏ hàng trước khi thanh toán.</p>
           <Link href="/" className="inline-flex items-center px-6 py-3 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-lg font-medium transition-colors">
             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
-            Back to Shopping
+            Quay lại mua sắm
           </Link>
         </div>
       </div>
@@ -237,16 +245,16 @@ export default function CheckoutPage() {
           <svg className="w-16 h-16 mx-auto mb-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Order Placed Successfully!</h2>
-          <p className="text-gray-600 mb-4">Thank you for your purchase. Your order has been confirmed.</p>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Đặt hàng thành công!</h2>
+          <p className="text-gray-600 mb-4">Cảm ơn bạn đã mua hàng. Đơn hàng của bạn đã được xác nhận.</p>
           <p className="text-sm text-gray-500 mb-6">
-            You will be redirected to the home page shortly...
+            Bạn sẽ được chuyển hướng về trang chủ ngay...
           </p>
           <Link href="/" className="inline-flex items-center px-6 py-3 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-lg font-medium transition-colors">
             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-3m0 0l7-4 7 4M5 9v10a1 1 0 001 1h12a1 1 0 001-1V9m-9 5h4" />
             </svg>
-            Go Home
+            Về trang chủ
           </Link>
         </div>
       </div>
@@ -263,10 +271,10 @@ export default function CheckoutPage() {
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>
-              Cart
+              Giỏ hàng
             </Link>
             <span className="text-gray-600">/</span>
-            <span className="text-gray-600 font-medium">Checkout</span>
+            <span className="text-gray-600 font-medium">Thanh toán</span>
           </div>
         </div>
       </div>
@@ -284,11 +292,11 @@ export default function CheckoutPage() {
             <form onSubmit={handlePlaceOrder} className="space-y-6">
               {/* Shipping Address Section */}
               <div className="bg-grey-200 rounded-lg shadow-md p-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">Shipping Address</h2>
+                <h2 className="text-xl font-bold text-gray-900 mb-4">Địa chỉ giao hàng</h2>
                 <div className="space-y-4">
                   {/* Full Name */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Họ và tên</label>
                     <input
                       type="text"
                       name="full_name"
@@ -297,7 +305,7 @@ export default function CheckoutPage() {
                       className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                         errors.full_name ? 'border-red-500' : 'border-gray-300'
                       }`}
-                      placeholder="John Doe"
+                      placeholder="Nguyễn Văn A"
                     />
                     {errors.full_name && <p className="text-red-600 text-sm mt-1">{errors.full_name}</p>}
                   </div>
@@ -320,7 +328,7 @@ export default function CheckoutPage() {
 
                   {/* Phone */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Điện thoại</label>
                     <input
                       type="tel"
                       name="phone"
@@ -329,14 +337,14 @@ export default function CheckoutPage() {
                       className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                         errors.phone ? 'border-red-500' : 'border-gray-300'
                       }`}
-                      placeholder="+1 (555) 000-0000"
+                      placeholder="0901234567"
                     />
                     {errors.phone && <p className="text-red-600 text-sm mt-1">{errors.phone}</p>}
                   </div>
 
                   {/* Address */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Địa chỉ</label>
                     <textarea
                       name="address"
                       value={formData.address}
@@ -345,7 +353,7 @@ export default function CheckoutPage() {
                       className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                         errors.address ? 'border-red-500' : 'border-gray-300'
                       }`}
-                      placeholder="123 Main Street"
+                      placeholder="123 Đường ABC, Phường XYZ"
                     />
                     {errors.address && <p className="text-red-600 text-sm mt-1">{errors.address}</p>}
                   </div>
@@ -353,7 +361,7 @@ export default function CheckoutPage() {
                   {/* City, State, Postal Code */}
                   <div className="grid grid-cols-3 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Thành phố</label>
                       <input
                         type="text"
                         name="city"
@@ -362,12 +370,12 @@ export default function CheckoutPage() {
                         className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                           errors.city ? 'border-red-500' : 'border-gray-300'
                         }`}
-                        placeholder="New York"
+                        placeholder="TP. Hồ Chí Minh"
                       />
                       {errors.city && <p className="text-red-600 text-xs mt-1">{errors.city}</p>}
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Tỉnh/Thành</label>
                       <input
                         type="text"
                         name="state"
@@ -376,12 +384,12 @@ export default function CheckoutPage() {
                         className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                           errors.state ? 'border-red-500' : 'border-gray-300'
                         }`}
-                        placeholder="NY"
+                        placeholder="Quận 1"
                       />
                       {errors.state && <p className="text-red-600 text-xs mt-1">{errors.state}</p>}
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Postal Code</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Mã bưu điện</label>
                       <input
                         type="text"
                         name="postal_code"
@@ -390,7 +398,7 @@ export default function CheckoutPage() {
                         className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                           errors.postal_code ? 'border-red-500' : 'border-gray-300'
                         }`}
-                        placeholder="10001"
+                        placeholder="700000"
                       />
                       {errors.postal_code && <p className="text-red-600 text-xs mt-1">{errors.postal_code}</p>}
                     </div>
@@ -400,7 +408,7 @@ export default function CheckoutPage() {
 
               {/* Payment Method Section */}
               <div className="bg-grey-200 rounded-lg shadow-md p-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">Payment Method</h2>
+                <h2 className="text-xl font-bold text-gray-900 mb-4">Phương thức thanh toán</h2>
                 <div className="space-y-4">
                   {/* Payment Method Selection */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -419,8 +427,8 @@ export default function CheckoutPage() {
                         className="mt-1 cursor-pointer"
                       />
                       <div className="ml-3 flex-1">
-                        <p className="font-semibold text-gray-900">Cash on Delivery</p>
-                        <p className="text-sm text-gray-600">Pay when you receive your order</p>
+                        <p className="font-semibold text-gray-900">Thanh toán khi nhận hàng</p>
+                        <p className="text-sm text-gray-600">Thanh toán khi bạn nhận được đơn hàng</p>
                       </div>
                       {paymentMethod === 'cod' && (
                         <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
@@ -444,8 +452,8 @@ export default function CheckoutPage() {
                         className="mt-1 cursor-pointer"
                       />
                       <div className="ml-3 flex-1">
-                        <p className="font-semibold text-gray-900">QR Code Payment</p>
-                        <p className="text-sm text-gray-600">Scan and pay instantly</p>
+                        <p className="font-semibold text-gray-900">Thanh toán QR Code</p>
+                        <p className="text-sm text-gray-600">Quét mã và thanh toán ngay</p>
                       </div>
                       {paymentMethod === 'qr' && (
                         <svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
@@ -469,8 +477,8 @@ export default function CheckoutPage() {
                         className="mt-1 cursor-pointer"
                       />
                       <div className="ml-3 flex-1">
-                        <p className="font-semibold text-gray-900">Bank Transfer</p>
-                        <p className="text-sm text-gray-600">Transfer to our bank account</p>
+                        <p className="font-semibold text-gray-900">Chuyển khoản ngân hàng</p>
+                        <p className="text-sm text-gray-600">Chuyển khoản vào tài khoản ngân hàng của chúng tôi</p>
                       </div>
                       {paymentMethod === 'bank_transfer' && (
                         <svg className="w-5 h-5 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
@@ -488,8 +496,8 @@ export default function CheckoutPage() {
                           <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                         </svg>
                         <div>
-                          <p className="font-semibold text-green-900 text-sm">Payment on Delivery</p>
-                          <p className="text-green-800 text-sm mt-1">You will pay ${totalPrice.toFixed(2)} when the delivery person arrives at your doorstep.</p>
+                          <p className="font-semibold text-green-900 text-sm">Thanh toán khi nhận hàng</p>
+                          <p className="text-green-800 text-sm mt-1">Bạn sẽ thanh toán ${totalPrice.toFixed(2)} khi người giao hàng đến nơi.</p>
                         </div>
                       </div>
                     </div>
@@ -503,8 +511,8 @@ export default function CheckoutPage() {
                           <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                         </svg>
                         <div>
-                          <p className="font-semibold text-blue-900 text-sm">QR Code Payment</p>
-                          <p className="text-blue-800 text-sm mt-1">Scan the QR code below with your mobile payment app to pay ${totalPrice.toFixed(2)}</p>
+                          <p className="font-semibold text-blue-900 text-sm">Thanh toán QR Code</p>
+                          <p className="text-blue-800 text-sm mt-1">Quét mã QR bên dưới bằng ứng dụng thanh toán để trả ${totalPrice.toFixed(2)}</p>
                         </div>
                       </div>
                       <div className="bg-grey-200 p-4 rounded border border-blue-200">
@@ -512,7 +520,7 @@ export default function CheckoutPage() {
                           <div className="flex items-center justify-center min-h-[200px]">
                             <div className="text-center">
                               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-                              <p className="text-gray-600 text-sm">Loading QR code...</p>
+                              <p className="text-gray-600 text-sm">Đang tải mã QR...</p>
                             </div>
                           </div>
                         ) : shopQRCode ? (
@@ -533,8 +541,8 @@ export default function CheckoutPage() {
                               <svg className="w-16 h-16 text-gray-900 mx-auto mb-2" fill="currentColor" viewBox="0 0 24 24">
                                 <path d="M4 4h7v7H4V4zm2 2v3h3V6H6zM13 4h7v7h-7V4zm2 2v3h3V6h-3zM4 13h7v7H4v-7zm2 2v3h3v-3H6zm9 0v1h1v-1h-1zm-1 1h1v1h-1v-1zm2 0h1v1h-1v-1zm1 1v1h1v-1h-1zm-1 1h1v1h-1v-1zm2 0h1v1h-1v-1z" />
                               </svg>
-                              <p className="text-gray-900 text-xs font-medium">QR Code</p>
-                              <p className="text-blue-100 text-xs mt-1">Amount: ${totalPrice.toFixed(2)}</p>
+                              <p className="text-gray-900 text-xs font-medium">Mã QR</p>
+                              <p className="text-blue-100 text-xs mt-1">Số tiền: ${totalPrice.toFixed(2)}</p>
                             </div>
                           </div>
                         )}
@@ -550,15 +558,15 @@ export default function CheckoutPage() {
                           <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                         </svg>
                         <div>
-                          <p className="font-semibold text-purple-900 text-sm">Bank Transfer Details</p>
-                          <p className="text-purple-800 text-sm mt-1">Please transfer ${totalPrice.toFixed(2)} to the bank account below</p>
+                          <p className="font-semibold text-purple-900 text-sm">Thông tin chuyển khoản</p>
+                          <p className="text-purple-800 text-sm mt-1">Vui lòng chuyển khoản ${totalPrice.toFixed(2)} vào tài khoản ngân hàng dưới đây</p>
                         </div>
                       </div>
 
                       <div className="space-y-4">
                         {/* Bank Name */}
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Bank Name</label>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Tên ngân hàng</label>
                           <input
                             type="text"
                             name="bank_name"
@@ -567,14 +575,14 @@ export default function CheckoutPage() {
                             className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 ${
                               errors.bank_name ? 'border-red-500' : 'border-gray-300'
                             }`}
-                            placeholder="e.g., Vietnam Bank / Techcombank"
+                            placeholder="VD: Vietcombank / Techcombank"
                           />
                           {errors.bank_name && <p className="text-red-600 text-sm mt-1">{errors.bank_name}</p>}
                         </div>
 
                         {/* Account Number */}
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Account Number</label>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Số tài khoản</label>
                           <input
                             type="text"
                             name="account_number"
@@ -590,7 +598,7 @@ export default function CheckoutPage() {
 
                         {/* Account Holder */}
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Account Holder Name</label>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Tên chủ tài khoản</label>
                           <input
                             type="text"
                             name="account_holder"
@@ -599,14 +607,14 @@ export default function CheckoutPage() {
                             className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 ${
                               errors.account_holder ? 'border-red-500' : 'border-gray-300'
                             }`}
-                            placeholder="Account holder name"
+                            placeholder="Tên chủ tài khoản"
                           />
                           {errors.account_holder && <p className="text-red-600 text-sm mt-1">{errors.account_holder}</p>}
                         </div>
 
                         {/* Transfer Reference */}
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Transfer Reference / Description</label>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Mã tham chiếu / Nội dung chuyển khoản</label>
                           <input
                             type="text"
                             name="transfer_reference"
@@ -615,14 +623,14 @@ export default function CheckoutPage() {
                             className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 ${
                               errors.transfer_reference ? 'border-red-500' : 'border-gray-300'
                             }`}
-                            placeholder="e.g., Order #12345"
+                            placeholder="VD: Đơn hàng #12345"
                           />
                           {errors.transfer_reference && <p className="text-red-600 text-sm mt-1">{errors.transfer_reference}</p>}
                         </div>
 
                         <div className="bg-grey-200 rounded p-3 border border-purple-200">
                           <p className="text-xs text-gray-600">
-                            <span className="font-semibold">Important:</span> Please use the transfer reference as the description/memo when making your bank transfer. This helps us match your payment with your order.
+                            <span className="font-semibold">Lưu ý:</span> Vui lòng sử dụng mã tham chiếu làm nội dung/ghi chú khi chuyển khoản. Điều này giúp chúng tôi đối chiếu thanh toán với đơn hàng của bạn.
                           </p>
                         </div>
                       </div>
@@ -647,7 +655,7 @@ export default function CheckoutPage() {
                         d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                       />
                     </svg>
-                    Processing...
+                    Đang xử lý...
                   </>
                 ) : (
                   <>
@@ -660,10 +668,10 @@ export default function CheckoutPage() {
                       />
                     </svg>
                     {paymentMethod === 'cod'
-                      ? 'Place Order'
+                      ? 'Đặt hàng'
                       : paymentMethod === 'qr'
-                      ? 'Place Order & Pay with QR'
-                      : 'Place Order & Send Payment'}
+                      ? 'Đặt hàng & Thanh toán QR'
+                      : 'Đặt hàng & Chuyển khoản'}
                   </>
                 )}
               </button>
@@ -673,7 +681,7 @@ export default function CheckoutPage() {
           {/* Order Summary */}
           <div className="lg:col-span-1">
             <div className="bg-grey-200 rounded-lg shadow-md p-6 sticky top-20 space-y-6">
-              <h2 className="text-xl font-bold text-gray-900">Order Summary</h2>
+              <h2 className="text-xl font-bold text-gray-900">Tóm tắt đơn hàng</h2>
 
               {/* Items List */}
               <div className="space-y-3 border-b border-gray-300 pb-4">
@@ -688,7 +696,7 @@ export default function CheckoutPage() {
               {/* Total */}
               <div className="space-y-2">
                 <div className="flex justify-between text-lg font-bold text-gray-900">
-                  <span>Total:</span>
+                  <span>Tổng cộng:</span>
                   <span className="text-green-600">${totalPrice.toFixed(2)}</span>
                 </div>
               </div>
@@ -704,10 +712,10 @@ export default function CheckoutPage() {
                       d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
                     />
                   </svg>
-                  <span className="text-xs text-blue-800 font-medium">Secure Payment</span>
+                  <span className="text-xs text-blue-800 font-medium">Thanh toán an toàn</span>
                 </div>
                 <p className="text-xs text-blue-700">
-                  Your payment information is encrypted and processed securely.
+                  Thông tin thanh toán của bạn được mã hóa và xử lý an toàn.
                 </p>
               </div>
             </div>

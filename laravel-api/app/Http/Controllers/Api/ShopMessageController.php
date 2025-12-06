@@ -188,7 +188,7 @@ class ShopMessageController extends Controller
             'shop_id' => 'required|integer|exists:shops,id',
             'sender_id' => 'required|integer',
             'shop_owner_id' => 'required|integer',
-            'message' => 'required|string|max:5000',
+            'message' => 'required|string|max:65000', // Increased to support multiple image URLs
         ]);
 
         $message = ShopMessage::create($validated);

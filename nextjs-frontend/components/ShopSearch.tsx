@@ -36,7 +36,7 @@ export function ShopSearch() {
         setResults(response.data);
       } catch (err) {
         console.error('Error searching shops:', err);
-        setError('Failed to search shops');
+        setError('Không thể tìm kiếm cửa hàng');
       } finally {
         setLoading(false);
       }
@@ -61,8 +61,8 @@ export function ShopSearch() {
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">Find Shops</h2>
-          <p className="text-gray-600">Search for shops and businesses near you</p>
+          <h2 className="text-3xl font-bold text-gray-900 mb-2">Tìm cửa hàng</h2>
+          <p className="text-gray-600">Tìm kiếm cửa hàng và doanh nghiệp gần bạn</p>
         </div>
 
         {/* Search Bar */}
@@ -84,7 +84,7 @@ export function ShopSearch() {
               </svg>
               <input
                 type="text"
-                placeholder="Search shops by name, category, location..."
+                placeholder="Tìm kiếm cửa hàng theo tên, danh mục, địa điểm..."
                 value={searchTerm}
                 onChange={handleInputChange}
                 className="flex-1 px-4 py-3 bg-transparent outline-none text-gray-900 placeholder-gray-500"
@@ -113,14 +113,14 @@ export function ShopSearch() {
               {loading ? (
                 <span className="flex items-center gap-2">
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                  Searching shops...
+                  Đang tìm kiếm cửa hàng...
                 </span>
               ) : error ? (
                 <span className="text-red-600">{error}</span>
               ) : results.length === 0 ? (
-                <span>No shops found matching "{searchTerm}"</span>
+                <span>Không tìm thấy cửa hàng nào cho "{searchTerm}"</span>
               ) : (
-                <span>{results.length} shop{results.length !== 1 ? 's' : ''} found</span>
+                <span>Tìm thấy {results.length} cửa hàng</span>
               )}
             </div>
           )}
@@ -148,12 +148,12 @@ export function ShopSearch() {
                     d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
                   />
                 </svg>
-                <p className="text-gray-500 mb-4">No shops found matching your search</p>
+                <p className="text-gray-500 mb-4">Không tìm thấy cửa hàng nào phù hợp với tìm kiếm của bạn</p>
                 <Link
                   href="/shops"
                   className="inline-block px-6 py-2 bg-blue-600 text-gray-900 rounded-lg hover:bg-blue-700 font-medium transition-colors"
                 >
-                  Browse All Shops
+                  Xem tất cả cửa hàng
                 </Link>
               </div>
             ) : (
@@ -171,7 +171,7 @@ export function ShopSearch() {
                     href={`/shops?search=${encodeURIComponent(searchTerm)}`}
                     className="inline-block px-6 py-2 bg-blue-600 text-gray-900 rounded-lg hover:bg-blue-700 font-medium transition-colors"
                   >
-                    View All Results
+                    Xem tất cả kết quả
                   </Link>
                 </div>
               </>
@@ -183,13 +183,13 @@ export function ShopSearch() {
         {!hasSearched && (
           <div className="rounded-lg p-8 text-center border border-blue-100">
             <p className="text-gray-600 mb-4">
-              Search for shops above or explore all available businesses
+              Tìm kiếm cửa hàng ở trên hoặc khám phá tất cả doanh nghiệp có sẵn
             </p>
             <Link
               href="/shops"
               className="inline-block px-6 py-2 bg-blue-600 text-gray-900 rounded-lg hover:bg-blue-700 font-medium transition-colors"
             >
-              Explore All Shops
+              Khám phá tất cả cửa hàng
             </Link>
           </div>
         )}

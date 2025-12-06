@@ -49,9 +49,9 @@ export default function GroupJoinRequestsPage() {
     } catch (err: any) {
       console.error('Error fetching data:', err);
       if (err.message?.includes('403') || err.message?.includes('Unauthorized')) {
-        setError('You do not have permission to manage join requests. Only group admins and moderators can access this page.');
+        setError('Bạn không có quyền quản lý yêu cầu tham gia. Chỉ quản trị viên và điều hành viên nhóm mới có thể truy cập trang này.');
       } else {
-        setError('Failed to load join requests');
+        setError('Không thể tải yêu cầu tham gia');
       }
     } finally {
       setLoading(false);
@@ -67,11 +67,11 @@ export default function GroupJoinRequestsPage() {
 
       // Remove from list and show success message
       setRequests(requests.filter((r) => r.user_id !== userId));
-      setSuccessMessage(`${userName} has been accepted to the group!`);
+      setSuccessMessage(`${userName} đã được chấp nhận vào nhóm!`);
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err) {
       console.error('Error accepting request:', err);
-      setError('Failed to accept join request');
+      setError('Không thể chấp nhận yêu cầu tham gia');
     } finally {
       setProcessingId(null);
     }
@@ -79,7 +79,7 @@ export default function GroupJoinRequestsPage() {
 
   const handleReject = async (userId: number, userName: string) => {
     if (processingId !== null) return;
-    if (!confirm(`Are you sure you want to reject ${userName}'s request?`)) return;
+    if (!confirm(`Bạn có chắc muốn từ chối yêu cầu của ${userName} không?`)) return;
 
     try {
       setProcessingId(userId);
@@ -87,18 +87,18 @@ export default function GroupJoinRequestsPage() {
 
       // Remove from list and show success message
       setRequests(requests.filter((r) => r.user_id !== userId));
-      setSuccessMessage(`${userName}'s request has been rejected.`);
+      setSuccessMessage(`Yêu cầu của ${userName} đã bị từ chối.`);
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err) {
       console.error('Error rejecting request:', err);
-      setError('Failed to reject join request');
+      setError('Không thể từ chối yêu cầu tham gia');
     } finally {
       setProcessingId(null);
     }
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    return new Date(dateString).toLocaleDateString('vi-VN', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -123,7 +123,7 @@ export default function GroupJoinRequestsPage() {
             {error}
           </div>
           <Link href="/groups" className="inline-block px-4 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-700">
-            Back to Groups
+            Quay lại danh sách nhóm
           </Link>
         </div>
       </div>
@@ -134,9 +134,9 @@ export default function GroupJoinRequestsPage() {
     return (
       <div className="min-h-screen bg-white px-4 py-8">
         <div className="max-w-4xl mx-auto text-center py-12">
-          <p className="text-gray-500 text-lg">Group not found</p>
+          <p className="text-gray-500 text-lg">Không tìm thấy nhóm</p>
           <Link href="/groups" className="mt-4 inline-block px-4 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-700">
-            Back to Groups
+            Quay lại danh sách nhóm
           </Link>
         </div>
       </div>
@@ -155,18 +155,18 @@ export default function GroupJoinRequestsPage() {
                   href="/"
                   className="text-gray-600 hover:text-gray-900 font-medium"
                 >
-                  🏠 Home
+                  🏠 Trang chủ
                 </Link>
                 <span className="text-gray-600">/</span>
                 <Link
                   href={`/groups/${group.group_id}`}
                   className="text-blue-600 hover:text-blue-700 font-medium"
                 >
-                  ← Back to {group.group_name}
+                  ← Quay lại {group.group_name}
                 </Link>
               </div>
-              <h1 className="text-3xl font-bold text-gray-900">Join Requests</h1>
-              <p className="text-gray-600 mt-1">{requests.length} pending request(s)</p>
+              <h1 className="text-3xl font-bold text-gray-900">Yêu cầu tham gia</h1>
+              <p className="text-gray-600 mt-1">{requests.length} yêu cầu đang chờ</p>
             </div>
           </div>
         </div>
@@ -206,7 +206,7 @@ export default function GroupJoinRequestsPage() {
             >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <p className="text-gray-500 text-lg">No pending join requests</p>
+            <p className="text-gray-500 text-lg">Không có yêu cầu tham gia đang chờ</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -235,7 +235,7 @@ export default function GroupJoinRequestsPage() {
                     <div className="flex-1">
                       <h3 className="text-lg font-semibold text-gray-900">{request.user.name}</h3>
                       <p className="text-gray-600 text-sm">@{request.user.username}</p>
-                      <p className="text-gray-500 text-xs mt-1">Requested: {formatDate(request.requested_at)}</p>
+                      <p className="text-gray-500 text-xs mt-1">Yêu cầu: {formatDate(request.requested_at)}</p>
                     </div>
                   </div>
 
@@ -246,14 +246,14 @@ export default function GroupJoinRequestsPage() {
                       disabled={processingId !== null}
                       className="px-6 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {processingId === request.user_id ? 'Accepting...' : 'Accept'}
+                      {processingId === request.user_id ? 'Đang chấp nhận...' : 'Chấp nhận'}
                     </button>
                     <button
                       onClick={() => handleReject(request.user_id, request.user.name)}
                       disabled={processingId !== null}
                       className="px-6 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {processingId === request.user_id ? 'Rejecting...' : 'Reject'}
+                      {processingId === request.user_id ? 'Đang từ chối...' : 'Từ chối'}
                     </button>
                   </div>
                 </div>

@@ -309,7 +309,7 @@ export default function MessagesPage() {
     <div className="container mx-auto px-4 py-8 bg-white">
       {/* Header */}
       <div className="px-6 py-4 border-b border-gray-200 bg-white">
-        <h1 className="text-2xl font-bold text-gray-900">Messages</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Tin nhắn</h1>
       </div>
 
       {/* Conversations List */}

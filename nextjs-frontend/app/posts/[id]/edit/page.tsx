@@ -46,7 +46,7 @@ export default function EditPostPage() {
         const postData = await posts.getById(postId);
 
         if (!postData) {
-          setError('Post data is empty');
+          setError('Dữ liệu bài viết trống');
           setIsFetching(false);
           return;
         }
@@ -70,7 +70,7 @@ export default function EditPostPage() {
             postAuthorId: postData.author.id,
           });
           setNotAuthorized(true);
-          setError('You are not authorized to edit this post.');
+          setError('Bạn không có quyền chỉnh sửa bài viết này.');
           setIsFetching(false);
           return;
         }
@@ -113,7 +113,7 @@ export default function EditPostPage() {
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : String(err);
         console.error('[EditPost] Error fetching post:', errorMsg);
-        setError(`Failed to load post: ${errorMsg}`);
+        setError(`Không thể tải bài viết: ${errorMsg}`);
       } finally {
         setIsFetching(false);
       }
@@ -184,7 +184,7 @@ export default function EditPostPage() {
           setValidationErrors(err.errors);
         }
       } else {
-        setError('Failed to update post. Please try again.');
+        setError('Không thể cập nhật bài viết. Vui lòng thử lại.');
       }
       console.error('Update post error:', err);
     } finally {
@@ -205,7 +205,7 @@ export default function EditPostPage() {
         <div className="container mx-auto px-4 py-8">
           <div className="flex flex-col items-center justify-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
-            <p className="text-gray-600">Loading post...</p>
+            <p className="text-gray-600">Đang tải bài viết...</p>
           </div>
         </div>
       </div>
@@ -222,14 +222,14 @@ export default function EditPostPage() {
         <div className="container mx-auto px-4 py-8">
           <div className="max-w-3xl mx-auto">
             <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-              <h2 className="text-lg font-semibold text-red-900 mb-2">Access Denied</h2>
+              <h2 className="text-lg font-semibold text-red-900 mb-2">Truy cập bị từ chối</h2>
               <p className="text-red-700 mb-4">{error}</p>
-              <p className="text-red-600 text-sm mb-6">You can only edit posts that you have created.</p>
+              <p className="text-red-600 text-sm mb-6">Bạn chỉ có thể chỉnh sửa bài viết mà bạn đã tạo.</p>
               <button
                 onClick={() => router.back()}
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
               >
-                Go Back
+                Quay lại
               </button>
             </div>
           </div>
@@ -244,13 +244,13 @@ export default function EditPostPage() {
         <div className="container mx-auto px-4 py-8">
           <div className="max-w-3xl mx-auto">
             <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-              <h2 className="text-lg font-semibold text-red-900 mb-2">Post Not Found</h2>
-              <p className="text-red-700 mb-4">{error || 'Unable to load the requested post.'}</p>
+              <h2 className="text-lg font-semibold text-red-900 mb-2">Không tìm thấy bài viết</h2>
+              <p className="text-red-700 mb-4">{error || 'Không thể tải bài viết yêu cầu.'}</p>
               <button
                 onClick={() => router.back()}
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
               >
-                Go Back
+                Quay lại
               </button>
             </div>
           </div>
@@ -268,10 +268,10 @@ export default function EditPostPage() {
               onClick={() => router.back()}
               className="text-blue-600 hover:text-blue-700 font-medium mb-4 inline-flex items-center gap-1"
             >
-              ← Back
+              ← Quay lại
             </button>
-            <h1 className="text-3xl font-bold text-gray-900">Edit Post #{postId}</h1>
-            <p className="text-gray-600 mt-2">Update your post information and images</p>
+            <h1 className="text-3xl font-bold text-gray-900">Sửa bài viết #{postId}</h1>
+            <p className="text-gray-600 mt-2">Cập nhật thông tin và hình ảnh bài viết của bạn</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6 bg-white rounded-lg border border-gray-200 p-6">
@@ -284,7 +284,7 @@ export default function EditPostPage() {
             {/* Title */}
             <div>
               <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
-                Title *
+                Tiêu đề *
               </label>
               <input
                 type="text"
@@ -296,7 +296,7 @@ export default function EditPostPage() {
                 className={`w-full px-4 py-2 border ${
                   getFieldError('title') ? 'border-red-500' : 'border-gray-300'
                 } rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                placeholder="Enter post title"
+                placeholder="Nhập tiêu đề bài viết"
               />
               {getFieldError('title') && (
                 <p className="mt-1 text-sm text-red-600">{getFieldError('title')}</p>
@@ -306,7 +306,7 @@ export default function EditPostPage() {
             {/* Excerpt */}
             <div>
               <label htmlFor="excerpt" className="block text-sm font-medium text-gray-700 mb-2">
-                Excerpt
+                Tóm tắt
               </label>
               <textarea
                 id="excerpt"
@@ -316,14 +316,14 @@ export default function EditPostPage() {
                 onChange={handleChange}
                 disabled={isLoading}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Short description (optional)"
+                placeholder="Mô tả ngắn (tùy chọn)"
               />
             </div>
 
             {/* Content */}
             <div>
               <label htmlFor="content" className="block text-sm font-medium text-gray-700 mb-2">
-                Content *
+                Nội dung *
               </label>
               <textarea
                 id="content"
@@ -335,7 +335,7 @@ export default function EditPostPage() {
                 className={`w-full px-4 py-2 border ${
                   getFieldError('content') ? 'border-red-500' : 'border-gray-300'
                 } rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                placeholder="Write your post content here..."
+                placeholder="Viết nội dung bài viết của bạn tại đây..."
               />
               {getFieldError('content') && (
                 <p className="mt-1 text-sm text-red-600">{getFieldError('content')}</p>
@@ -346,7 +346,7 @@ export default function EditPostPage() {
             {existingImages.length > 0 && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-4">
-                  Current Images
+                  Hình ảnh hiện tại
                 </label>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                   {existingImages.map((imageUrl, index) => (
@@ -373,7 +373,7 @@ export default function EditPostPage() {
             {/* New Image Upload */}
             <div>
               <label htmlFor="images" className="block text-sm font-medium text-gray-700 mb-2">
-                Add New Images (up to 10)
+                Thêm hình ảnh mới (tối đa 10)
               </label>
               <input
                 type="file"
@@ -413,7 +413,7 @@ export default function EditPostPage() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label htmlFor="type" className="block text-sm font-medium text-gray-700 mb-2">
-                  Type
+                  Loại
                 </label>
                 <select
                   id="type"
@@ -423,15 +423,15 @@ export default function EditPostPage() {
                   disabled={isLoading}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="post">Post</option>
-                  <option value="page">Page</option>
-                  <option value="product">Product</option>
+                  <option value="post">Bài viết</option>
+                  <option value="page">Trang</option>
+                  <option value="product">Sản phẩm</option>
                 </select>
               </div>
 
               <div>
                 <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
-                  Status
+                  Trạng thái
                 </label>
                 <select
                   id="status"
@@ -441,9 +441,9 @@ export default function EditPostPage() {
                   disabled={isLoading}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="draft">Draft</option>
-                  <option value="pending">Pending</option>
-                  <option value="publish">Publish</option>
+                  <option value="draft">Bản nháp</option>
+                  <option value="pending">Đang chờ</option>
+                  <option value="publish">Xuất bản</option>
                 </select>
               </div>
             </div>
@@ -455,7 +455,7 @@ export default function EditPostPage() {
                 disabled={isLoading}
                 className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isLoading ? 'Updating...' : 'Update Post'}
+                {isLoading ? 'Đang cập nhật...' : 'Cập nhật bài viết'}
               </button>
               <button
                 type="button"
@@ -463,7 +463,7 @@ export default function EditPostPage() {
                 disabled={isLoading}
                 className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-6 rounded-lg transition-colors disabled:opacity-50"
               >
-                Cancel
+                Hủy
               </button>
             </div>
           </form>

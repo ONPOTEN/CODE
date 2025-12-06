@@ -37,11 +37,11 @@ export default function FirebasePhonePasswordSetupPage() {
   }, [isInitialized, router]);
 
   const validatePassword = (pwd: string): string => {
-    if (!pwd) return 'Password is required';
-    if (pwd.length < 6) return 'Password must be at least 6 characters';
-    if (!/[A-Z]/.test(pwd)) return 'Password must contain at least one uppercase letter';
-    if (!/[a-z]/.test(pwd)) return 'Password must contain at least one lowercase letter';
-    if (!/[0-9]/.test(pwd)) return 'Password must contain at least one number';
+    if (!pwd) return 'Mật khẩu là bắt buộc';
+    if (pwd.length < 6) return 'Mật khẩu phải có ít nhất 6 ký tự';
+    if (!/[A-Z]/.test(pwd)) return 'Mật khẩu phải chứa ít nhất một chữ hoa';
+    if (!/[a-z]/.test(pwd)) return 'Mật khẩu phải chứa ít nhất một chữ thường';
+    if (!/[0-9]/.test(pwd)) return 'Mật khẩu phải chứa ít nhất một số';
     return '';
   };
 
@@ -59,7 +59,7 @@ export default function FirebasePhonePasswordSetupPage() {
 
     // Check passwords match
     if (newPassword !== confirmNewPassword) {
-      setErrorMessage('New passwords do not match');
+      setErrorMessage('Mật khẩu mới không khớp');
       return;
     }
 
@@ -72,7 +72,7 @@ export default function FirebasePhonePasswordSetupPage() {
 
       if (!currentUser) {
         console.log('[Phone Password Setup] User not authenticated. Please start over.');
-        setErrorMessage('Authentication lost. Please start the process again.');
+        setErrorMessage('Phiên xác thực đã mất. Vui lòng bắt đầu lại quy trình.');
         setStep('setup');
         return;
       }
@@ -114,7 +114,7 @@ export default function FirebasePhonePasswordSetupPage() {
         // If still no phone, return error
         if (!phoneNumber) {
           console.error('[Phone Password Setup] ❌ Could not find phone number anywhere');
-          setErrorMessage('Phone number not found. Please verify your phone again.');
+          setErrorMessage('Không tìm thấy số điện thoại. Vui lòng xác thực lại số điện thoại.');
           return;
         }
       }
@@ -199,15 +199,15 @@ export default function FirebasePhonePasswordSetupPage() {
         router.push('/');
       } else {
         console.warn('[Phone Password Setup] Laravel password setup failed - invalid response:', setupResponse);
-        setErrorMessage('Could not set up password in backend. Please try again.');
+        setErrorMessage('Không thể thiết lập mật khẩu trong hệ thống. Vui lòng thử lại.');
       }
     } catch (err: any) {
       console.error('[Phone Password Setup] Password setup error:', err);
 
-      let errorMsg = 'Failed to set up password. Please try again.';
+      let errorMsg = 'Không thể thiết lập mật khẩu. Vui lòng thử lại.';
 
       if (err.code === 'auth/weak-password') {
-        errorMsg = 'Password is too weak. Please use a stronger password.';
+        errorMsg = 'Mật khẩu quá yếu. Vui lòng sử dụng mật khẩu mạnh hơn.';
       } else if (err.message) {
         errorMsg = err.message;
       }
@@ -224,10 +224,10 @@ export default function FirebasePhonePasswordSetupPage() {
         {/* Header */}
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Complete Your Setup
+            Hoàn tất thiết lập
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Create a password to access your account using your phone number
+            Tạo mật khẩu để truy cập tài khoản của bạn bằng số điện thoại
           </p>
         </div>
 
@@ -238,7 +238,7 @@ export default function FirebasePhonePasswordSetupPage() {
               ? 'bg-blue-500 text-gray-900'
               : 'bg-blue-500 text-gray-800'
           }`}>
-            Setup Password
+            Thiết lập mật khẩu
           </div>
         </div>
 
@@ -255,7 +255,7 @@ export default function FirebasePhonePasswordSetupPage() {
             {/* New Password */}
             <div>
               <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                Password
+                Mật khẩu
               </label>
               <div className="relative">
                 <input
@@ -264,7 +264,7 @@ export default function FirebasePhonePasswordSetupPage() {
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none pr-10"
-                  placeholder="Enter password"
+                  placeholder="Nhập mật khẩu"
                   required
                 />
                 <button
@@ -285,14 +285,14 @@ export default function FirebasePhonePasswordSetupPage() {
                 </button>
               </div>
               <p className="mt-1 text-xs text-gray-500">
-                Must contain: uppercase, lowercase, number, 6+ characters
+                Phải chứa: chữ hoa, chữ thường, số, ít nhất 6 ký tự
               </p>
             </div>
 
             {/* Confirm Password */}
             <div>
               <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                Confirm Password
+                Xác nhận mật khẩu
               </label>
               <div className="relative">
                 <input
@@ -301,7 +301,7 @@ export default function FirebasePhonePasswordSetupPage() {
                   value={confirmNewPassword}
                   onChange={(e) => setConfirmNewPassword(e.target.value)}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none pr-10"
-                  placeholder="Confirm password"
+                  placeholder="Xác nhận mật khẩu"
                   required
                 />
                 <button
@@ -329,13 +329,13 @@ export default function FirebasePhonePasswordSetupPage() {
               disabled={isLoading}
               className="w-full mt-6 py-2 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-gray-900 bg-blue-500 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed transition-colors"
             >
-              {isLoading ? 'Setting up...' : 'Complete Setup'}
+              {isLoading ? 'Đang thiết lập...' : 'Hoàn tất thiết lập'}
             </button>
 
             {/* Back Link */}
             <div className="text-center">
               <Link href="/firebase-phone-login" className="text-sm text-blue-600 hover:text-blue-500">
-                Back to Phone Login
+                Quay lại đăng nhập bằng số điện thoại
               </Link>
             </div>
           </form>

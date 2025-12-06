@@ -94,7 +94,7 @@ export default function OrderDetailPage() {
 
         setOrder(orderData);
       } catch (err) {
-        let errorMsg = 'Failed to fetch order details';
+        let errorMsg = 'Không thể tải chi tiết đơn hàng';
         if (err instanceof ApiException) {
           errorMsg = err.message;
         } else if (err instanceof Error) {
@@ -130,13 +130,13 @@ export default function OrderDetailPage() {
   const getStatusLabel = (status: string) => {
     switch (status) {
       case 'completed':
-        return 'Completed';
+        return 'Hoàn thành';
       case 'processing':
-        return 'Processing';
+        return 'Đang xử lý';
       case 'pending':
-        return 'Pending';
+        return 'Chờ xử lý';
       case 'cancelled':
-        return 'Cancelled';
+        return 'Đã hủy';
       default:
         return status;
     }
@@ -145,11 +145,11 @@ export default function OrderDetailPage() {
   const getProductTypeLabel = (type: string) => {
     switch (type) {
       case 'Đơn giản':
-        return 'Simple Product';
+        return 'Sản phẩm đơn giản';
       case 'Biến thể':
-        return 'Variant Product';
+        return 'Sản phẩm biến thể';
       case 'Tải xuống':
-        return 'Download Product';
+        return 'Sản phẩm tải xuống';
       default:
         return type;
     }
@@ -183,7 +183,7 @@ export default function OrderDetailPage() {
                 />
               </svg>
             </div>
-            <p className="text-gray-600">Loading order details...</p>
+            <p className="text-gray-600">Đang tải chi tiết đơn hàng...</p>
           </div>
         </div>
       </div>
@@ -207,13 +207,13 @@ export default function OrderDetailPage() {
                 d="M12 8v4m0 4v.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
               />
             </svg>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Order Not Found</h2>
-            <p className="text-gray-600 mb-6">{error || 'The order you are looking for does not exist.'}</p>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Không tìm thấy đơn hàng</h2>
+            <p className="text-gray-600 mb-6">{error || 'Đơn hàng bạn đang tìm kiếm không tồn tại.'}</p>
             <Link
               href="/my-orders"
               className="inline-block bg-blue-500 hover:bg-blue-700 text-gray-900 font-medium py-2 px-6 rounded transition-colors"
             >
-              Back to Orders
+              Quay lại danh sách đơn hàng
             </Link>
           </div>
         </div>
@@ -230,12 +230,12 @@ export default function OrderDetailPage() {
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
-            Back to Orders
+            Quay lại danh sách đơn hàng
           </Link>
           <div className="flex justify-between items-start">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">{order.order_number}</h1>
-              <p className="text-gray-600">Order placed on {new Date(order.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+              <p className="text-gray-600">Đặt hàng ngày {new Date(order.created_at).toLocaleDateString('vi-VN', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
             </div>
             <span className={`px-4 py-2 rounded-lg font-semibold ${getStatusColor(order.status)}`}>
               {getStatusLabel(order.status)}
@@ -245,32 +245,32 @@ export default function OrderDetailPage() {
 
         {/* Order Summary Card */}
         <div className="bg-grey-200 rounded-lg shadow-md p-6 mb-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Order Summary</h2>
+          <h2 className="text-xl font-bold text-gray-900 mb-4">Tóm tắt đơn hàng</h2>
           <div className="space-y-3">
             <div className="flex justify-between">
-              <span className="text-gray-600">Subtotal:</span>
+              <span className="text-gray-600">Tạm tính:</span>
               <span className="font-medium text-gray-900">₫{(order.subtotal).toLocaleString('vi-VN')}</span>
             </div>
             {order.tax > 0 && (
               <div className="flex justify-between">
-                <span className="text-gray-600">Tax:</span>
+                <span className="text-gray-600">Thuế:</span>
                 <span className="font-medium text-gray-900">₫{(order.tax).toLocaleString('vi-VN')}</span>
               </div>
             )}
             {order.shipping_fee > 0 && (
               <div className="flex justify-between">
-                <span className="text-gray-600">Shipping Fee:</span>
+                <span className="text-gray-600">Phí vận chuyển:</span>
                 <span className="font-medium text-gray-900">₫{(order.shipping_fee).toLocaleString('vi-VN')}</span>
               </div>
             )}
             {order.discount > 0 && (
               <div className="flex justify-between text-green-700">
-                <span>Discount:</span>
+                <span>Giảm giá:</span>
                 <span className="font-medium">-₫{(order.discount).toLocaleString('vi-VN')}</span>
               </div>
             )}
             <div className="border-t pt-3 flex justify-between">
-              <span className="text-lg font-bold text-gray-900">Total:</span>
+              <span className="text-lg font-bold text-gray-900">Tổng cộng:</span>
               <span className="text-lg font-bold text-green-600">₫{(order.total_amount).toLocaleString('vi-VN')}</span>
             </div>
           </div>
@@ -278,7 +278,7 @@ export default function OrderDetailPage() {
 
         {/* Order Items */}
         <div className="bg-grey-200 rounded-lg shadow-md p-6 mb-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Order Items</h2>
+          <h2 className="text-xl font-bold text-gray-900 mb-4">Sản phẩm trong đơn hàng</h2>
           {order.items && order.items.length > 0 ? (
             <div className="space-y-4">
               {order.items.map((item, index) => (
@@ -299,7 +299,7 @@ export default function OrderDetailPage() {
                   {/* Variant Options */}
                   {item.variant_options && Object.keys(item.variant_options).length > 0 && (
                     <div className="bg-white rounded p-3 mb-3">
-                      <p className="text-sm font-medium text-gray-700 mb-2">Selected Options:</p>
+                      <p className="text-sm font-medium text-gray-700 mb-2">Tùy chọn đã chọn:</p>
                       <div className="grid grid-cols-2 gap-2">
                         {Object.entries(item.variant_options).map(([key, value]) => (
                           <div key={key} className="text-sm">
@@ -320,7 +320,7 @@ export default function OrderDetailPage() {
                           {item.download_files && (Array.isArray(item.download_files) ? item.download_files.length > 0 : (typeof item.download_files === 'object' ? Object.keys(item.download_files).length > 0 : !!item.download_files)) && (
                             <div className="border border-green-300 rounded-lg p-4 bg-grey-200 mb-3">
                               <h4 className="font-medium text-gray-900 mb-4 flex items-center gap-2">
-                                <span>📁</span> Downloadable File
+                                <span>📁</span> Tệp tải xuống
                               </h4>
                               <div className="space-y-3">
                                 {(Array.isArray(item.download_files) ? item.download_files : [item.download_files]).map((file: any, fileIdx: number) => {
@@ -337,7 +337,7 @@ export default function OrderDetailPage() {
                                           </svg>
                                           <p className="font-medium text-gray-900">{fileName}</p>
                                         </div>
-                                        {fileSize && <p className="text-xs text-gray-500">Size: {fileSize}</p>}
+                                        {fileSize && <p className="text-xs text-gray-500">Kích thước: {fileSize}</p>}
                                       </div>
                                       <a
                                         href={fileUrl}
@@ -347,7 +347,7 @@ export default function OrderDetailPage() {
                                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                                         </svg>
-                                        Download
+                                        Tải xuống
                                       </a>
                                     </div>
                                   );
@@ -360,7 +360,7 @@ export default function OrderDetailPage() {
                           {item.link_files && item.link_files.length > 0 && (
                             <div className="border border-blue-300 rounded-lg p-4 bg-grey-200">
                               <h4 className="font-medium text-gray-900 mb-4 flex items-center gap-2">
-                                <span>🔗</span> External Links
+                                <span>🔗</span> Liên kết bên ngoài
                               </h4>
                               <div className="space-y-3">
                                 {item.link_files.map((link: any, linkIdx: number) => {
@@ -387,7 +387,7 @@ export default function OrderDetailPage() {
                                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                                         </svg>
-                                        Open
+                                        Mở
                                       </a>
                                     </div>
                                   );
@@ -411,10 +411,10 @@ export default function OrderDetailPage() {
                               return (
                                 <div className="border border-gray-300 rounded-lg p-4 bg-gray-50">
                                   <h4 className="font-medium text-gray-700 mb-2 flex items-center gap-2">
-                                    <span>ℹ️</span> No Download Files Configured
+                                    <span>ℹ️</span> Chưa có tệp tải xuống
                                   </h4>
                                   <p className="text-sm text-gray-600">
-                                    This product does not have any download files or external links configured yet. Please contact the seller for assistance.
+                                    Sản phẩm này chưa có tệp tải xuống hoặc liên kết bên ngoài nào được cấu hình. Vui lòng liên hệ người bán để được hỗ trợ.
                                   </p>
                                   {order.shop_id && item.shop_post_id && (
                                     <Link
@@ -424,7 +424,7 @@ export default function OrderDetailPage() {
                                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                                       </svg>
-                                      View Product Page
+                                      Xem trang sản phẩm
                                     </Link>
                                   )}
                                 </div>
@@ -440,12 +440,12 @@ export default function OrderDetailPage() {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                             </svg>
                             <div>
-                              <p className="text-sm font-semibold text-yellow-800">Downloads Not Available Yet</p>
+                              <p className="text-sm font-semibold text-yellow-800">Tệp tải xuống chưa khả dụng</p>
                               <p className="text-sm text-yellow-700 mt-1">
-                                Your download files and external links will be available once the order is marked as <span className="font-semibold">Completed</span>.
+                                Tệp tải xuống và liên kết bên ngoài của bạn sẽ khả dụng khi đơn hàng được đánh dấu là <span className="font-semibold">Hoàn thành</span>.
                               </p>
                               <p className="text-xs text-yellow-600 mt-2">
-                                Current status: <span className="font-medium">{getStatusLabel(order.status)}</span>
+                                Trạng thái hiện tại: <span className="font-medium">{getStatusLabel(order.status)}</span>
                               </p>
                             </div>
                           </div>
@@ -457,7 +457,7 @@ export default function OrderDetailPage() {
               ))}
             </div>
           ) : (
-            <p className="text-gray-600">No items in this order</p>
+            <p className="text-gray-600">Không có sản phẩm trong đơn hàng này</p>
           )}
         </div>
 
@@ -465,7 +465,7 @@ export default function OrderDetailPage() {
         {order.shipping_address && (
           <div className="grid md:grid-cols-2 gap-6 mb-6">
             <div className="bg-grey-200 rounded-lg shadow-md p-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-4">Shipping Address</h3>
+              <h3 className="text-lg font-bold text-gray-900 mb-4">Địa chỉ giao hàng</h3>
               <div className="space-y-2 text-gray-700">
                 <p>
                   <span className="font-medium">{order.shipping_address.full_name}</span>
@@ -490,7 +490,7 @@ export default function OrderDetailPage() {
             {/* Billing Address */}
             {order.billing_address && JSON.stringify(order.billing_address) !== JSON.stringify(order.shipping_address) && (
               <div className="bg-grey-200 rounded-lg shadow-md p-6">
-                <h3 className="text-lg font-bold text-gray-900 mb-4">Billing Address</h3>
+                <h3 className="text-lg font-bold text-gray-900 mb-4">Địa chỉ thanh toán</h3>
                 <div className="space-y-2 text-gray-700">
                   <p>
                     <span className="font-medium">{order.billing_address.full_name}</span>
@@ -517,7 +517,7 @@ export default function OrderDetailPage() {
 
         {/* Order Timeline */}
         <div className="bg-grey-200 rounded-lg shadow-md p-6 mb-6">
-          <h3 className="text-lg font-bold text-gray-900 mb-4">Order Timeline</h3>
+          <h3 className="text-lg font-bold text-gray-900 mb-4">Tiến trình đơn hàng</h3>
           <div className="space-y-4">
             <div className="flex gap-4">
               <div className="flex flex-col items-center">
@@ -528,7 +528,7 @@ export default function OrderDetailPage() {
                 </div>
               </div>
               <div>
-                <p className="font-semibold text-gray-900">Order Placed</p>
+                <p className="font-semibold text-gray-900">Đã đặt hàng</p>
                 <p className="text-sm text-gray-600">{new Date(order.created_at).toLocaleString()}</p>
               </div>
             </div>
@@ -542,8 +542,8 @@ export default function OrderDetailPage() {
                 </div>
               </div>
               <div>
-                <p className="font-semibold text-gray-900">Processing</p>
-                <p className="text-sm text-gray-600">{order.status !== 'pending' ? 'In progress' : 'Waiting to process'}</p>
+                <p className="font-semibold text-gray-900">Đang xử lý</p>
+                <p className="text-sm text-gray-600">{order.status !== 'pending' ? 'Đang thực hiện' : 'Chờ xử lý'}</p>
               </div>
             </div>
 
@@ -556,8 +556,8 @@ export default function OrderDetailPage() {
                 </div>
               </div>
               <div>
-                <p className="font-semibold text-gray-900">Delivered</p>
-                <p className="text-sm text-gray-600">{order.status === 'completed' ? 'Order completed' : 'Pending delivery'}</p>
+                <p className="font-semibold text-gray-900">Đã giao hàng</p>
+                <p className="text-sm text-gray-600">{order.status === 'completed' ? 'Đơn hàng hoàn thành' : 'Chờ giao hàng'}</p>
               </div>
             </div>
           </div>
@@ -569,16 +569,16 @@ export default function OrderDetailPage() {
             href="/my-orders"
             className="flex-1 bg-blue-500 hover:bg-blue-700 text-gray-900 font-medium py-3 px-6 rounded text-center transition-colors"
           >
-            Back to Orders
+            Quay lại danh sách đơn hàng
           </Link>
           {order.status === 'pending' && (
             <button className="flex-1 bg-blue-500 hover:bg-blue-700 text-gray-900 font-medium py-3 px-6 rounded transition-colors">
-              Cancel Order
+              Hủy đơn hàng
             </button>
           )}
           {order.status === 'completed' && (
             <button className="flex-1 bg-blue-500 hover:bg-blue-700 text-gray-900 font-medium py-3 px-6 rounded transition-colors">
-              Return Item
+              Trả hàng
             </button>
           )}
         </div>

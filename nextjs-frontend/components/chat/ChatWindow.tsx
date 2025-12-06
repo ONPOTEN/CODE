@@ -2,10 +2,12 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
+import Image from 'next/image';
 import { chat, ChatMessage, Conversation } from '@/lib/api';
 import { useSocket } from '@/contexts/SocketContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatTime } from '@/lib/utils';
+import { uploadFileViaProxy } from '@/lib/s3-upload';
 import VideoCallButton from './VideoCallButton';
 import VideoChatModal from './VideoChatModal';
 import IncomingCallNotification from './IncomingCallNotification';
@@ -26,8 +28,13 @@ export default function ChatWindow({ conversation, onNewMessage }: ChatWindowPro
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
   const [isCallActive, setIsCallActive] = useState(false);
   const [incomingCallVisible, setIncomingCallVisible] = useState(false);
+  const [selectedImages, setSelectedImages] = useState<File[]>([]);
+  const [imagePreviewUrls, setImagePreviewUrls] = useState<string[]>([]);
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
+  const [isUploading, setIsUploading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const joinedRoomRef = useRef<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { socket, isConnected, onIncomingCall, offIncomingCall } = useSocket();
   const { user } = useAuth();
 
@@ -439,6 +446,163 @@ export default function ChatWindow({ conversation, onNewMessage }: ChatWindowPro
     }
   };
 
+  // Image attachment handlers
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const newFiles: File[] = [];
+    const newPreviewUrls: string[] = [];
+
+    Array.from(files).forEach((file) => {
+      if (file.type.startsWith('image/')) {
+        newFiles.push(file);
+        newPreviewUrls.push(URL.createObjectURL(file));
+      }
+    });
+
+    setSelectedImages((prev) => [...prev, ...newFiles]);
+    setImagePreviewUrls((prev) => [...prev, ...newPreviewUrls]);
+
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const removeSelectedImage = (index: number) => {
+    URL.revokeObjectURL(imagePreviewUrls[index]);
+    setSelectedImages((prev) => prev.filter((_, i) => i !== index));
+    setImagePreviewUrls((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const uploadImages = async (): Promise<string[]> => {
+    const uploadedUrls: string[] = [];
+
+    for (let i = 0; i < selectedImages.length; i++) {
+      const file = selectedImages[i];
+      try {
+        setUploadProgress(((i + 0.5) / selectedImages.length) * 100);
+
+        const fileUrl = await uploadFileViaProxy(file, (progress) => {
+          const overallProgress = ((i + progress / 100) / selectedImages.length) * 100;
+          setUploadProgress(overallProgress);
+        });
+
+        uploadedUrls.push(fileUrl);
+        setUploadProgress(((i + 1) / selectedImages.length) * 100);
+      } catch (error) {
+        console.error(`Failed to upload image ${file.name}:`, error);
+        throw error;
+      }
+    }
+
+    return uploadedUrls;
+  };
+
+  const handleSendWithImages = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if ((!newMessage.trim() && selectedImages.length === 0) || sending || isUploading) return;
+
+    const messageText = newMessage.trim();
+    setNewMessage('');
+
+    try {
+      setSending(true);
+
+      let imageUrls: string[] = [];
+
+      // Upload images first if any
+      if (selectedImages.length > 0) {
+        setIsUploading(true);
+        try {
+          imageUrls = await uploadImages();
+        } finally {
+          setIsUploading(false);
+          setUploadProgress(0);
+        }
+      }
+
+      // Build message content with image URLs
+      let finalMessage = messageText;
+      if (imageUrls.length > 0) {
+        const imageMarkup = imageUrls.map((url) => `[IMAGE]${url}[/IMAGE]`).join('\n');
+        finalMessage = messageText ? `${messageText}\n${imageMarkup}` : imageMarkup;
+      }
+
+      if (!finalMessage) return;
+
+      // Detect shop message room
+      const effectiveRoomName = conversation.room_name || roomName;
+      const isShopMessageRoom = effectiveRoomName && effectiveRoomName.includes('-shop');
+
+      if (isShopMessageRoom && user) {
+        const room = effectiveRoomName!;
+        const match = room.match(/^(\d+)-shop(\d+)$/);
+        const customerId = match ? parseInt(match[1], 10) : 0;
+        const shopIdNum = match ? parseInt(match[2], 10) : 0;
+
+        const response = await chat.sendShopMessage(
+          shopIdNum,
+          customerId,
+          user.id,
+          finalMessage,
+          conversation.shop_owner_id
+        );
+
+        if (socket && isConnected) {
+          socket.emit('shop:chat:message', {
+            shopId: shopIdNum,
+            shopName: '',
+            shopOwnerId: conversation.shop_owner_id,
+            senderId: user.id,
+            senderName: user?.display_name || user?.username || 'User',
+            message: finalMessage,
+            roomName: room,
+            timestamp: new Date().toISOString(),
+          });
+        }
+      } else if (conversation.id) {
+        await chat.sendMessage(conversation.id, finalMessage);
+      }
+
+      // Clear selected images after sending
+      imagePreviewUrls.forEach((url) => URL.revokeObjectURL(url));
+      setSelectedImages([]);
+      setImagePreviewUrls([]);
+
+      if (onNewMessage) {
+        onNewMessage();
+      }
+    } catch (error) {
+      console.error('Failed to send message:', error);
+      setNewMessage(messageText);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  // Helper function to check if message contains images
+  const isImageMessage = (message: string): boolean => {
+    return message.includes('[IMAGE]') && message.includes('[/IMAGE]');
+  };
+
+  // Helper function to parse message and extract images
+  const parseMessageContent = (message: string): { text: string; images: string[] } => {
+    const images: string[] = [];
+    const imageRegex = /\[IMAGE\](.*?)\[\/IMAGE\]/g;
+    let match;
+
+    while ((match = imageRegex.exec(message)) !== null) {
+      images.push(match[1]);
+    }
+
+    const text = message.replace(imageRegex, '').trim();
+
+    return { text, images };
+  };
+
   const handleVideoCallClick = () => {
     setIsVideoModalOpen(true);
     setIsCallActive(true);
@@ -466,7 +630,7 @@ export default function ChatWindow({ conversation, onNewMessage }: ChatWindowPro
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="text-gray-600">Loading messages...</div>
+        <div className="text-gray-600">Đang tải tin nhắn...</div>
       </div>
     );
   }
@@ -478,7 +642,7 @@ export default function ChatWindow({ conversation, onNewMessage }: ChatWindowPro
         <div className="flex-1">
           <h2 className="font-semibold text-lg">{conversation.other_user.name}</h2>
           <p className="text-sm text-gray-500">{conversation.other_user.email}</p>
-          <p className="text-xs text-gray-600 mt-1">Room: {roomName || conversation.room_name}</p>
+          <p className="text-xs text-gray-600 mt-1">Phòng: {roomName || conversation.room_name}</p>
         </div>
         <VideoCallButton
           conversation={conversation}
@@ -491,7 +655,7 @@ export default function ChatWindow({ conversation, onNewMessage }: ChatWindowPro
       <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-white">
         {messages.length === 0 ? (
           <div className="text-center text-gray-500 mt-8">
-            No messages yet. Start the conversation!
+            Chưa có tin nhắn. Hãy bắt đầu cuộc trò chuyện!
           </div>
         ) : (
           messages.map((message) => (
@@ -519,6 +683,37 @@ export default function ChatWindow({ conversation, onNewMessage }: ChatWindowPro
                       console.log('Invitation action completed');
                     }}
                   />
+                ) : isImageMessage(message.message) ? (
+                  (() => {
+                    const { text, images } = parseMessageContent(message.message);
+                    return (
+                      <>
+                        {text && <p className="break-words mb-2">{text}</p>}
+                        <div className="space-y-2">
+                          {images.map((imageUrl, idx) => (
+                            <a
+                              key={idx}
+                              href={imageUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="block"
+                            >
+                              <img
+                                src={imageUrl}
+                                alt={`Hình ảnh ${idx + 1}`}
+                                className="max-w-full rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                                style={{ maxHeight: '300px', objectFit: 'contain' }}
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.style.display = 'none';
+                                }}
+                              />
+                            </a>
+                          ))}
+                        </div>
+                      </>
+                    );
+                  })()
                 ) : (
                   <p className="break-words">{message.message}</p>
                 )}
@@ -529,7 +724,7 @@ export default function ChatWindow({ conversation, onNewMessage }: ChatWindowPro
                         message.is_mine ? 'text-blue-200' : 'text-gray-600'
                       }`}
                     >
-                      Room: {formatRoomName(message.host_room, message.remote_room)}
+                      Phòng: {formatRoomName(message.host_room, message.remote_room)}
                     </p>
                   )}
                   <p
@@ -549,28 +744,103 @@ export default function ChatWindow({ conversation, onNewMessage }: ChatWindowPro
 
       {/* Message Input */}
       <div className="p-4 border-t border-gray-300 bg-gray-50">
-        <form onSubmit={handleSendMessage} className="flex gap-2">
+        {/* Image Preview */}
+        {imagePreviewUrls.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-3 p-2 bg-white rounded-lg border border-gray-200">
+            {imagePreviewUrls.map((url, index) => (
+              <div key={index} className="relative group">
+                <img
+                  src={url}
+                  alt={`Preview ${index + 1}`}
+                  className="w-16 h-16 object-cover rounded-lg border border-gray-300"
+                />
+                <button
+                  type="button"
+                  onClick={() => removeSelectedImage(index)}
+                  className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Upload Progress */}
+        {isUploading && (
+          <div className="mb-3">
+            <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
+              <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+              <span>Đang tải ảnh lên... {Math.round(uploadProgress)}%</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div
+                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                style={{ width: `${uploadProgress}%` }}
+              />
+            </div>
+          </div>
+        )}
+
+        <form onSubmit={handleSendWithImages} className="flex gap-2">
+          {/* Hidden file input */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            onChange={handleImageSelect}
+            className="hidden"
+          />
+
+          {/* Image attachment button */}
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={sending || isUploading}
+            className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            title="Đính kèm hình ảnh"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5 text-gray-600"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+              />
+            </svg>
+          </button>
+
           <input
             type="text"
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
-            placeholder="Type a message..."
+            placeholder="Nhập tin nhắn..."
             className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            disabled={sending}
+            disabled={sending || isUploading}
           />
           <button
             type="submit"
-            disabled={sending || !newMessage.trim()}
-            className="px-6 py-2 bg-blue-600 text-gray-900 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+            disabled={sending || isUploading || (!newMessage.trim() && selectedImages.length === 0)}
+            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
           >
-            {sending ? 'Sending...' : 'Send'}
+            {sending || isUploading ? 'Đang gửi...' : 'Gửi'}
           </button>
         </form>
         {isConnected && (
-          <p className="text-xs text-green-600 mt-2">Connected</p>
+          <p className="text-xs text-green-600 mt-2">Đã kết nối</p>
         )}
         {!isConnected && (
-          <p className="text-xs text-yellow-600 mt-2">Reconnecting...</p>
+          <p className="text-xs text-yellow-600 mt-2">Đang kết nối lại...</p>
         )}
       </div>
 

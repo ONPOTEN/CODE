@@ -118,7 +118,7 @@ export default function MyShopsPage() {
         if (err instanceof ApiException) {
           setError(err.message);
         } else {
-          setError('Failed to load your shops');
+          setError('Không thể tải danh sách cửa hàng của bạn');
         }
         console.error('Error fetching my shops:', err);
       } finally {
@@ -172,17 +172,17 @@ export default function MyShopsPage() {
   }, [socket, isAuthenticated, user, onShopMessage, offShopMessage]);
 
   const handleDelete = async (shopId: number, shopName: string) => {
-    if (!confirm(`Are you sure you want to delete "${shopName}"?`)) return;
+    if (!confirm(`Bạn có chắc chắn muốn xóa "${shopName}" không?`)) return;
 
     try {
       await shops.delete(shopId);
       setMyShops((prev) => prev.filter((shop) => shop.id !== shopId));
-      alert('Shop deleted successfully!');
+      alert('Đã xóa cửa hàng thành công!');
     } catch (err) {
       if (err instanceof ApiException) {
-        alert(`Failed to delete shop: ${err.message}`);
+        alert(`Không thể xóa cửa hàng: ${err.message}`);
       } else {
-        alert('Failed to delete shop');
+        alert('Không thể xóa cửa hàng');
       }
       console.error('Delete error:', err);
     }
@@ -205,12 +205,12 @@ export default function MyShopsPage() {
       setPostsData((prev) => ({ ...prev, [shopId]: response.data }));
     } catch (err) {
       console.error('Error fetching shop posts:', err);
-      alert('Failed to load posts');
+      alert('Không thể tải bài viết');
     }
   };
 
   const handleDeletePost = async (shopId: number, postId: number, postTitle: string) => {
-    if (!confirm(`Are you sure you want to delete "${postTitle}"?`)) return;
+    if (!confirm(`Bạn có chắc chắn muốn xóa "${postTitle}" không?`)) return;
 
     try {
       await shopPostsApi.delete(shopId, postId);
@@ -218,12 +218,12 @@ export default function MyShopsPage() {
         ...prev,
         [shopId]: prev[shopId].filter((post: ShopPost) => post.id !== postId),
       }));
-      alert('Post deleted successfully!');
+      alert('Đã xóa bài viết thành công!');
     } catch (err) {
       if (err instanceof ApiException) {
-        alert(`Failed to delete post: ${err.message}`);
+        alert(`Không thể xóa bài viết: ${err.message}`);
       } else {
-        alert('Failed to delete post');
+        alert('Không thể xóa bài viết');
       }
       console.error('Delete post error:', err);
     }
@@ -231,7 +231,7 @@ export default function MyShopsPage() {
 
   const generateQRCode = async () => {
     if (!paymentFormData.bank_name || !paymentFormData.account_number) {
-      alert('Please fill in bank name and account number');
+      alert('Vui lòng điền tên ngân hàng và số tài khoản');
       return;
     }
 
@@ -283,7 +283,7 @@ export default function MyShopsPage() {
     } catch (err) {
       console.error('Error generating QR code:', err);
       const errorMsg = err instanceof Error ? err.message : 'Failed to generate QR code';
-      alert(`${errorMsg}. Please check bank details and try again.`);
+      alert(`${errorMsg}. Vui lòng kiểm tra thông tin ngân hàng và thử lại.`);
     } finally {
       setLoadingQR(false);
     }
@@ -342,7 +342,7 @@ export default function MyShopsPage() {
     if (!paymentSettingsModal) return;
 
     if (!paymentFormData.bank_name || !paymentFormData.account_number || !paymentFormData.account_holder) {
-      alert('Please fill in all required fields');
+      alert('Vui lòng điền đầy đủ các trường bắt buộc');
       return;
     }
 
@@ -367,7 +367,7 @@ export default function MyShopsPage() {
           [paymentSettingsModal.shopId]: paymentFormData,
         }));
 
-        alert('Payment settings saved successfully!');
+        alert('Đã lưu cài đặt thanh toán thành công!');
         closePaymentSettings();
       }
     } catch (err) {
@@ -397,8 +397,8 @@ export default function MyShopsPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">My Shops</h1>
-            <p className="text-gray-600 mt-2">Manage your shops and track their status</p>
+            <h1 className="text-3xl font-bold text-gray-900">Cửa hàng của tôi</h1>
+            <p className="text-gray-600 mt-2">Quản lý cửa hàng và theo dõi trạng thái</p>
           </div>
           <div className="flex gap-3">
             <Link
@@ -408,7 +408,7 @@ export default function MyShopsPage() {
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
               </svg>
-              All Shops
+              Tất cả cửa hàng
             </Link>
             <Link
               href="/shops/create"
@@ -417,7 +417,7 @@ export default function MyShopsPage() {
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
-              Create New Shop
+              Tạo cửa hàng mới
             </Link>
           </div>
         </div>
@@ -437,9 +437,9 @@ export default function MyShopsPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <div>
-                <h3 className="font-semibold text-yellow-900 mb-1">Shop(s) Pending Approval</h3>
+                <h3 className="font-semibold text-yellow-900 mb-1">Cửa hàng đang chờ duyệt</h3>
                 <p className="text-yellow-800 text-sm">
-                  Some of your shops are waiting for admin approval. They will appear in the public listing once approved.
+                  Một số cửa hàng của bạn đang chờ quản trị viên phê duyệt. Chúng sẽ xuất hiện trong danh sách công khai sau khi được duyệt.
                 </p>
               </div>
             </div>
@@ -452,8 +452,8 @@ export default function MyShopsPage() {
             <svg className="w-20 h-20 mx-auto mb-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
             </svg>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">No Shops Yet</h3>
-            <p className="text-gray-600 mb-6">You haven't created any shops. Start by creating your first shop!</p>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">Chưa có cửa hàng nào</h3>
+            <p className="text-gray-600 mb-6">Bạn chưa tạo cửa hàng nào. Hãy bắt đầu bằng cách tạo cửa hàng đầu tiên!</p>
             <Link
               href="/shops/create"
               className="inline-flex items-center px-6 py-3 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-lg font-medium transition-colors"
@@ -461,7 +461,7 @@ export default function MyShopsPage() {
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
-              Create Your First Shop
+              Tạo cửa hàng đầu tiên
             </Link>
           </div>
         ) : (
@@ -552,7 +552,7 @@ export default function MyShopsPage() {
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                           </svg>
-                          Customer Messages
+                          Tin nhắn khách hàng
                         </h4>
                         {messageStats[shop.id].unreadCount > 0 && (
                           <span className="inline-flex items-center justify-center px-2 py-1 text-xs font-bold text-gray-900 bg-grey-2000 rounded-full">
@@ -563,12 +563,12 @@ export default function MyShopsPage() {
 
                       <div className="space-y-2 text-sm">
                         <p className="text-blue-800">
-                          <span className="font-semibold">{messageStats[shop.id].totalMessages}</span> total message{messageStats[shop.id].totalMessages !== 1 ? 's' : ''}
+                          <span className="font-semibold">{messageStats[shop.id].totalMessages}</span> tin nhắn
                         </p>
 
                         {messageStats[shop.id].lastMessage && (
                           <div className="bg-grey-200 rounded p-3 border border-blue-200">
-                            <p className="text-xs text-gray-500 mb-1">Latest from {messageStats[shop.id].lastMessageSender}</p>
+                            <p className="text-xs text-gray-500 mb-1">Mới nhất từ {messageStats[shop.id].lastMessageSender}</p>
                             <p className="text-gray-700 text-sm italic">"{messageStats[shop.id].lastMessage}"</p>
                             {messageStats[shop.id].lastMessageTime && (
                               <p className="text-xs text-gray-500 mt-1">
@@ -582,7 +582,7 @@ export default function MyShopsPage() {
                           href={`/shop-messages/${shop.id}`}
                           className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700 font-medium text-sm mt-2"
                         >
-                          View all messages
+                          Xem tất cả tin nhắn
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                           </svg>
@@ -602,7 +602,7 @@ export default function MyShopsPage() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                       </svg>
-                      View Shop
+                      Xem cửa hàng
                     </Link>
 
                     {/* Create Content Actions */}
@@ -614,7 +614,7 @@ export default function MyShopsPage() {
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                         </svg>
-                        New Post
+                        Bài viết mới
                       </Link>
                       <Link
                         href={`/shops/${shop.id}/posts/create`}
@@ -623,7 +623,7 @@ export default function MyShopsPage() {
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                         </svg>
-                        New Page
+                        Trang mới
                       </Link>
                     </div>
 
@@ -635,7 +635,7 @@ export default function MyShopsPage() {
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                       </svg>
-                      {messageStats[shop.id]?.unreadCount > 0 ? `Messages (${messageStats[shop.id].unreadCount})` : 'Messages'}
+                      {messageStats[shop.id]?.unreadCount > 0 ? `Tin nhắn (${messageStats[shop.id].unreadCount})` : 'Tin nhắn'}
                     </Link>
 
                     {/* Orders Button */}
@@ -646,7 +646,7 @@ export default function MyShopsPage() {
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
                       </svg>
-                      Manage Orders
+                      Quản lý đơn hàng
                     </Link>
 
                     {/* Management Actions */}
@@ -658,8 +658,8 @@ export default function MyShopsPage() {
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                         </svg>
-                        <span className="hidden sm:inline">{expandedShopId === shop.id ? 'Hide Posts' : 'Manage Posts'}</span>
-                        <span className="sm:hidden">{expandedShopId === shop.id ? 'Hide' : 'Posts'}</span>
+                        <span className="hidden sm:inline">{expandedShopId === shop.id ? 'Ẩn bài viết' : 'Quản lý bài viết'}</span>
+                        <span className="sm:hidden">{expandedShopId === shop.id ? 'Ẩn' : 'Bài viết'}</span>
                       </button>
                       <button
                         onClick={() => openPaymentSettings(shop.id, shop.name)}
@@ -668,7 +668,7 @@ export default function MyShopsPage() {
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
-                        <span className="hidden sm:inline">Payment</span>
+                        <span className="hidden sm:inline">Thanh toán</span>
                       </button>
                       <Link
                         href={`/shops/${shop.id}/edit`}
@@ -677,7 +677,7 @@ export default function MyShopsPage() {
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                         </svg>
-                        <span className="hidden sm:inline">Edit</span>
+                        <span className="hidden sm:inline">Sửa</span>
                       </Link>
                       <button
                         onClick={() => handleDelete(shop.id, shop.name)}
@@ -695,7 +695,7 @@ export default function MyShopsPage() {
                 {expandedShopId === shop.id && (
                     <div className="px-6 pb-6 border-t border-gray-300">
                       <div className="mt-4">
-                        <h4 className="text-lg font-semibold text-gray-900 mb-3">Posts & Pages</h4>
+                        <h4 className="text-lg font-semibold text-gray-900 mb-3">Bài viết & Trang</h4>
                         {!postsData[shop.id] ? (
                           <div className="flex justify-center py-4">
                             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
@@ -705,7 +705,7 @@ export default function MyShopsPage() {
                             <svg className="w-12 h-12 mx-auto mb-3 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                             </svg>
-                            <p className="text-gray-500 mb-3">No posts yet</p>
+                            <p className="text-gray-500 mb-3">Chưa có bài viết nào</p>
                             <Link
                               href={`/shops/${shop.id}/posts/create`}
                               className="inline-flex items-center gap-1 px-4 py-2 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-lg font-medium transition-colors text-sm"
@@ -713,7 +713,7 @@ export default function MyShopsPage() {
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                               </svg>
-                              Create First Post
+                              Tạo bài viết đầu tiên
                             </Link>
                           </div>
                         ) : (
@@ -776,8 +776,8 @@ export default function MyShopsPage() {
             <div className="bg-grey-200 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
               {/* Modal Header */}
               <div className="sticky top-0 bg-gradient-to-r from-amber-600 to-amber-700 px-6 py-4 flex items-center justify-between">
-                <h2 className="text-xl font-bold text-gray-900">Payment Settings</h2>
-                <p className="text-amber-100 text-sm">Shop: {paymentSettingsModal.shopName}</p>
+                <h2 className="text-xl font-bold text-gray-900">Cài đặt thanh toán</h2>
+                <p className="text-amber-100 text-sm">Cửa hàng: {paymentSettingsModal.shopName}</p>
                 <button
                   onClick={closePaymentSettings}
                   className="text-gray-900 hover:bg-blue-700 p-2 rounded transition-colors"
@@ -792,15 +792,15 @@ export default function MyShopsPage() {
               <div className="p-6 space-y-6">
                 {/* Bank Details Form */}
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Bank Account Details</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">Thông tin tài khoản ngân hàng</h3>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Bank Name <span className="text-red-500">*</span>
+                      Tên ngân hàng <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
-                      placeholder="e.g., Vietcombank, Techcombank"
+                      placeholder="VD: Vietcombank, Techcombank"
                       value={paymentFormData.bank_name}
                       onChange={(e) => setPaymentFormData({ ...paymentFormData, bank_name: e.target.value })}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
@@ -809,11 +809,11 @@ export default function MyShopsPage() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Account Number <span className="text-red-500">*</span>
+                      Số tài khoản <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
-                      placeholder="Enter your bank account number"
+                      placeholder="Nhập số tài khoản ngân hàng của bạn"
                       value={paymentFormData.account_number}
                       onChange={(e) => setPaymentFormData({ ...paymentFormData, account_number: e.target.value })}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
@@ -822,11 +822,11 @@ export default function MyShopsPage() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Account Holder Name <span className="text-red-500">*</span>
+                      Tên chủ tài khoản <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
-                      placeholder="Name on the bank account"
+                      placeholder="Tên trên tài khoản ngân hàng"
                       value={paymentFormData.account_holder}
                       onChange={(e) => setPaymentFormData({ ...paymentFormData, account_holder: e.target.value })}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
@@ -835,11 +835,11 @@ export default function MyShopsPage() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      UPI ID (Optional)
+                      UPI ID (Tùy chọn)
                     </label>
                     <input
                       type="text"
-                      placeholder="UPI ID for mobile payments"
+                      placeholder="UPI ID cho thanh toán di động"
                       value={paymentFormData.upi_id || ''}
                       onChange={(e) => setPaymentFormData({ ...paymentFormData, upi_id: e.target.value })}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
@@ -848,11 +848,11 @@ export default function MyShopsPage() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Phone Number (Optional)
+                      Số điện thoại (Tùy chọn)
                     </label>
                     <input
                       type="text"
-                      placeholder="Contact phone number"
+                      placeholder="Số điện thoại liên hệ"
                       value={paymentFormData.phone || ''}
                       onChange={(e) => setPaymentFormData({ ...paymentFormData, phone: e.target.value })}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
@@ -863,7 +863,7 @@ export default function MyShopsPage() {
                 {/* QR Code Generation */}
                 <div className="space-y-4 border-t border-gray-300 pt-6">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-semibold text-gray-900">VietQR Code</h3>
+                    <h3 className="text-lg font-semibold text-gray-900">Mã VietQR</h3>
                     <button
                       onClick={generateQRCode}
                       disabled={loadingQR || !paymentFormData.bank_name || !paymentFormData.account_number}
@@ -874,14 +874,14 @@ export default function MyShopsPage() {
                           <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <circle cx="12" cy="12" r="1" fill="currentColor"></circle>
                           </svg>
-                          Generating...
+                          Đang tạo...
                         </>
                       ) : (
                         <>
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                           </svg>
-                          Generate QR Code
+                          Tạo mã QR
                         </>
                       )}
                     </button>
@@ -892,12 +892,12 @@ export default function MyShopsPage() {
                       <div className="border-4 border-amber-200 rounded-lg p-4 bg-grey-200">
                         <img
                           src={generatedQR}
-                          alt="VietQR Code"
+                          alt="Mã VietQR"
                           className="w-64 h-64 object-contain"
                         />
                       </div>
                       <p className="text-sm text-gray-600 text-center">
-                        QR code generated successfully. Display this code to receive payments via VietQR.
+                        Mã QR đã được tạo thành công. Hiển thị mã này để nhận thanh toán qua VietQR.
                       </p>
                     </div>
                   )}
@@ -906,10 +906,10 @@ export default function MyShopsPage() {
                 {/* Info Box */}
                 <div className="bg-grey-200 border border-blue-200 rounded-lg p-4 space-y-2">
                   <p className="text-sm text-blue-900">
-                    <strong>Note:</strong> VietQR allows customers to scan and transfer money directly to your bank account.
+                    <strong>Lưu ý:</strong> VietQR cho phép khách hàng quét và chuyển tiền trực tiếp vào tài khoản ngân hàng của bạn.
                   </p>
                   <p className="text-xs text-blue-800">
-                    Supported banks: vietcombank, techcombank, agribank, tpbank, mbbank, acb, bidv, vib, scb, sacombank, seabank, eximbank, vpbank, vietinbank and more.
+                    Ngân hàng hỗ trợ: Vietcombank, Techcombank, Agribank, TPBank, MB Bank, ACB, BIDV, VIB, SCB, Sacombank, SeABank, Eximbank, VPBank, VietinBank và nhiều hơn nữa.
                   </p>
                 </div>
               </div>
@@ -920,7 +920,7 @@ export default function MyShopsPage() {
                   onClick={closePaymentSettings}
                   className="px-6 py-2 border border-gray-300 hover:bg-blue-500 text-gray-700 rounded-lg font-medium transition-colors"
                 >
-                  Cancel
+                  Hủy
                 </button>
                 <button
                   onClick={savePaymentSettings}
@@ -929,7 +929,7 @@ export default function MyShopsPage() {
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  Save Settings
+                  Lưu cài đặt
                 </button>
               </div>
             </div>

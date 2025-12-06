@@ -382,6 +382,42 @@ export const auth = {
     return response;
   },
 
+  facebookLogin: async (accessToken: string): Promise<LoginResponse> => {
+    const response = await apiRequest<any>('/auth/facebook-login', {
+      method: 'POST',
+      body: JSON.stringify({ access_token: accessToken }),
+    });
+
+    // Store the token
+    if (response.token) {
+      tokenStorage.set(response.token);
+    }
+
+    return {
+      user: response.user,
+      token: response.token,
+      message: response.message,
+    };
+  },
+
+  googleLogin: async (accessToken: string): Promise<LoginResponse> => {
+    const response = await apiRequest<any>('/auth/google-login', {
+      method: 'POST',
+      body: JSON.stringify({ access_token: accessToken }),
+    });
+
+    // Store the token
+    if (response.token) {
+      tokenStorage.set(response.token);
+    }
+
+    return {
+      user: response.user,
+      token: response.token,
+      message: response.message,
+    };
+  },
+
   getToken: () => tokenStorage.get(),
 
   isAuthenticated: () => !!tokenStorage.get(),
@@ -425,6 +461,7 @@ export interface Post {
   visibility?: string;
   featured_image?: string;
   images?: PostImage[];
+  video?: string;  // Video URL (mp4)
   author?: User;  // Author information with avatar
   created_at: string;
   updated_at: string;
@@ -437,6 +474,7 @@ export interface CreatePostData {
   type?: 'post' | 'page' | 'product';
   status?: 'publish' | 'draft' | 'pending';
   images?: File[];
+  video?: File;
 }
 
 export interface UpdatePostData {
@@ -447,6 +485,8 @@ export interface UpdatePostData {
   status?: 'publish' | 'draft' | 'pending';
   visibility?: 'public' | 'private';
   images?: File[];
+  video?: File;
+  remove_video?: boolean;
   remove_images?: number[];
 }
 
@@ -492,8 +532,8 @@ export const posts = {
   },
 
   create: async (data: CreatePostData): Promise<CreatePostResponse> => {
-    // If there are images, use FormData
-    if (data.images && data.images.length > 0) {
+    // If there are images or video, use FormData
+    if ((data.images && data.images.length > 0) || data.video) {
       const formData = new FormData();
       formData.append('title', data.title);
       formData.append('content', data.content);
@@ -502,9 +542,16 @@ export const posts = {
       if (data.status) formData.append('status', data.status);
 
       // Append images
-      data.images.forEach((image) => {
-        formData.append('images[]', image);
-      });
+      if (data.images) {
+        data.images.forEach((image) => {
+          formData.append('images[]', image);
+        });
+      }
+
+      // Append video
+      if (data.video) {
+        formData.append('video', data.video);
+      }
 
       return apiRequestWithFiles<CreatePostResponse>('/posts', formData);
     }
@@ -517,8 +564,8 @@ export const posts = {
   },
 
   update: async (id: number, data: UpdatePostData): Promise<CreatePostResponse> => {
-    // If there are images or remove_images, use FormData
-    if ((data.images && data.images.length > 0) || (data.remove_images && data.remove_images.length > 0)) {
+    // If there are images, video, or remove_images, use FormData
+    if ((data.images && data.images.length > 0) || (data.remove_images && data.remove_images.length > 0) || data.video || data.remove_video) {
       const formData = new FormData();
       if (data.title) formData.append('title', data.title);
       if (data.content) formData.append('content', data.content);
@@ -531,6 +578,16 @@ export const posts = {
         data.images.forEach((image) => {
           formData.append('images[]', image);
         });
+      }
+
+      // Append video
+      if (data.video) {
+        formData.append('video', data.video);
+      }
+
+      // Append remove_video flag
+      if (data.remove_video) {
+        formData.append('remove_video', '1');
       }
 
       // Append images to remove
@@ -1869,6 +1926,294 @@ export const admin = {
       body: JSON.stringify({ users }),
     });
   },
+
+  // Get a single user by ID (admin only)
+  getUser: async (userId: number): Promise<{ user: User }> => {
+    return apiRequest(`/admin/users/${userId}`);
+  },
+
+  // Create a new user (admin only)
+  createUser: async (userData: {
+    username: string;
+    email: string;
+    password: string;
+    display_name?: string;
+    role?: string;
+    phone?: string;
+    hobby?: string;
+    company?: string;
+    occupation?: string;
+    main_occupation?: string;
+    location?: string;
+    profile_visibility?: string;
+  }): Promise<{ message: string; user: User }> => {
+    return apiRequest('/admin/users', {
+      method: 'POST',
+      body: JSON.stringify(userData),
+    });
+  },
+
+  // Update a user (admin only)
+  updateUser: async (userId: number, userData: {
+    username?: string;
+    email?: string;
+    password?: string;
+    display_name?: string;
+    role?: string;
+    phone?: string;
+    hobby?: string;
+    company?: string;
+    occupation?: string;
+    main_occupation?: string;
+    location?: string;
+    profile_visibility?: string;
+    email_public?: boolean;
+    hobby_public?: boolean;
+    company_public?: boolean;
+    occupation_public?: boolean;
+    main_occupation_public?: boolean;
+    location_public?: boolean;
+    phone_public?: boolean;
+  }): Promise<{ message: string; user: User }> => {
+    return apiRequest(`/admin/users/${userId}`, {
+      method: 'PUT',
+      body: JSON.stringify(userData),
+    });
+  },
+
+  // Delete a user (admin only)
+  deleteUser: async (userId: number): Promise<{ message: string; deleted_user: { id: number; username: string; email: string } }> => {
+    return apiRequest(`/admin/users/${userId}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // ==========================================
+  // Post Management (WpPost - Wall Posts)
+  // ==========================================
+
+  // Get all posts with filters (admin only)
+  getPosts: async (params?: {
+    status?: string;
+    type?: string;
+    author_id?: number;
+    search?: string;
+    order_by?: string;
+    order?: 'asc' | 'desc';
+    per_page?: number;
+    page?: number;
+  }): Promise<any> => {
+    const queryString = new URLSearchParams();
+    if (params?.status) queryString.append('status', params.status);
+    if (params?.type) queryString.append('type', params.type);
+    if (params?.author_id) queryString.append('author_id', params.author_id.toString());
+    if (params?.search) queryString.append('search', params.search);
+    if (params?.order_by) queryString.append('order_by', params.order_by);
+    if (params?.order) queryString.append('order', params.order);
+    if (params?.per_page) queryString.append('per_page', params.per_page.toString());
+    if (params?.page) queryString.append('page', params.page.toString());
+
+    return apiRequest(`/admin/posts?${queryString.toString()}`);
+  },
+
+  // Get a single post (admin only)
+  getPost: async (postId: number): Promise<any> => {
+    return apiRequest(`/admin/posts/${postId}`);
+  },
+
+  // Create a new post (admin only)
+  createPost: async (postData: {
+    title: string;
+    content: string;
+    excerpt?: string;
+    type?: 'post' | 'page' | 'product';
+    status?: 'publish' | 'draft' | 'pending' | 'trash';
+    author_id?: number;
+    wall_id?: number;
+  }): Promise<{ message: string; post: any }> => {
+    return apiRequest('/admin/posts', {
+      method: 'POST',
+      body: JSON.stringify(postData),
+    });
+  },
+
+  // Update a post (admin only)
+  updatePost: async (postId: number, postData: {
+    title?: string;
+    content?: string;
+    excerpt?: string;
+    type?: 'post' | 'page' | 'product';
+    status?: 'publish' | 'draft' | 'pending' | 'trash';
+    visibility?: 'public' | 'private';
+  }): Promise<{ message: string; post: any }> => {
+    return apiRequest(`/admin/posts/${postId}`, {
+      method: 'PUT',
+      body: JSON.stringify(postData),
+    });
+  },
+
+  // Delete a post (admin only)
+  deletePost: async (postId: number): Promise<{ message: string; deleted_post: { id: number; title: string } }> => {
+    return apiRequest(`/admin/posts/${postId}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // ==========================================
+  // Group Post Management
+  // ==========================================
+
+  // Get all group posts with filters (admin only)
+  getGroupPosts: async (params?: {
+    group_id?: number;
+    status?: string;
+    author_id?: number;
+    search?: string;
+    sort_by?: string;
+    order?: 'asc' | 'desc';
+    per_page?: number;
+    page?: number;
+  }): Promise<any> => {
+    const queryString = new URLSearchParams();
+    if (params?.group_id) queryString.append('group_id', params.group_id.toString());
+    if (params?.status) queryString.append('status', params.status);
+    if (params?.author_id) queryString.append('author_id', params.author_id.toString());
+    if (params?.search) queryString.append('search', params.search);
+    if (params?.sort_by) queryString.append('sort_by', params.sort_by);
+    if (params?.order) queryString.append('order', params.order);
+    if (params?.per_page) queryString.append('per_page', params.per_page.toString());
+    if (params?.page) queryString.append('page', params.page.toString());
+
+    return apiRequest(`/admin/group-posts?${queryString.toString()}`);
+  },
+
+  // Get a single group post (admin only)
+  getGroupPost: async (postId: number): Promise<any> => {
+    return apiRequest(`/admin/group-posts/${postId}`);
+  },
+
+  // Create a new group post (admin only)
+  createGroupPost: async (postData: {
+    group_id: number;
+    title: string;
+    content: string;
+    excerpt?: string;
+    status?: 'publish' | 'draft' | 'pending' | 'trash';
+    type?: 'post' | 'page';
+    author_id?: number;
+    visibility?: 'public' | 'private';
+  }): Promise<{ data: any; message: string }> => {
+    return apiRequest('/admin/group-posts', {
+      method: 'POST',
+      body: JSON.stringify(postData),
+    });
+  },
+
+  // Update a group post (admin only)
+  updateGroupPost: async (postId: number, postData: {
+    title?: string;
+    content?: string;
+    excerpt?: string;
+    status?: 'publish' | 'draft' | 'pending' | 'trash';
+    type?: 'post' | 'page';
+    visibility?: 'public' | 'private';
+  }): Promise<{ data: any; message: string }> => {
+    return apiRequest(`/admin/group-posts/${postId}`, {
+      method: 'PUT',
+      body: JSON.stringify(postData),
+    });
+  },
+
+  // Delete a group post (admin only)
+  deleteGroupPost: async (postId: number): Promise<{ message: string; deleted_post: { id: number; title: string; group_id: number } }> => {
+    return apiRequest(`/admin/group-posts/${postId}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // ==========================================
+  // Shop Post Management
+  // ==========================================
+
+  // Get all shop posts with filters (admin only)
+  getShopPosts: async (params?: {
+    shop_id?: number;
+    type?: 'post' | 'page';
+    status?: 'draft' | 'published';
+    user_id?: number;
+    search?: string;
+    order_by?: string;
+    order?: 'asc' | 'desc';
+    per_page?: number;
+    page?: number;
+  }): Promise<any> => {
+    const queryString = new URLSearchParams();
+    if (params?.shop_id) queryString.append('shop_id', params.shop_id.toString());
+    if (params?.type) queryString.append('type', params.type);
+    if (params?.status) queryString.append('status', params.status);
+    if (params?.user_id) queryString.append('user_id', params.user_id.toString());
+    if (params?.search) queryString.append('search', params.search);
+    if (params?.order_by) queryString.append('order_by', params.order_by);
+    if (params?.order) queryString.append('order', params.order);
+    if (params?.per_page) queryString.append('per_page', params.per_page.toString());
+    if (params?.page) queryString.append('page', params.page.toString());
+
+    return apiRequest(`/admin/shop-posts?${queryString.toString()}`);
+  },
+
+  // Get a single shop post (admin only)
+  getShopPost: async (postId: number): Promise<any> => {
+    return apiRequest(`/admin/shop-posts/${postId}`);
+  },
+
+  // Create a new shop post (admin only)
+  createShopPost: async (postData: {
+    shop_id: number;
+    category_id?: number | null;
+    title: string;
+    content?: string;
+    price_range?: string;
+    type: 'post' | 'page';
+    status: 'draft' | 'published';
+    user_id?: number;
+    product_type?: 'simple' | 'variant' | 'download';
+    price?: number;
+    sale_price?: number;
+    short_description?: string;
+    detail_description?: string;
+  }): Promise<{ message: string; post: any }> => {
+    return apiRequest('/admin/shop-posts', {
+      method: 'POST',
+      body: JSON.stringify(postData),
+    });
+  },
+
+  // Update a shop post (admin only)
+  updateShopPost: async (postId: number, postData: {
+    category_id?: number | null;
+    title?: string;
+    content?: string;
+    price_range?: string;
+    type?: 'post' | 'page';
+    status?: 'draft' | 'published';
+    product_type?: 'simple' | 'variant' | 'download';
+    price?: number;
+    sale_price?: number;
+    short_description?: string;
+    detail_description?: string;
+  }): Promise<{ message: string; post: any }> => {
+    return apiRequest(`/admin/shop-posts/${postId}`, {
+      method: 'PUT',
+      body: JSON.stringify(postData),
+    });
+  },
+
+  // Delete a shop post (admin only)
+  deleteShopPost: async (postId: number): Promise<{ message: string; deleted_post: { id: number; title: string; shop_id: number } }> => {
+    return apiRequest(`/admin/shop-posts/${postId}`, {
+      method: 'DELETE',
+    });
+  },
 };
 
 // Orders API
@@ -1897,7 +2242,7 @@ export const orders = {
     items: Array<{
       shop_post_id: number;
       quantity: number;
-      variant_options?: Record<string, string>;
+      variant_options?: Record<string, string> | null;
     }>;
     subtotal: number;
     tax?: number;
@@ -1986,6 +2331,135 @@ export const orders = {
   },
 };
 
+// Categories interfaces
+export interface Category {
+  id: number;
+  name: string;
+  slug: string;
+  description?: string;
+  parent_id?: number | null;
+  order: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  parent?: Category;
+  children?: Category[];
+  full_path?: string;
+  depth?: number;
+}
+
+export interface CreateCategoryData {
+  name: string;
+  slug?: string;
+  description?: string;
+  parent_id?: number | null;
+  order?: number;
+  is_active?: boolean;
+}
+
+export interface UpdateCategoryData {
+  name?: string;
+  slug?: string;
+  description?: string;
+  parent_id?: number | null;
+  order?: number;
+  is_active?: boolean;
+}
+
+// Categories API
+export const categories = {
+  // Get all categories (public)
+  getAll: async (params?: {
+    parent_id?: number | string;
+    search?: string;
+    tree?: boolean;
+    all?: boolean;
+    per_page?: number;
+    page?: number;
+  }): Promise<{ success: boolean; data: Category[]; meta?: any }> => {
+    const queryString = new URLSearchParams();
+    if (params?.parent_id !== undefined) queryString.append('parent_id', params.parent_id.toString());
+    if (params?.search) queryString.append('search', params.search);
+    if (params?.tree) queryString.append('tree', 'true');
+    if (params?.all) queryString.append('all', 'true');
+    if (params?.per_page) queryString.append('per_page', params.per_page.toString());
+    if (params?.page) queryString.append('page', params.page.toString());
+
+    const query = queryString.toString() ? `?${queryString}` : '';
+    return apiRequest(`/categories${query}`);
+  },
+
+  // Get a single category by ID
+  getById: async (id: number): Promise<{ success: boolean; data: Category }> => {
+    return apiRequest(`/categories/${id}`);
+  },
+
+  // Get a category by slug
+  getBySlug: async (slug: string): Promise<{ success: boolean; data: Category }> => {
+    return apiRequest(`/categories/slug/${slug}`);
+  },
+
+  // Admin: Get all categories with full details
+  adminGetAll: async (params?: {
+    parent_id?: number | string;
+    search?: string;
+    is_active?: boolean;
+    tree?: boolean;
+    per_page?: number;
+    page?: number;
+  }): Promise<{ success: boolean; data: Category[]; meta?: any }> => {
+    const queryString = new URLSearchParams();
+    if (params?.parent_id !== undefined) queryString.append('parent_id', params.parent_id.toString());
+    if (params?.search) queryString.append('search', params.search);
+    if (params?.is_active !== undefined) queryString.append('is_active', params.is_active.toString());
+    if (params?.tree) queryString.append('tree', 'true');
+    if (params?.per_page) queryString.append('per_page', params.per_page.toString());
+    if (params?.page) queryString.append('page', params.page.toString());
+
+    const query = queryString.toString() ? `?${queryString}` : '';
+    return apiRequest(`/admin/categories${query}`);
+  },
+
+  // Admin: Create a new category
+  create: async (data: CreateCategoryData): Promise<{ success: boolean; message: string; data: Category }> => {
+    return apiRequest('/admin/categories', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  // Admin: Update a category
+  update: async (id: number, data: UpdateCategoryData): Promise<{ success: boolean; message: string; data: Category }> => {
+    return apiRequest(`/admin/categories/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  // Admin: Delete a category
+  delete: async (id: number): Promise<{ success: boolean; message: string }> => {
+    return apiRequest(`/admin/categories/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // Admin: Reorder categories
+  reorder: async (categoriesOrder: { id: number; order: number; parent_id?: number | null }[]): Promise<{ success: boolean; message: string }> => {
+    return apiRequest('/admin/categories/reorder', {
+      method: 'POST',
+      body: JSON.stringify({ categories: categoriesOrder }),
+    });
+  },
+
+  // Admin: Generate unique slug from name
+  generateSlug: async (name: string, excludeId?: number): Promise<{ success: boolean; slug: string }> => {
+    return apiRequest('/admin/categories/generate-slug', {
+      method: 'POST',
+      body: JSON.stringify({ name, exclude_id: excludeId }),
+    });
+  },
+};
+
 export default {
   auth,
   posts,
@@ -1998,4 +2472,5 @@ export default {
   shopPosts,
   orders,
   admin,
+  categories,
 };

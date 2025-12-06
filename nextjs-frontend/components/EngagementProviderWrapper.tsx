@@ -2,6 +2,7 @@
 
 import { ReactNode, useEffect, useState } from 'react';
 import { EngagementProvider } from '@/contexts/EngagementContext';
+import { ShopPostEngagementProvider } from '@/contexts/ShopPostEngagementContext';
 
 export function EngagementProviderWrapper({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string>('');
@@ -42,7 +43,9 @@ export function EngagementProviderWrapper({ children }: { children: ReactNode })
 
   return (
     <EngagementProvider token={token}>
-      {children}
+      <ShopPostEngagementProvider token={token}>
+        {children}
+      </ShopPostEngagementProvider>
     </EngagementProvider>
   );
 }

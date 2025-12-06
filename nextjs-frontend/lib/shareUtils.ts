@@ -124,6 +124,62 @@ export function getPostShareUrl(postId: number | string, postSlug?: string): str
 }
 
 /**
+ * Get the share URL for a shop post
+ */
+export function getShopPostShareUrl(shopId: number | string, postId: number | string): string {
+  const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://centimet2.com';
+  return `${baseUrl}/shops/${shopId}/posts/${postId}`;
+}
+
+/**
+ * Handle social media share for shop posts
+ */
+export async function handleShopPostShare(
+  platform: string,
+  shopId: number,
+  postId: number,
+  postTitle: string,
+  postText?: string
+): Promise<void> {
+  const shareUrl = getShopPostShareUrl(shopId, postId);
+
+  const options: ShareOptions = {
+    url: shareUrl,
+    title: postTitle,
+    text: postText || postTitle,
+    hashtags: ['centimet2', 'marketplace'],
+  };
+
+  switch (platform.toLowerCase()) {
+    case 'facebook':
+      shareToFacebook(options);
+      break;
+    case 'twitter':
+      shareToTwitter(options);
+      break;
+    case 'whatsapp':
+      shareToWhatsApp(options);
+      break;
+    case 'linkedin':
+      shareToLinkedIn(options);
+      break;
+    case 'email':
+      shareViaEmail(options);
+      break;
+    case 'direct':
+      const copied = await copyDirectLink(shareUrl);
+      if (copied) {
+        console.log('Link copied to clipboard!');
+      } else {
+        console.error('Failed to copy link');
+      }
+      break;
+    default:
+      console.warn(`Unknown share platform: ${platform}`);
+  }
+}
+
+/**
  * Handle social media share with appropriate platform
  */
 export async function handleSocialShare(

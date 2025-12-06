@@ -48,21 +48,21 @@ function CommentItem({
       setIsEditing(false);
     } catch (error) {
       console.error('Failed to update comment:', error);
-      alert('Failed to update comment');
+      alert('Không thể cập nhật bình luận');
     } finally {
       setIsSaving(false);
     }
   };
 
   const handleDelete = async () => {
-    if (!confirm('Are you sure you want to delete this comment?')) return;
+    if (!confirm('Bạn có chắc muốn xóa bình luận này?')) return;
 
     try {
       setIsDeleting(true);
       await deleteComment(postId, comment.id);
     } catch (error) {
       console.error('Failed to delete comment:', error);
-      alert('Failed to delete comment');
+      alert('Không thể xóa bình luận');
     } finally {
       setIsDeleting(false);
     }
@@ -110,7 +110,7 @@ function CommentItem({
           </span>
           {!comment.approved && (
             <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded">
-              Pending
+              Chờ duyệt
             </span>
           )}
         </div>
@@ -130,7 +130,7 @@ function CommentItem({
                 disabled={isSaving || !editContent.trim()}
                 className="px-3 py-1 bg-blue-500 text-gray-900 rounded text-sm hover:bg-blue-600 disabled:opacity-50"
               >
-                {isSaving ? 'Saving...' : 'Save'}
+                {isSaving ? 'Đang lưu...' : 'Lưu'}
               </button>
               <button
                 onClick={() => {
@@ -139,7 +139,7 @@ function CommentItem({
                 }}
                 className="px-3 py-1 bg-gray-300 text-gray-700 rounded text-sm hover:bg-gray-400"
               >
-                Cancel
+                Hủy
               </button>
             </div>
           </div>
@@ -154,7 +154,7 @@ function CommentItem({
               onClick={() => onReplyClick(comment.id)}
               className="text-xs text-blue-500 hover:text-blue-700 font-medium"
             >
-              Reply
+              Trả lời
             </button>
             {isAuthor && (
               <>
@@ -162,14 +162,14 @@ function CommentItem({
                   onClick={() => setIsEditing(true)}
                   className="text-xs text-blue-500 hover:text-blue-700 font-medium"
                 >
-                  Edit
+                  Sửa
                 </button>
                 <button
                   onClick={handleDelete}
                   disabled={isDeleting}
                   className="text-xs text-red-500 hover:text-red-700 font-medium disabled:opacity-50"
                 >
-                  {isDeleting ? 'Deleting...' : 'Delete'}
+                  {isDeleting ? 'Đang xóa...' : 'Xóa'}
                 </button>
               </>
             )}
@@ -239,7 +239,7 @@ export function CommentsSection({
     }
 
     if (!commentText.trim()) {
-      alert('Please enter a comment');
+      alert('Vui lòng nhập bình luận');
       return;
     }
 
@@ -250,7 +250,7 @@ export function CommentsSection({
       setReplyingTo(null);
     } catch (error) {
       console.error('Failed to post comment:', error);
-      alert(error instanceof Error ? error.message : 'Failed to post comment');
+      alert(error instanceof Error ? error.message : 'Không thể đăng bình luận');
     } finally {
       setIsPosting(false);
     }
@@ -263,7 +263,7 @@ export function CommentsSection({
   return (
     <div id={`comments-section-${postId}`} className={`flex flex-col h-full ${className}`}>
       <h3 className="text-lg font-semibold text-gray-900 mb-4">
-        Comments ({postComments.length})
+        Bình luận ({postComments.length})
       </h3>
 
       {/* Comments List - Scrollable with bottom padding for fixed form */}
@@ -276,11 +276,11 @@ export function CommentsSection({
         {isLoadingComments && postComments.length === 0 ? (
           <div className="text-center py-8">
             <div className="inline-block animate-spin">⏳</div>
-            <p className="mt-2 text-gray-600">Loading comments...</p>
+            <p className="mt-2 text-gray-600">Đang tải bình luận...</p>
           </div>
         ) : postComments.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
-            <p>No comments yet. Be the first to comment!</p>
+            <p>Chưa có bình luận nào. Hãy là người đầu tiên bình luận!</p>
           </div>
         ) : (
           topLevelComments.map((comment) => (
@@ -320,32 +320,33 @@ export function CommentsSection({
           {replyingTo !== null && (
             <div className="flex items-center gap-2 p-2 bg-blue-50 rounded border border-blue-200">
               <span className="text-sm text-blue-700">
-                Replying to comment #{replyingTo}
+                Đang trả lời bình luận #{replyingTo}
               </span>
               <button
                 onClick={() => setReplyingTo(null)}
                 className="text-sm text-blue-500 hover:text-blue-700 underline"
               >
-                Cancel
+                Hủy
               </button>
             </div>
           )}
 
           <div className="max-w-7xl mx-auto">
-            <div className="flex gap-2">
+            <div className="flex gap-2 items-center">
               <textarea
                 value={commentText}
                 onChange={(e) => setCommentText(e.target.value)}
-                placeholder="Write a comment..."
-                className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                rows={3}
+                placeholder="Viết bình luận..."
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none text-sm"
+                rows={1}
+                style={{ minHeight: '40px', maxHeight: '80px' }}
               />
 
               <button
                 onClick={handlePostComment}
                 disabled={isPosting || !commentText.trim()}
-                className="px-4 py-3 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-600 disabled:opacity-50 font-medium text-sm flex items-center gap-2 flex-shrink-0 h-fit"
-                title="Post comment"
+                className="px-3 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-600 disabled:opacity-50 font-medium text-sm flex items-center gap-2 flex-shrink-0"
+                title="Đăng bình luận"
               >
                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M16.6915026,12.4744748 L3.50612381,13.2599618 C3.19218622,13.2599618 3.03521743,13.4170592 3.03521743,13.5741566 L1.15159189,20.0151496 C0.8376543,20.8006365 0.99,21.89 1.77946707,22.52 C2.41,22.99 3.50612381,23.1 4.13399899,22.8429026 L21.714504,14.0454487 C22.6563168,13.5741566 23.1272231,12.6315722 22.9702544,11.6889879 L4.13399899,1.16151496 C3.34915502,0.9 2.40734225,1.00636533 1.77946707,1.4776575 C0.994623095,2.10604706 0.837654326,3.0486314 1.15159189,3.99047963 L3.03521743,10.4314727 C3.03521743,10.5885701 3.34915502,10.7456675 3.50612381,10.7456675 L16.6915026,11.5311544 C16.6915026,11.5311544 17.1624089,11.5311544 17.1624089,12.0024465 C17.1624089,12.4744748 16.6915026,12.4744748 16.6915026,12.4744748 Z"/>
@@ -360,7 +361,7 @@ export function CommentsSection({
               <button
                 type="button"
                 className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                title="Add photo"
+                title="Thêm ảnh"
               >
                 <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
@@ -372,7 +373,7 @@ export function CommentsSection({
               <button
                 type="button"
                 className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                title="Add emoji"
+                title="Thêm biểu tượng cảm xúc"
               >
                 <svg className="w-5 h-5 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -383,7 +384,7 @@ export function CommentsSection({
               <button
                 type="button"
                 className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                title="Add GIF"
+                title="Thêm GIF"
               >
                 <svg className="w-5 h-5 text-purple-500" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9.5 8.5c0 .8-.7 1.5-1.5 1.5H7v2H5.5V9H8c.8 0 1.5.7 1.5 1.5v1zm5 2c0 .8-.7 1.5-1.5 1.5h-2.5V9H13c.8 0 1.5.7 1.5 1.5v3zm4-3H17v1h1.5v1.5H17v2h-1.5V9h3v1.5zM8 10.5h-.5v1H8v-1zm5 0h-.5v3h.5v-3z"/>
@@ -394,7 +395,7 @@ export function CommentsSection({
               <button
                 type="button"
                 className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                title="Add sticker"
+                title="Thêm nhãn dán"
               >
                 <svg className="w-5 h-5 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -405,7 +406,7 @@ export function CommentsSection({
               <button
                 type="button"
                 className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                title="Mention someone"
+                title="Nhắc đến ai đó"
               >
                 <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
@@ -417,12 +418,12 @@ export function CommentsSection({
       ) : (
         <div className="fixed bottom-[50px] left-0 right-0 bg-blue-50 border-t border-blue-200 shadow-lg z-50 p-4">
           <div className="max-w-7xl mx-auto">
-            <p className="text-blue-700 text-sm mb-3">Sign in to comment on this post</p>
+            <p className="text-blue-700 text-sm mb-3">Đăng nhập để bình luận bài viết này</p>
             <button
               onClick={() => router.push('/login')}
               className="px-6 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-600 font-medium text-sm"
             >
-              Login to Comment
+              Đăng nhập để bình luận
             </button>
           </div>
         </div>

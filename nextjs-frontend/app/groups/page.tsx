@@ -48,7 +48,7 @@ export default function GroupsPage() {
       }
     } catch (err) {
       console.error('Error fetching groups:', err);
-      setError('Failed to load groups');
+      setError('Không thể tải danh sách nhóm');
     } finally {
       setLoading(false);
     }
@@ -60,12 +60,12 @@ export default function GroupsPage() {
       <div className="bg-grey-200 border-b border-gray-300">
         <div className="max-w-6xl mx-auto px-4 py-8">
           <div className="flex items-center justify-between mb-6">
-            <h1 className="text-3xl font-bold text-gray-900">Groups</h1>
+            <h1 className="text-3xl font-bold text-gray-900">Nhóm</h1>
             <Link
               href="/groups/create"
               className="px-4 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-700 font-medium transition-colors"
             >
-              Create Group
+              Tạo nhóm
             </Link>
           </div>
 
@@ -74,7 +74,7 @@ export default function GroupsPage() {
             {/* Search */}
             <input
               type="text"
-              placeholder="Search groups by name or description..."
+              placeholder="Tìm kiếm nhóm theo tên hoặc mô tả..."
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value);
@@ -87,7 +87,7 @@ export default function GroupsPage() {
             <div className="flex gap-4 flex-wrap">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Visibility
+                  Hiển thị
                 </label>
                 <select
                   value={filterVisibility}
@@ -97,15 +97,15 @@ export default function GroupsPage() {
                   }}
                   className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="all">All</option>
-                  <option value="public">Public</option>
-                  <option value="private">Private</option>
+                  <option value="all">Tất cả</option>
+                  <option value="public">Công khai</option>
+                  <option value="private">Riêng tư</option>
                 </select>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Status
+                  Trạng thái
                 </label>
                 <select
                   value={filterStatus}
@@ -115,9 +115,9 @@ export default function GroupsPage() {
                   }}
                   className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="all">All</option>
-                  <option value="active">Active</option>
-                  <option value="inactive">Inactive</option>
+                  <option value="all">Tất cả</option>
+                  <option value="active">Hoạt động</option>
+                  <option value="inactive">Không hoạt động</option>
                 </select>
               </div>
             </div>
@@ -152,7 +152,7 @@ export default function GroupsPage() {
                 d="M17 20h5v-2a3 3 0 00-5.856-1.487M15 10a3 3 0 11-6 0 3 3 0 016 0zM15 20H9m6 0h6"
               />
             </svg>
-            <p className="text-gray-500 text-lg">No groups found</p>
+            <p className="text-gray-500 text-lg">Không tìm thấy nhóm nào</p>
           </div>
         ) : (
           <>
@@ -171,7 +171,7 @@ export default function GroupsPage() {
                   disabled={currentPage === 1}
                   className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Previous
+                  Trước
                 </button>
 
                 <div className="flex gap-1">
@@ -195,7 +195,7 @@ export default function GroupsPage() {
                   disabled={currentPage === totalPages}
                   className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Next
+                  Sau
                 </button>
               </div>
             )}

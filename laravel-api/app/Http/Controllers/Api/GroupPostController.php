@@ -1075,4 +1075,220 @@ class GroupPostController extends Controller
             ], 400);
         }
     }
+
+    // ============================================
+    // ADMIN ONLY METHODS
+    // ============================================
+
+    /**
+     * ADMIN ONLY: Get all group posts with filtering and pagination
+     */
+    public function adminIndex(Request $request): JsonResponse
+    {
+        $perPage = $request->input('per_page', 15);
+
+        $query = GroupPost::with(['group', 'author', 'meta']);
+
+        // Filter by group
+        if ($request->has('group_id')) {
+            $query->where('group_id', $request->input('group_id'));
+        }
+
+        // Filter by status
+        if ($request->has('status')) {
+            $query->where('post_status', $request->input('status'));
+        }
+
+        // Filter by author
+        if ($request->has('author_id')) {
+            $query->where('post_author', $request->input('author_id'));
+        }
+
+        // Search
+        if ($request->has('search')) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('post_title', 'like', "%{$search}%")
+                  ->orWhere('post_content', 'like', "%{$search}%");
+            });
+        }
+
+        // Order by
+        $sortBy = $request->input('sort_by', 'post_date');
+        $order = $request->input('order', 'desc');
+        $query->orderBy($sortBy, $order);
+
+        $posts = $query->paginate($perPage);
+
+        return response()->json([
+            'data' => GroupPostResource::collection($posts->items()),
+            'pagination' => [
+                'total' => $posts->total(),
+                'per_page' => $posts->perPage(),
+                'current_page' => $posts->currentPage(),
+                'last_page' => $posts->lastPage(),
+                'from' => $posts->firstItem(),
+                'to' => $posts->lastItem(),
+            ],
+        ]);
+    }
+
+    /**
+     * ADMIN ONLY: Get a single group post by ID
+     */
+    public function adminShow($id): JsonResponse
+    {
+        $post = GroupPost::with(['group', 'author', 'meta'])->findOrFail($id);
+
+        return response()->json([
+            'data' => new GroupPostResource($post),
+        ]);
+    }
+
+    /**
+     * ADMIN ONLY: Create a new group post
+     */
+    public function adminStore(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'group_id' => 'required|exists:groups,group_id',
+            'title' => 'required|string|max:255',
+            'content' => 'required|string',
+            'excerpt' => 'nullable|string',
+            'status' => 'nullable|string|in:publish,draft,pending,trash',
+            'type' => 'nullable|string|in:post,page',
+            'author_id' => 'nullable|integer|exists:wp_users,ID',
+            'visibility' => 'nullable|string|in:public,private',
+        ]);
+
+        $user = $request->user();
+        $authorId = $validated['author_id'] ?? $user->ID;
+
+        $post = GroupPost::create([
+            'group_id' => $validated['group_id'],
+            'post_author' => $authorId,
+            'post_date' => now(),
+            'post_date_gmt' => now(),
+            'post_modified' => now(),
+            'post_modified_gmt' => now(),
+            'post_title' => $validated['title'],
+            'post_content' => $validated['content'],
+            'post_excerpt' => $validated['excerpt'] ?? '',
+            'post_status' => $validated['status'] ?? 'publish',
+            'post_type' => $validated['type'] ?? 'post',
+            'comment_status' => 'closed',
+            'ping_status' => 'closed',
+            'visibility' => $validated['visibility'] ?? 'public',
+            'comment_count' => 0,
+        ]);
+
+        \Log::info('[GroupPostController::adminStore] Group post created by admin', [
+            'created_by' => $user->ID,
+            'post_id' => $post->id,
+            'group_id' => $post->group_id,
+            'title' => $post->post_title,
+        ]);
+
+        return response()->json([
+            'data' => new GroupPostResource($post->load(['group', 'author'])),
+            'message' => 'Group post created successfully',
+        ], 201);
+    }
+
+    /**
+     * ADMIN ONLY: Update any group post
+     */
+    public function adminUpdate(Request $request, $id): JsonResponse
+    {
+        $post = GroupPost::findOrFail($id);
+
+        $validated = $request->validate([
+            'title' => 'nullable|string|max:255',
+            'content' => 'nullable|string',
+            'excerpt' => 'nullable|string',
+            'status' => 'nullable|string|in:publish,draft,pending,trash',
+            'type' => 'nullable|string|in:post,page',
+            'visibility' => 'nullable|string|in:public,private',
+        ]);
+
+        // Update fields
+        $post->update([
+            'post_title' => $validated['title'] ?? $post->post_title,
+            'post_content' => $validated['content'] ?? $post->post_content,
+            'post_excerpt' => $validated['excerpt'] ?? $post->post_excerpt,
+            'post_status' => $validated['status'] ?? $post->post_status,
+            'post_type' => $validated['type'] ?? $post->post_type,
+            'visibility' => $validated['visibility'] ?? $post->visibility,
+            'post_modified' => now(),
+            'post_modified_gmt' => now(),
+        ]);
+
+        \Log::info('[GroupPostController::adminUpdate] Group post updated by admin', [
+            'updated_by' => $request->user()->ID,
+            'post_id' => $post->id,
+            'fields_updated' => array_keys($validated),
+        ]);
+
+        return response()->json([
+            'data' => new GroupPostResource($post->load(['group', 'author'])),
+            'message' => 'Group post updated successfully',
+        ]);
+    }
+
+    /**
+     * ADMIN ONLY: Delete any group post
+     */
+    public function adminDestroy(Request $request, $id): JsonResponse
+    {
+        $post = GroupPost::findOrFail($id);
+
+        $title = $post->post_title;
+        $groupId = $post->group_id;
+        $authorId = $post->post_author;
+
+        // Delete gallery images from S3
+        $images = $post->meta()->where('meta_key', 'image')->get();
+        foreach ($images as $image) {
+            \Storage::disk('s3')->delete($image->meta_value);
+        }
+
+        // Delete featured image from S3
+        $featuredImage = $post->meta()->where('meta_key', 'featured_image')->first();
+        if ($featuredImage) {
+            \Storage::disk('s3')->delete($featuredImage->meta_value);
+        }
+
+        // Delete meta
+        $post->meta()->delete();
+
+        // Delete likes and dislikes
+        GroupPostLike::where('post_id', $post->id)->delete();
+        GroupPostDislike::where('post_id', $post->id)->delete();
+
+        // Delete comments
+        GroupComment::where('post_id', $post->id)->delete();
+
+        // Delete share walls
+        ShareWall::where('group_post_id', $post->id)->delete();
+
+        // Delete post
+        $post->delete();
+
+        \Log::info('[GroupPostController::adminDestroy] Group post deleted by admin', [
+            'deleted_by' => $request->user()->ID,
+            'post_id' => $id,
+            'title' => $title,
+            'group_id' => $groupId,
+            'original_author_id' => $authorId,
+        ]);
+
+        return response()->json([
+            'message' => 'Group post deleted successfully',
+            'deleted_post' => [
+                'id' => $id,
+                'title' => $title,
+                'group_id' => $groupId,
+            ],
+        ]);
+    }
 }

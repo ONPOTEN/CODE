@@ -56,19 +56,19 @@ export default function FirebasePhoneLoginPage() {
     e.preventDefault();
 
     if (!phoneNumber) {
-      alert('Please enter phone number');
+      alert('Vui lòng nhập số điện thoại');
       return;
     }
 
     // Validate and normalize phone number (auto-adds +84 prefix)
     const validation = validateFirebasePhoneNumber(phoneNumber);
     if (!validation.valid) {
-      alert(validation.error || 'Invalid phone number');
+      alert(validation.error || 'Số điện thoại không hợp lệ');
       return;
     }
 
     if (!recaptchaVerifier) {
-      alert('reCAPTCHA is still initializing. Please wait a moment and try again.');
+      alert('reCAPTCHA đang khởi tạo. Vui lòng đợi một chút và thử lại.');
       return;
     }
 
@@ -82,11 +82,11 @@ export default function FirebasePhoneLoginPage() {
       console.error('Phone verification failed:', err);
       // Handle specific Firebase errors
       if (err?.code === 'auth/captcha-check-failed') {
-        alert('reCAPTCHA verification failed. Please ensure your domain is authorized in Firebase Console. Make sure your domain (e.g., localhost, yourdomain.com) is added to Firebase Authentication > Settings > Authorized Domains.');
+        alert('Xác thực reCAPTCHA thất bại. Vui lòng đảm bảo tên miền của bạn được ủy quyền trong Firebase Console. Hãy chắc chắn tên miền (ví dụ: localhost, yourdomain.com) đã được thêm vào Firebase Authentication > Settings > Authorized Domains.');
       } else if (err?.code === 'auth/invalid-phone-number') {
-        alert('Invalid phone number. Expected 10 digits (e.g., 0867631313 or 867631313). The +84 prefix will be added automatically.');
+        alert('Số điện thoại không hợp lệ. Yêu cầu 10 chữ số (ví dụ: 0867631313 hoặc 867631313). Tiền tố +84 sẽ được thêm tự động.');
       } else {
-        alert(err?.message || 'Phone verification failed. Please try again.');
+        alert(err?.message || 'Xác thực số điện thoại thất bại. Vui lòng thử lại.');
       }
     }
   };
@@ -95,7 +95,7 @@ export default function FirebasePhoneLoginPage() {
     e.preventDefault();
 
     if (!smsCode || !confirmationResult) {
-      alert('Please enter SMS code');
+      alert('Vui lòng nhập mã SMS');
       return;
     }
 
@@ -113,7 +113,7 @@ export default function FirebasePhoneLoginPage() {
       router.push(`/firebase-phone-password-setup?${params.toString()}`);
     } catch (err: any) {
       console.error('[Firebase Phone Login] Code verification failed:', err);
-      alert(err?.message || 'Verification failed. Please try again.');
+      alert(err?.message || 'Xác thực thất bại. Vui lòng thử lại.');
     }
   };
 
@@ -123,12 +123,12 @@ export default function FirebasePhoneLoginPage() {
         {/* Header */}
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Sign in with phone
+            Đăng nhập bằng số điện thoại
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Back to{' '}
+            Quay lại{' '}
             <Link href="/firebase-login" className="font-medium text-blue-600 hover:text-blue-500">
-              login
+              đăng nhập
             </Link>
           </p>
         </div>
@@ -146,7 +146,7 @@ export default function FirebasePhoneLoginPage() {
             {/* Phone Number */}
             <div>
               <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700">
-                Phone Number
+                Số điện thoại
               </label>
               <input
                 id="phoneNumber"
@@ -159,7 +159,7 @@ export default function FirebasePhoneLoginPage() {
                 onChange={(e) => setPhoneNumber(e.target.value)}
                 disabled={isLoading}
               />
-              <p className="mt-1 text-xs text-gray-500">Include country code (e.g., +1 for USA)</p>
+              <p className="mt-1 text-xs text-gray-500">Bao gồm mã quốc gia (ví dụ: +84 cho Việt Nam)</p>
             </div>
 
             {/* reCAPTCHA Container */}
@@ -171,7 +171,7 @@ export default function FirebasePhoneLoginPage() {
               disabled={isLoading}
               className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-gray-900 bg-blue-500 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoading ? 'Sending code...' : 'Send verification code'}
+              {isLoading ? 'Đang gửi mã...' : 'Gửi mã xác thực'}
             </button>
           </form>
         )}
@@ -183,7 +183,7 @@ export default function FirebasePhoneLoginPage() {
             <div className="rounded-md bg-grey-200 p-4">
               <div className="flex">
                 <div className="text-sm font-medium text-blue-800">
-                  Verification code sent to {phoneNumber}
+                  Đã gửi mã xác thực đến {phoneNumber}
                 </div>
               </div>
             </div>
@@ -191,7 +191,7 @@ export default function FirebasePhoneLoginPage() {
             {/* SMS Code */}
             <div>
               <label htmlFor="smsCode" className="block text-sm font-medium text-gray-700">
-                Verification Code
+                Mã xác thực
               </label>
               <input
                 id="smsCode"
@@ -205,7 +205,7 @@ export default function FirebasePhoneLoginPage() {
                 maxLength={6}
                 disabled={isLoading}
               />
-              <p className="mt-1 text-xs text-gray-500">Enter the 6-digit code from your SMS</p>
+              <p className="mt-1 text-xs text-gray-500">Nhập mã 6 chữ số từ tin nhắn SMS của bạn</p>
             </div>
 
             {/* Submit Button */}
@@ -214,7 +214,7 @@ export default function FirebasePhoneLoginPage() {
               disabled={isLoading}
               className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-gray-900 bg-blue-500 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoading ? 'Verifying...' : 'Verify and sign in'}
+              {isLoading ? 'Đang xác thực...' : 'Xác thực và đăng nhập'}
             </button>
 
             {/* Back Button */}
@@ -227,7 +227,7 @@ export default function FirebasePhoneLoginPage() {
               disabled={isLoading}
               className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-grey-200 hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Use different phone number
+              Sử dụng số điện thoại khác
             </button>
           </form>
         )}

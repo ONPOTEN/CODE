@@ -62,7 +62,7 @@ export default function EditShopPage() {
 
       // Check if user owns this shop
       if (user && shop.user_id !== user.id) {
-        setError('You do not have permission to edit this shop.');
+        setError('Bạn không có quyền chỉnh sửa cửa hàng này.');
         setLoading(false);
         return;
       }
@@ -107,7 +107,7 @@ export default function EditShopPage() {
       if (err instanceof ApiException) {
         setError(err.message);
       } else {
-        setError('Failed to fetch shop details');
+        setError('Không thể tải thông tin cửa hàng');
       }
       console.error('Error fetching shop:', err);
     } finally {
@@ -215,13 +215,13 @@ export default function EditShopPage() {
         await shops.update(shopId, formData);
       }
 
-      alert('Shop updated successfully!');
+      alert('Đã cập nhật cửa hàng thành công!');
       router.push('/shops');
     } catch (err) {
       if (err instanceof ApiException) {
         setError(err.message);
       } else {
-        setError('Failed to update shop. Please try again.');
+        setError('Không thể cập nhật cửa hàng. Vui lòng thử lại.');
       }
       console.error('Error updating shop:', err);
     } finally {
@@ -244,7 +244,7 @@ export default function EditShopPage() {
       <div className="max-w-3xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Edit Shop</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Chỉnh sửa cửa hàng</h1>
           <Link
             href="/shops"
             className="inline-flex items-center px-4 py-2 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-lg font-medium transition-colors"
@@ -252,7 +252,7 @@ export default function EditShopPage() {
             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            Back
+            Quay lại
           </Link>
         </div>
 
@@ -272,13 +272,13 @@ export default function EditShopPage() {
                 <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                Basic Information
+                Thông tin cơ bản
               </h2>
 
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="md:col-span-2">
                   <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                    Shop Name <span className="text-red-500">*</span>
+                    Tên cửa hàng <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -293,7 +293,7 @@ export default function EditShopPage() {
 
                 <div className="md:col-span-2">
                   <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
-                    Description
+                    Mô tả
                   </label>
                   <textarea
                     id="description"
@@ -302,13 +302,13 @@ export default function EditShopPage() {
                     onChange={handleChange}
                     rows={4}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                    placeholder="Tell customers about your shop..."
+                    placeholder="Giới thiệu về cửa hàng của bạn..."
                   />
                 </div>
 
                 <div>
                   <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">
-                    Status
+                    Trạng thái
                   </label>
                   <select
                     id="status"
@@ -317,9 +317,9 @@ export default function EditShopPage() {
                     onChange={handleChange}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                   >
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
-                    <option value="pending">Pending</option>
+                    <option value="active">Hoạt động</option>
+                    <option value="inactive">Ngưng hoạt động</option>
+                    <option value="pending">Đang chờ duyệt</option>
                   </select>
                 </div>
               </div>
@@ -331,14 +331,14 @@ export default function EditShopPage() {
                 <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0l5.172 5.172m-9-9l1.414-1.414a2 2 0 012.828 0L19 12m-5-5l1.414-1.414a2 2 0 012.828 0L21 8" />
                 </svg>
-                Shop Images
+                Hình ảnh cửa hàng
               </h2>
 
               <div className="grid md:grid-cols-2 gap-4">
                 {/* Logo Upload */}
                 <div>
                   <label htmlFor="logo" className="block text-sm font-medium text-gray-700 mb-2">
-                    Shop Logo (Avatar)
+                    Logo cửa hàng (Ảnh đại diện)
                   </label>
                   <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
                     <input
@@ -352,8 +352,8 @@ export default function EditShopPage() {
                       <svg className="w-12 h-12 mx-auto mb-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0l5.172 5.172m-9-9l1.414-1.414a2 2 0 012.828 0L19 12m-5-5l1.414-1.414a2 2 0 012.828 0L21 8" />
                       </svg>
-                      <p className="text-sm text-gray-600">Click to upload logo</p>
-                      <p className="text-xs text-gray-500 mt-1">PNG, JPG up to 2MB</p>
+                      <p className="text-sm text-gray-600">Nhấp để tải lên logo</p>
+                      <p className="text-xs text-gray-500 mt-1">PNG, JPG tối đa 2MB</p>
                     </label>
                   </div>
                   {logoPreview && (
@@ -375,7 +375,7 @@ export default function EditShopPage() {
                 {/* Banner Upload */}
                 <div>
                   <label htmlFor="banner" className="block text-sm font-medium text-gray-700 mb-2">
-                    Shop Banner (Cover Image)
+                    Ảnh bìa cửa hàng
                   </label>
                   <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
                     <input
@@ -389,8 +389,8 @@ export default function EditShopPage() {
                       <svg className="w-12 h-12 mx-auto mb-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0l5.172 5.172m-9-9l1.414-1.414a2 2 0 012.828 0L19 12m-5-5l1.414-1.414a2 2 0 012.828 0L21 8" />
                       </svg>
-                      <p className="text-sm text-gray-600">Click to upload banner</p>
-                      <p className="text-xs text-gray-500 mt-1">PNG, JPG up to 5MB</p>
+                      <p className="text-sm text-gray-600">Nhấp để tải lên ảnh bìa</p>
+                      <p className="text-xs text-gray-500 mt-1">PNG, JPG tối đa 5MB</p>
                     </label>
                   </div>
                   {bannerPreview && (
@@ -614,13 +614,13 @@ export default function EditShopPage() {
                 <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                 </svg>
-                Contact Information
+                Thông tin liên hệ
               </h2>
 
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-                    Phone
+                    Số điện thoại
                   </label>
                   <input
                     type="tel"
@@ -650,7 +650,7 @@ export default function EditShopPage() {
 
                 <div className="md:col-span-2">
                   <label htmlFor="website" className="block text-sm font-medium text-gray-700 mb-1">
-                    Website
+                    Trang web
                   </label>
                   <input
                     type="url"
@@ -672,13 +672,13 @@ export default function EditShopPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
-                Address
+                Địa chỉ
               </h2>
 
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="md:col-span-2">
                   <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">
-                    Street Address
+                    Địa chỉ đường
                   </label>
                   <input
                     type="text"
@@ -687,13 +687,13 @@ export default function EditShopPage() {
                     value={formData.address}
                     onChange={handleChange}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                    placeholder="123 Main Street"
+                    placeholder="123 Đường ABC"
                   />
                 </div>
 
                 <div>
                   <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-1">
-                    City
+                    Thành phố
                   </label>
                   <input
                     type="text"
@@ -702,13 +702,13 @@ export default function EditShopPage() {
                     value={formData.city}
                     onChange={handleChange}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                    placeholder="New York"
+                    placeholder="Hồ Chí Minh"
                   />
                 </div>
 
                 <div>
                   <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-1">
-                    State/Province
+                    Tỉnh/Thành phố
                   </label>
                   <input
                     type="text"
@@ -717,13 +717,13 @@ export default function EditShopPage() {
                     value={formData.state}
                     onChange={handleChange}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                    placeholder="NY"
+                    placeholder="TP.HCM"
                   />
                 </div>
 
                 <div>
                   <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-1">
-                    Country
+                    Quốc gia
                   </label>
                   <input
                     type="text"
@@ -732,13 +732,13 @@ export default function EditShopPage() {
                     value={formData.country}
                     onChange={handleChange}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                    placeholder="United States"
+                    placeholder="Việt Nam"
                   />
                 </div>
 
                 <div>
                   <label htmlFor="postal_code" className="block text-sm font-medium text-gray-700 mb-1">
-                    Postal Code
+                    Mã bưu chính
                   </label>
                   <input
                     type="text"
@@ -747,7 +747,7 @@ export default function EditShopPage() {
                     value={formData.postal_code}
                     onChange={handleChange}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                    placeholder="10001"
+                    placeholder="700000"
                   />
                 </div>
               </div>
@@ -760,13 +760,13 @@ export default function EditShopPage() {
                 disabled={submitting}
                 className="flex-1 bg-blue-500 hover:bg-blue-700 text-gray-900 font-medium py-3 px-6 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {submitting ? 'Updating...' : 'Update Shop'}
+                {submitting ? 'Đang cập nhật...' : 'Cập nhật cửa hàng'}
               </button>
               <Link
                 href="/shops"
                 className="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-white transition-colors"
               >
-                Cancel
+                Hủy
               </Link>
             </div>
           </div>

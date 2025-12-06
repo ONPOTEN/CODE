@@ -77,10 +77,10 @@ export default function ProfilePage() {
       await friends.acceptRequest(senderId);
       // Remove from pending requests
       setPendingRequests((prev) => prev.filter((req) => req.id !== requestId));
-      alert('Friend request accepted!');
+      alert('Đã chấp nhận lời mời kết bạn!');
     } catch (error) {
       console.error('Error accepting friend request:', error);
-      alert('Failed to accept friend request');
+      alert('Không thể chấp nhận lời mời kết bạn');
     } finally {
       setActionLoading(null);
     }
@@ -92,10 +92,10 @@ export default function ProfilePage() {
       await friends.rejectRequest(senderId);
       // Remove from pending requests
       setPendingRequests((prev) => prev.filter((req) => req.id !== requestId));
-      alert('Friend request rejected');
+      alert('Đã từ chối lời mời kết bạn');
     } catch (error) {
       console.error('Error rejecting friend request:', error);
-      alert('Failed to reject friend request');
+      alert('Không thể từ chối lời mời kết bạn');
     } finally {
       setActionLoading(null);
     }
@@ -126,10 +126,10 @@ export default function ProfilePage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-2xl mx-auto">
-        <h1 className="text-3xl font-bold mb-8">Profile</h1>
+        <h1 className="text-3xl font-bold mb-8">Hồ sơ</h1>
 
         <div className="bg-grey-200 rounded-lg shadow p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4">User Information</h2>
+          <h2 className="text-xl font-semibold mb-4">Thông tin người dùng</h2>
 
           {/* Avatar Display */}
           <div className="flex items-center gap-4 mb-6 pb-6 border-b border-gray-300">
@@ -154,12 +154,12 @@ export default function ProfilePage() {
 
           <div className="space-y-3">
             <div>
-              <span className="font-medium text-gray-700">Display Name:</span>
+              <span className="font-medium text-gray-700">Tên hiển thị:</span>
               <span className="ml-2 text-gray-900">{displayUser.display_name}</span>
             </div>
 
             <div>
-              <span className="font-medium text-gray-700">Username:</span>
+              <span className="font-medium text-gray-700">Tên đăng nhập:</span>
               <span className="ml-2 text-gray-900">{displayUser.username}</span>
             </div>
 
@@ -167,84 +167,84 @@ export default function ProfilePage() {
               <span className="font-medium text-gray-700">Email:</span>
               <span className="ml-2 text-gray-900">{displayUser.email}</span>
               <span className={`ml-2 text-xs px-2 py-0.5 rounded ${isPublic(displayUser.email_public) ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'}`}>
-                {isPublic(displayUser.email_public) ? 'Public' : 'Private'}
+                {isPublic(displayUser.email_public) ? 'Công khai' : 'Riêng tư'}
               </span>
             </div>
 
             <div>
-              <span className="font-medium text-gray-700">User ID:</span>
+              <span className="font-medium text-gray-700">ID người dùng:</span>
               <span className="ml-2 text-gray-900">{displayUser.id}</span>
             </div>
 
             <div>
-              <span className="font-medium text-gray-700">Hobby:</span>
-              <span className="ml-2 text-gray-900">{displayUser.hobby || 'Not specified'}</span>
+              <span className="font-medium text-gray-700">Sở thích:</span>
+              <span className="ml-2 text-gray-900">{displayUser.hobby || 'Chưa xác định'}</span>
               <span className={`ml-2 text-xs px-2 py-0.5 rounded ${isPublic(displayUser.hobby_public) ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'}`}>
-                {isPublic(displayUser.hobby_public) ? 'Public' : 'Private'}
+                {isPublic(displayUser.hobby_public) ? 'Công khai' : 'Riêng tư'}
               </span>
             </div>
 
             <div>
-              <span className="font-medium text-gray-700">Company:</span>
-              <span className="ml-2 text-gray-900">{displayUser.company || 'Not specified'}</span>
+              <span className="font-medium text-gray-700">Công ty:</span>
+              <span className="ml-2 text-gray-900">{displayUser.company || 'Chưa xác định'}</span>
               <span className={`ml-2 text-xs px-2 py-0.5 rounded ${isPublic(displayUser.company_public) ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'}`}>
-                {isPublic(displayUser.company_public) ? 'Public' : 'Private'}
+                {isPublic(displayUser.company_public) ? 'Công khai' : 'Riêng tư'}
               </span>
             </div>
 
             <div>
-              <span className="font-medium text-gray-700">Occupation:</span>
-              <span className="ml-2 text-gray-900">{displayUser.occupation || 'Not specified'}</span>
+              <span className="font-medium text-gray-700">Nghề nghiệp:</span>
+              <span className="ml-2 text-gray-900">{displayUser.occupation || 'Chưa xác định'}</span>
               <span className={`ml-2 text-xs px-2 py-0.5 rounded ${isPublic(displayUser.occupation_public) ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'}`}>
-                {isPublic(displayUser.occupation_public) ? 'Public' : 'Private'}
+                {isPublic(displayUser.occupation_public) ? 'Công khai' : 'Riêng tư'}
               </span>
             </div>
 
             <div>
-              <span className="font-medium text-gray-700">Main Occupation:</span>
-              <span className="ml-2 text-gray-900">{displayUser.main_occupation || 'Not specified'}</span>
+              <span className="font-medium text-gray-700">Nghề nghiệp chính:</span>
+              <span className="ml-2 text-gray-900">{displayUser.main_occupation || 'Chưa xác định'}</span>
               <span className={`ml-2 text-xs px-2 py-0.5 rounded ${isPublic(displayUser.main_occupation_public) ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'}`}>
-                {isPublic(displayUser.main_occupation_public) ? 'Public' : 'Private'}
+                {isPublic(displayUser.main_occupation_public) ? 'Công khai' : 'Riêng tư'}
               </span>
             </div>
 
             <div>
-              <span className="font-medium text-gray-700">Location:</span>
-              <span className="ml-2 text-gray-900">{displayUser.location || 'Not specified'}</span>
+              <span className="font-medium text-gray-700">Địa chỉ:</span>
+              <span className="ml-2 text-gray-900">{displayUser.location || 'Chưa xác định'}</span>
               <span className={`ml-2 text-xs px-2 py-0.5 rounded ${isPublic(displayUser.location_public) ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'}`}>
-                {isPublic(displayUser.location_public) ? 'Public' : 'Private'}
+                {isPublic(displayUser.location_public) ? 'Công khai' : 'Riêng tư'}
               </span>
             </div>
 
             <div>
-              <span className="font-medium text-gray-700">Phone:</span>
-              <span className="ml-2 text-gray-900">{displayUser.phone || 'Not specified'}</span>
+              <span className="font-medium text-gray-700">Điện thoại:</span>
+              <span className="ml-2 text-gray-900">{displayUser.phone || 'Chưa xác định'}</span>
               <span className={`ml-2 text-xs px-2 py-0.5 rounded ${isPublic(displayUser.phone_public) ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'}`}>
-                {isPublic(displayUser.phone_public) ? 'Public' : 'Private'}
+                {isPublic(displayUser.phone_public) ? 'Công khai' : 'Riêng tư'}
               </span>
             </div>
 
             <div>
-              <span className="font-medium text-gray-700">Role:</span>
+              <span className="font-medium text-gray-700">Vai trò:</span>
               <span className="ml-2 text-gray-900 capitalize">{displayUser.role || 'user'}</span>
             </div>
 
             <div>
-              <span className="font-medium text-gray-700">Profile Visibility:</span>
+              <span className="font-medium text-gray-700">Hiển thị hồ sơ:</span>
               <span className={`ml-2 font-medium ${displayUser.profile_visibility === 'private' ? 'text-orange-600' : 'text-green-600'}`}>
                 {displayUser.profile_visibility === 'private' ? (
                   <span className="inline-flex items-center gap-1">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                     </svg>
-                    Private
+                    Riêng tư
                   </span>
                 ) : (
                   <span className="inline-flex items-center gap-1">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    Public
+                    Công khai
                   </span>
                 )}
               </span>
@@ -254,46 +254,46 @@ export default function ProfilePage() {
 
         <div className="bg-grey-200 border border-green-200 rounded-lg p-4 mb-6">
           <p className="text-green-800 font-medium">
-            ✓ Successfully authenticated with Laravel API
+            ✓ Xác thực thành công với Laravel API
           </p>
           <p className="text-green-700 text-sm mt-1">
-            Your authentication token is stored and will be sent with all API requests.
+            Token xác thực của bạn đã được lưu trữ và sẽ được gửi với tất cả các yêu cầu API.
           </p>
         </div>
 
         <div className="bg-grey-200 border border-blue-200 rounded-lg p-4 mb-6">
-          <h3 className="text-blue-900 font-semibold mb-3">Actions</h3>
+          <h3 className="text-blue-900 font-semibold mb-3">Hành động</h3>
           <div className="flex flex-wrap gap-3">
             <Link
               href="/profile/edit"
               className="inline-block bg-blue-500 hover:bg-blue-700 text-gray-900 font-medium py-2 px-6 rounded transition-colors"
             >
-              Edit Profile
+              Chỉnh sửa hồ sơ
             </Link>
             <Link
               href="/my-posts"
               className="inline-block bg-blue-500 hover:bg-blue-700 text-gray-900 font-medium py-2 px-6 rounded transition-colors"
             >
-              My Posts
+              Bài viết của tôi
             </Link>
             <Link
               href="/posts/create"
               className="inline-block bg-blue-500 hover:bg-blue-700 text-gray-900 font-medium py-2 px-6 rounded transition-colors"
             >
-              Create New Post
+              Tạo bài viết mới
             </Link>
             <Link
               href="/friends"
               className="inline-block bg-blue-500 hover:bg-blue-700 text-gray-900 font-medium py-2 px-6 rounded transition-colors"
             >
-              My Friends
+              Bạn bè của tôi
             </Link>
           </div>
         </div>
 
         <div className="bg-grey-200 rounded-lg shadow p-6 mb-6">
-          <h3 className="text-lg font-semibold mb-4">Search Users</h3>
-          <UserSearchAutocomplete placeholder="Search for other users..." />
+          <h3 className="text-lg font-semibold mb-4">Tìm kiếm người dùng</h3>
+          <UserSearchAutocomplete placeholder="Tìm kiếm người dùng khác..." />
         </div>
 
         {/* Pending Friend Requests */}
@@ -302,7 +302,7 @@ export default function ProfilePage() {
             <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
             </svg>
-            Friend Requests
+            Lời mời kết bạn
             {pendingRequests.length > 0 && (
               <span className="inline-flex items-center justify-center w-6 h-6 text-xs font-bold text-gray-900 bg-blue-500 rounded-full">
                 {pendingRequests.length}
@@ -333,12 +333,12 @@ export default function ProfilePage() {
                     <div className="flex-1">
                       <Link href={`/users/${prequest.sender_id}`}>
                         <p className="font-medium text-gray-900 hover:text-blue-600 cursor-pointer">
-                          {prequest.sender?.name || 'Unknown User'}
+                          {prequest.sender?.name || 'Người dùng không xác định'}
                         </p>
                       </Link>
                       <p className="text-sm text-gray-500">@{prequest.sender?.username}</p>
                       <p className="text-xs text-gray-600 mt-1">
-                        {new Date(prequest.created_at).toLocaleDateString('en-US', {
+                        {new Date(prequest.created_at).toLocaleDateString('vi-VN', {
                           month: 'short',
                           day: 'numeric',
                           year: 'numeric',
@@ -357,7 +357,7 @@ export default function ProfilePage() {
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                       </svg>
-                      {actionLoading === prequest.sender_id ? 'Processing...' : 'Accept'}
+                      {actionLoading === prequest.sender_id ? 'Đang xử lý...' : 'Chấp nhận'}
                     </button>
                     <button
                       onClick={() => handleRejectRequest(prequest.id, prequest.sender_id)}
@@ -367,7 +367,7 @@ export default function ProfilePage() {
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                       </svg>
-                      {actionLoading === prequest.sender_id ? 'Processing...' : 'Reject'}
+                      {actionLoading === prequest.sender_id ? 'Đang xử lý...' : 'Từ chối'}
                     </button>
                   </div>
                 </div>
@@ -378,8 +378,8 @@ export default function ProfilePage() {
               <svg className="w-16 h-16 mx-auto mb-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg>
-              <p className="text-lg font-medium">No pending friend requests</p>
-              <p className="text-sm mt-1">When someone sends you a friend request, it will appear here.</p>
+              <p className="text-lg font-medium">Không có lời mời kết bạn</p>
+              <p className="text-sm mt-1">Khi ai đó gửi lời mời kết bạn cho bạn, nó sẽ xuất hiện ở đây.</p>
             </div>
           )}
         </div>
@@ -388,7 +388,7 @@ export default function ProfilePage() {
           onClick={handleLogout}
           className="bg-blue-500 hover:bg-blue-700 text-gray-900 font-medium py-2 px-6 rounded transition-colors"
         >
-          Logout
+          Đăng xuất
         </button>
       </div>
     </div>

@@ -122,7 +122,7 @@ export default function GroupWallPage() {
       const groupResponse = await groups.getById(parseInt(groupId));
       setGroup(groupResponse.data);
     } catch (err) {
-      setError('Failed to load group');
+      setError('Không thể tải nhóm');
     } finally {
       setLoading(false);
     }
@@ -138,13 +138,13 @@ export default function GroupWallPage() {
       if (response.status === 'pending') {
         setMembershipStatus('pending');
         setIsMember(false); // Not a full member yet
-        alert('Join request submitted! Your request is pending approval from the group admin.');
+        alert('Yêu cầu tham gia đã được gửi! Yêu cầu của bạn đang chờ quản trị viên nhóm phê duyệt.');
       } else {
         setMembershipStatus('approved');
         setIsMember(true);
       }
     } catch (err) {
-      alert('Failed to join group');
+      alert('Không thể tham gia nhóm');
     } finally {
       setIsJoiningOrLeaving(false);
     }
@@ -152,14 +152,14 @@ export default function GroupWallPage() {
 
   const handleLeaveGroup = async () => {
     if (isJoiningOrLeaving) return;
-    if (!confirm('Are you sure you want to leave this group?')) return;
+    if (!confirm('Bạn có chắc muốn rời khỏi nhóm này không?')) return;
 
     try {
       setIsJoiningOrLeaving(true);
       await groups.leaveGroup(parseInt(groupId));
       setIsMember(false);
     } catch (err) {
-      alert('Failed to leave group');
+      alert('Không thể rời nhóm');
     } finally {
       setIsJoiningOrLeaving(false);
     }
@@ -184,7 +184,7 @@ export default function GroupWallPage() {
       const response = await friends.getAll();
       setAllFriends(response.data || []);
     } catch (err) {
-      setSearchError('Failed to load friends list');
+      setSearchError('Không thể tải danh sách bạn bè');
       setAllFriends([]);
     } finally {
       setIsLoadingFriends(false);
@@ -194,9 +194,9 @@ export default function GroupWallPage() {
   const copyToClipboard = async () => {
     try {
       await navigator.clipboard.writeText(inviteLink);
-      alert('Link copied to clipboard!');
+      alert('Đã sao chép liên kết!');
     } catch (err) {
-      alert('Failed to copy link');
+      alert('Không thể sao chép liên kết');
     }
   };
 
@@ -206,13 +206,13 @@ export default function GroupWallPage() {
   };
 
   const shareOnTwitter = () => {
-    const text = `Check out this group: ${group?.group_name}`;
+    const text = `Xem nhóm này: ${group?.group_name}`;
     const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(inviteLink)}`;
     window.open(url, '_blank', 'width=600,height=400');
   };
 
   const shareOnWhatsApp = () => {
-    const text = `Check out this group: ${group?.group_name} ${inviteLink}`;
+    const text = `Xem nhóm này: ${group?.group_name} ${inviteLink}`;
     const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
     window.open(url, '_blank');
   };
@@ -231,7 +231,7 @@ export default function GroupWallPage() {
       const response = await users.search(query);
       setSearchResults(response.data || []);
     } catch (err) {
-      setSearchError('Failed to search users');
+      setSearchError('Không thể tìm kiếm người dùng');
       setSearchResults([]);
     } finally {
       setIsSearching(false);
@@ -258,7 +258,7 @@ export default function GroupWallPage() {
 
   const sendInvitationsToSelectedFriends = async () => {
     if (selectedFriends.size === 0) {
-      alert('Please select at least one friend to invite');
+      alert('Vui lòng chọn ít nhất một người bạn để mời');
       return;
     }
 
@@ -279,7 +279,7 @@ export default function GroupWallPage() {
           const conversation = await chat.getOrCreateConversation(friend.id);
 
           // Create invitation message with group link and action buttons
-          const inviteMessage = `${currentUserName} wants you to join the "${group?.group_name}" group. Click here to join: ${inviteLink}`;
+          const inviteMessage = `${currentUserName} mời bạn tham gia nhóm "${group?.group_name}". Nhấn vào đây để tham gia: ${inviteLink}`;
 
           // Create invitation metadata for Accept/Reject buttons
           const invitationData = {
@@ -305,10 +305,10 @@ export default function GroupWallPage() {
       }
 
       // Show results
-      let resultMessage = `✓ Invitations sent successfully!\n\n${successCount} friend${successCount > 1 ? 's' : ''} invited`;
+      let resultMessage = `✓ Gửi lời mời thành công!\n\nĐã mời ${successCount} bạn bè`;
 
       if (failedCount > 0) {
-        resultMessage += `\n\n⚠ Failed to send to ${failedCount} friend${failedCount > 1 ? 's' : ''}:\n${failedFriends.join(', ')}`;
+        resultMessage += `\n\n⚠ Không thể gửi đến ${failedCount} bạn bè:\n${failedFriends.join(', ')}`;
       }
 
       alert(resultMessage);
@@ -316,7 +316,7 @@ export default function GroupWallPage() {
       setSelectedFriends(new Set());
       setShowInviteModal(false);
     } catch (err) {
-      alert('Failed to send invitations. Please try again.');
+      alert('Không thể gửi lời mời. Vui lòng thử lại.');
     } finally {
       setInvitingFriends(false);
     }
@@ -338,7 +338,7 @@ export default function GroupWallPage() {
             {error}
           </div>
           <Link href="/groups" className="mt-4 inline-block px-4 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-700">
-            Back to Groups
+            Quay lại danh sách nhóm
           </Link>
         </div>
       </div>
@@ -349,9 +349,9 @@ export default function GroupWallPage() {
     return (
       <div className="min-h-screen bg-white px-4 py-8">
         <div className="max-w-4xl mx-auto text-center py-12">
-          <p className="text-gray-500 text-lg">Group not found</p>
+          <p className="text-gray-500 text-lg">Không tìm thấy nhóm</p>
           <Link href="/groups" className="mt-4 inline-block px-4 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-700">
-            Back to Groups
+            Quay lại danh sách nhóm
           </Link>
         </div>
       </div>
@@ -411,11 +411,11 @@ export default function GroupWallPage() {
           <div className="flex gap-8 mb-4 justify-center">
             <div className="text-center">
               <div className="text-2xl font-bold text-gray-900">{group.posts_count || 0}</div>
-              <div className="text-sm text-gray-600">Posts</div>
+              <div className="text-sm text-gray-600">Bài viết</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-gray-900">{group.members_count || 0}</div>
-              <div className="text-sm text-gray-600">Members</div>
+              <div className="text-sm text-gray-600">Thành viên</div>
             </div>
             <div>
               <span className={`px-3 py-1 text-sm font-medium rounded-full ${group.visibility === 'public' ? 'bg-blue-500 text-blue-800' : 'bg-blue-500 text-gray-800'}`}>
@@ -456,13 +456,13 @@ export default function GroupWallPage() {
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                       </svg>
-                      <span>Create Post</span>
+                      <span>Tạo bài viết</span>
                     </button>
                     <button
                       onClick={handleInviteFriend}
                       className="inline-block px-6 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-700 font-medium transition-colors"
                     >
-                      Invite Friends
+                      Mời bạn bè
                     </button>
                     
                   </>
@@ -471,13 +471,13 @@ export default function GroupWallPage() {
                   href={`/groups/${group.group_id}/requests`}
                   className="inline-block px-6 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-700 font-medium transition-colors"
                 >
-                  Manage Requests
+                  Quản lý yêu cầu
                 </Link>
                 <Link
                   href={`/groups/${group.group_id}/manage-group`}
                   className="inline-block px-6 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-700 font-medium transition-colors"
                 >
-                  Group Manager
+                  Quản lý nhóm
                 </Link>
               </>
             ) : isMember ? (
@@ -495,13 +495,13 @@ export default function GroupWallPage() {
                   }}
                   className="inline-block px-6 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-700 font-medium transition-colors"
                 >
-                  <span>Create Post</span>
+                  <span>Tạo bài viết</span>
                 </button>
                 <button
                   onClick={handleInviteFriend}
                   className="inline-block px-6 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-700 font-medium transition-colors"
                 >
-                  Invite Friends
+                  Mời bạn bè
                 </button>
               </>
             ) : membershipStatus === 'pending' ? (
@@ -509,7 +509,7 @@ export default function GroupWallPage() {
                 <svg className="w-5 h-5 text-yellow-600 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <span className="text-yellow-800 font-medium">Request Pending</span>
+                <span className="text-yellow-800 font-medium">Đang chờ duyệt</span>
               </div>
             ) : (
               <button
@@ -517,7 +517,7 @@ export default function GroupWallPage() {
                 disabled={isJoiningOrLeaving || isCheckingMembership}
                 className="inline-block px-6 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isJoiningOrLeaving ? 'Joining...' : isCheckingMembership ? 'Loading...' : 'Join Group'}
+                {isJoiningOrLeaving ? 'Đang tham gia...' : isCheckingMembership ? 'Đang tải...' : 'Tham gia nhóm'}
               </button>
             )}
           </div>
@@ -533,19 +533,19 @@ export default function GroupWallPage() {
               href={`/groups/${groupId}/my-posts`}
               className="inline-block pb-4 px-2 font-medium text-blue-600 border-b-2 border-blue-600 hover:text-blue-700 transition-colors"
             >
-              Me
+              Tôi
             </Link>
             <Link
               href={`/groups/chat/${groupId}`}
               className="inline-block pb-4 px-2 font-medium text-gray-600 border-b-2 border-transparent hover:text-gray-900 transition-colors"
             >
-              Message
+              Tin nhắn
             </Link>
             <Link
               href={`/groups/${groupId}/images`}
               className="inline-block pb-4 px-2 font-medium text-gray-600 border-b-2 border-transparent hover:text-gray-900 transition-colors"
             >
-              Images
+              Hình ảnh
             </Link>
           </div>
         )}
@@ -567,13 +567,13 @@ export default function GroupWallPage() {
                     d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"
                   />
                 </svg>
-                <h3 className="text-lg font-semibold text-yellow-900 mb-2">Sign In to Create Posts</h3>
-                <p className="text-yellow-700 mb-4">You must be signed in to create posts in this group. Please log in to continue.</p>
+                <h3 className="text-lg font-semibold text-yellow-900 mb-2">Đăng nhập để tạo bài viết</h3>
+                <p className="text-yellow-700 mb-4">Bạn phải đăng nhập để tạo bài viết trong nhóm này. Vui lòng đăng nhập để tiếp tục.</p>
                 <Link
                   href="/login"
                   className="inline-block px-6 py-2 bg-yellow-600 text-gray-900 rounded-lg hover:bg-yellow-700 font-medium transition-colors"
                 >
-                  Sign In
+                  Đăng nhập
                 </Link>
               </div>
             ) : isMember ? (
@@ -590,14 +590,14 @@ export default function GroupWallPage() {
                     d="M12 6v6m0 0v6m0-6h6m-6 0H6"
                   />
                 </svg>
-                <h3 className="text-lg font-semibold text-blue-900 mb-2">Join to Create Posts</h3>
-                <p className="text-blue-700 mb-4">You must be a member of this group to create posts. Join the group to get started!</p>
+                <h3 className="text-lg font-semibold text-blue-900 mb-2">Tham gia để tạo bài viết</h3>
+                <p className="text-blue-700 mb-4">Bạn phải là thành viên của nhóm này để tạo bài viết. Hãy tham gia nhóm để bắt đầu!</p>
                 <button
                   onClick={handleJoinGroup}
                   disabled={isJoiningOrLeaving}
                   className="inline-block px-6 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isJoiningOrLeaving ? 'Joining...' : 'Join Group'}
+                  {isJoiningOrLeaving ? 'Đang tham gia...' : 'Tham gia nhóm'}
                 </button>
               </div>
             )}
@@ -606,7 +606,7 @@ export default function GroupWallPage() {
 
         {/* Sort Options */}
         <div className="flex gap-4 mb-6 items-center flex-wrap">
-          <label className="text-sm font-medium text-gray-700">Sort by:</label>
+          <label className="text-sm font-medium text-gray-700">Sắp xếp theo:</label>
           <select
             value={sortBy}
             onChange={(e) => {
@@ -614,8 +614,8 @@ export default function GroupWallPage() {
             }}
             className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
           >
-            <option value="post_date">Date</option>
-            <option value="comment_count">Comments</option>
+            <option value="post_date">Ngày đăng</option>
+            <option value="comment_count">Bình luận</option>
           </select>
 
           <select
@@ -625,8 +625,8 @@ export default function GroupWallPage() {
             }}
             className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
           >
-            <option value="desc">Newest</option>
-            <option value="asc">Oldest</option>
+            <option value="desc">Mới nhất</option>
+            <option value="asc">Cũ nhất</option>
           </select>
         </div>
 
@@ -651,7 +651,7 @@ export default function GroupWallPage() {
           <div className="bg-grey-200 rounded-lg shadow-xl max-w-md w-full max-h-96 flex flex-col">
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-gray-300">
-              <h2 className="text-xl font-bold text-gray-900">Invite Friends</h2>
+              <h2 className="text-xl font-bold text-gray-900">Mời bạn bè</h2>
               <button
                 onClick={() => {
                   setShowInviteModal(false);
@@ -676,7 +676,7 @@ export default function GroupWallPage() {
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
-                Share Link
+                Chia sẻ liên kết
               </button>
               <button
                 onClick={() => setInviteTab('friend')}
@@ -686,7 +686,7 @@ export default function GroupWallPage() {
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
-                Invite Friend
+                Mời bạn bè
               </button>
             </div>
 
@@ -695,12 +695,12 @@ export default function GroupWallPage() {
               {/* Group Info */}
               <div className="bg-grey-200 border border-blue-200 rounded-lg p-4">
                 <p className="text-sm font-medium text-gray-900 mb-2">
-                  Invite friends to: <strong>{group?.group_name}</strong>
+                  Mời bạn bè vào: <strong>{group?.group_name}</strong>
                 </p>
                 <p className="text-xs text-gray-600">
                   {inviteTab === 'link'
-                    ? 'Share this link with friends to invite them to the group.'
-                    : 'Search and select friends to send them an invitation.'}
+                    ? 'Chia sẻ liên kết này với bạn bè để mời họ vào nhóm.'
+                    : 'Tìm và chọn bạn bè để gửi lời mời.'}
                 </p>
               </div>
 
@@ -710,7 +710,7 @@ export default function GroupWallPage() {
                   {/* Copy Link Section */}
                   <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Group Link
+                  Liên kết nhóm
                 </label>
                 <div className="flex gap-2">
                   <input
@@ -723,7 +723,7 @@ export default function GroupWallPage() {
                     onClick={copyToClipboard}
                     className="px-4 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-700 font-medium transition-colors whitespace-nowrap text-sm"
                   >
-                    Copy Link
+                    Sao chép
                   </button>
                 </div>
               </div>
@@ -731,7 +731,7 @@ export default function GroupWallPage() {
               {/* Share Options */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Share On
+                  Chia sẻ qua
                 </label>
                 <div className="grid grid-cols-3 gap-2">
                   <button
@@ -764,8 +764,8 @@ export default function GroupWallPage() {
                   {/* Info Message */}
                   <div className="bg-white border border-gray-300 rounded-lg p-3">
                     <p className="text-xs text-gray-600">
-                      Friends can click the link to view the group and join.
-                      {group?.requires_approval && ' Membership requests require your approval.'}
+                      Bạn bè có thể nhấp vào liên kết để xem nhóm và tham gia.
+                      {group?.requires_approval && ' Yêu cầu thành viên cần được bạn phê duyệt.'}
                     </p>
                   </div>
                 </>
@@ -802,7 +802,7 @@ export default function GroupWallPage() {
                             className="w-4 h-4 border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
                           />
                           <span className="text-sm font-medium text-gray-700">
-                            Select All ({selectedFriends.size}/{allFriends.length})
+                            Chọn tất cả ({selectedFriends.size}/{allFriends.length})
                           </span>
                         </label>
                       </div>
@@ -850,10 +850,10 @@ export default function GroupWallPage() {
                             {invitingFriends ? (
                               <>
                                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                                Preparing Invitations...
+                                Đang chuẩn bị lời mời...
                               </>
                             ) : (
-                              `Send to ${selectedFriends.size} Friend${selectedFriends.size > 1 ? 's' : ''}`
+                              `Gửi đến ${selectedFriends.size} bạn bè`
                             )}
                           </button>
                         </div>
@@ -867,8 +867,8 @@ export default function GroupWallPage() {
                       <svg className="w-12 h-12 mx-auto mb-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.856-1.487M15 10a3 3 0 11-6 0 3 3 0 016 0zM15 20H9m6 0h6" />
                       </svg>
-                      <p className="text-sm text-gray-600 mt-2">You don't have any friends yet</p>
-                      <p className="text-xs text-gray-500 mt-1">Add friends to invite them to groups</p>
+                      <p className="text-sm text-gray-600 mt-2">Bạn chưa có bạn bè nào</p>
+                      <p className="text-xs text-gray-500 mt-1">Thêm bạn bè để mời họ vào nhóm</p>
                     </div>
                   )}
                 </>
@@ -881,7 +881,7 @@ export default function GroupWallPage() {
                 onClick={() => setShowInviteModal(false)}
                 className="w-full px-4 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-300 font-medium transition-colors"
               >
-                Close
+                Đóng
               </button>
             </div>
           </div>

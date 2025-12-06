@@ -21,6 +21,8 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
   });
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [selectedVideo, setSelectedVideo] = useState<File | null>(null);
+  const [videoPreview, setVideoPreview] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<Record<string, string[]> | null>(null);
@@ -58,6 +60,41 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
     setImagePreviews(newPreviews);
   };
 
+  const handleVideoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('video/') && !file.name.endsWith('.mp4')) {
+      setError('Chỉ hỗ trợ file video MP4');
+      return;
+    }
+
+    // Validate file size (max 100MB)
+    const maxSize = 100 * 1024 * 1024;
+    if (file.size > maxSize) {
+      setError('Video không được vượt quá 100MB');
+      return;
+    }
+
+    // Clear previous video preview
+    if (videoPreview) {
+      URL.revokeObjectURL(videoPreview);
+    }
+
+    setSelectedVideo(file);
+    setVideoPreview(URL.createObjectURL(file));
+    setError(null);
+  };
+
+  const removeVideo = () => {
+    if (videoPreview) {
+      URL.revokeObjectURL(videoPreview);
+    }
+    setSelectedVideo(null);
+    setVideoPreview(null);
+  };
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
@@ -75,11 +112,16 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
         ...formData,
         title: 'Post',
         images: selectedImages.length > 0 ? selectedImages : undefined,
+        video: selectedVideo || undefined,
       };
 
       await posts.create(postData);
 
+      // Cleanup previews
       imagePreviews.forEach((preview) => URL.revokeObjectURL(preview));
+      if (videoPreview) {
+        URL.revokeObjectURL(videoPreview);
+      }
 
       // Reset form
       setFormData({
@@ -91,6 +133,8 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
       });
       setSelectedImages([]);
       setImagePreviews([]);
+      setSelectedVideo(null);
+      setVideoPreview(null);
       onClose();
 
       // Show success message
@@ -221,6 +265,27 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
             </div>
           )}
 
+          {/* Preview Video */}
+          {videoPreview && (
+            <div className="relative">
+              <video
+                src={videoPreview}
+                className="w-full max-h-80 object-contain rounded-xl bg-black"
+                controls
+              />
+              <button
+                type="button"
+                className="absolute top-2 right-2 bg-black bg-opacity-70 text-white rounded-full w-8 h-8 text-lg flex items-center justify-center hover:bg-opacity-90"
+                onClick={removeVideo}
+              >
+                ×
+              </button>
+              <div className="absolute bottom-2 left-2 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded">
+                {selectedVideo?.name} ({((selectedVideo?.size || 0) / 1024 / 1024).toFixed(1)} MB)
+              </div>
+            </div>
+          )}
+
           {/* Footer icons */}
           <div className="flex justify-between border-t pt-3">
             <div className="flex gap-3">
@@ -247,9 +312,19 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
             </div>
 
             <div className="flex items-center gap-3">
-              <label className="cursor-pointer">
+              <label className="cursor-pointer hover:opacity-70 transition-opacity" title="Thêm ảnh">
                 <span className="text-2xl">🖼️</span>
                 <input type="file" className="hidden" multiple onChange={handleImageChange} accept="image/*" />
+              </label>
+              <label className={`cursor-pointer hover:opacity-70 transition-opacity ${selectedVideo ? 'opacity-50' : ''}`} title="Thêm video">
+                <span className="text-2xl">🎬</span>
+                <input
+                  type="file"
+                  className="hidden"
+                  onChange={handleVideoChange}
+                  accept="video/mp4,.mp4"
+                  disabled={!!selectedVideo}
+                />
               </label>
             </div>
           </div>

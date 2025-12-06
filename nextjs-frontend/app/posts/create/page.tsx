@@ -40,7 +40,7 @@ export default function CreatePostPage() {
     e.preventDefault();
 
     if (!content.trim()) {
-      setError('Content is required');
+      setError('Nội dung là bắt buộc');
       return;
     }
 
@@ -61,14 +61,14 @@ export default function CreatePostPage() {
       if (err instanceof ApiException) {
         setError(err.message);
       } else {
-        setError('Failed to create post');
+        setError('Không thể tạo bài viết');
       }
     } finally {
       setIsLoading(false);
     }
   };
 
-  if (authLoading) return <div className="p-8">Loading...</div>;
+  if (authLoading) return <div className="p-8">Đang tải...</div>;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
@@ -81,7 +81,7 @@ export default function CreatePostPage() {
               src={user?.avatar || '/default-avatar.png'}
               className="w-10 h-10 rounded-full object-cover"
             />
-            <div className="font-semibold text-lg">Make new Post</div>
+            <div className="font-semibold text-lg">Tạo bài viết mới</div>
           </div>
 
           <div className="flex gap-2">
