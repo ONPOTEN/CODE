@@ -12,6 +12,7 @@ class PurchaseOrder extends Model
         'user_id',
         'shop_id',
         'order_number',
+        'order_reference',
         'status',
         'subtotal',
         'tax',
@@ -21,6 +22,7 @@ class PurchaseOrder extends Model
         'notes',
         'shipping_address',
         'billing_address',
+        'payment_method',
     ];
 
     protected $casts = [

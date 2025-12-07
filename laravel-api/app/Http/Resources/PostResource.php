@@ -31,6 +31,7 @@ class PostResource extends JsonResource
             'updated_at' => $this->post_modified?->toIso8601String(),
             'featured_image' => $this->getFeaturedImage(),
             'images' => $this->getPostImages(),
+            'video' => $this->getPostVideo(),
             'meta' => $this->when($request->input('include_meta'), function () {
                 return $this->meta->pluck('meta_value', 'meta_key');
             }),
@@ -96,5 +97,19 @@ class PostResource extends JsonResource
         }
 
         return $images;
+    }
+
+    protected function getPostVideo()
+    {
+        $videoPath = $this->meta->where('meta_key', '_post_video')->first()?->meta_value;
+        if ($videoPath) {
+            try {
+                return \Storage::disk('s3')->url($videoPath);
+            } catch (\Exception $e) {
+                // Fallback to local storage if S3 fails
+                return asset('storage/' . $videoPath);
+            }
+        }
+        return null;
     }
 }

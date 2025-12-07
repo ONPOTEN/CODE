@@ -42,6 +42,7 @@ export default function MyShopsPage() {
     account_holder: '',
     upi_id: '',
     phone: '',
+    qr_code: '',
   });
   const [generatedQR, setGeneratedQR] = useState<string | null>(null);
   const [loadingQR, setLoadingQR] = useState(false);
@@ -304,9 +305,42 @@ export default function MyShopsPage() {
           account_holder: settings.account_holder || '',
           upi_id: settings.upi_id || '',
           phone: settings.phone || '',
+          qr_code: settings.qr_code || '',
         });
         if (settings.qr_code) {
           setGeneratedQR(settings.qr_code);
+        } else if (settings.bank_name && settings.account_number && settings.account_holder) {
+          // Auto-generate QR if bank info exists but no QR saved
+          const bankCodes: { [key: string]: string } = {
+            'vietcombank': '970436',
+            'techcombank': '970407',
+            'agribank': '970405',
+            'tpbank': '970423',
+            'mbbank': '970422',
+            'acb': '970416',
+            'bidv': '970418',
+            'vib': '970441',
+            'scb': '970429',
+            'sacombank': '970403',
+            'seabank': '970440',
+            'eximbank': '970431',
+            'vpbank': '970432',
+            'vietinbank': '970415',
+          };
+          const bankName = settings.bank_name.toLowerCase().trim();
+          let bankCode = null;
+          for (const [key, code] of Object.entries(bankCodes)) {
+            if (bankName.includes(key)) {
+              bankCode = code;
+              break;
+            }
+          }
+          if (!bankCode) {
+            bankCode = settings.bank_name;
+          }
+          const qrImageUrl = `https://img.vietqr.io/image/${encodeURIComponent(bankCode)}-${encodeURIComponent(settings.account_number)}-qr_only.png?accountName=${encodeURIComponent(settings.account_holder)}`;
+          setGeneratedQR(qrImageUrl);
+          setPaymentFormData(prev => ({ ...prev, qr_code: qrImageUrl }));
         }
       } else {
         // No settings found, initialize with defaults
@@ -316,6 +350,7 @@ export default function MyShopsPage() {
           account_holder: user?.display_name || user?.username || '',
           upi_id: '',
           phone: '',
+          qr_code: '',
         });
         setGeneratedQR(null);
       }
@@ -328,6 +363,7 @@ export default function MyShopsPage() {
         account_holder: user?.display_name || user?.username || '',
         upi_id: '',
         phone: '',
+        qr_code: '',
       });
       setGeneratedQR(null);
     }
@@ -772,8 +808,8 @@ export default function MyShopsPage() {
 
         {/* Payment Settings Modal */}
         {paymentSettingsModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-grey-200 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
               {/* Modal Header */}
               <div className="sticky top-0 bg-gradient-to-r from-amber-600 to-amber-700 px-6 py-4 flex items-center justify-between">
                 <h2 className="text-xl font-bold text-gray-900">Cài đặt thanh toán</h2>
@@ -889,7 +925,7 @@ export default function MyShopsPage() {
 
                   {generatedQR && (
                     <div className="flex flex-col items-center space-y-4">
-                      <div className="border-4 border-amber-200 rounded-lg p-4 bg-grey-200">
+                      <div className="border-4 border-amber-200 rounded-lg p-4 bg-white">
                         <img
                           src={generatedQR}
                           alt="Mã VietQR"
@@ -904,7 +940,7 @@ export default function MyShopsPage() {
                 </div>
 
                 {/* Info Box */}
-                <div className="bg-grey-200 border border-blue-200 rounded-lg p-4 space-y-2">
+                <div className="bg-white border border-blue-200 rounded-lg p-4 space-y-2">
                   <p className="text-sm text-blue-900">
                     <strong>Lưu ý:</strong> VietQR cho phép khách hàng quét và chuyển tiền trực tiếp vào tài khoản ngân hàng của bạn.
                   </p>

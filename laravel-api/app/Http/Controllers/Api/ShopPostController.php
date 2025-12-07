@@ -104,6 +104,7 @@ class ShopPostController extends Controller
             'variant_option_images.*' => 'nullable|image|mimes:jpeg,jpg,png,gif,webp|max:5120', // 5MB max for variant option images
             'download_files[file]' => 'nullable|file|max:102400', // 100MB max for download file
             'download_files[name]' => 'nullable|string|max:255',
+            'video' => 'nullable|file|mimes:mp4,mov,avi,webm|max:102400', // 100MB max for video
         ]);
 
         // Helper function to upload image files to S3
@@ -296,6 +297,54 @@ class ShopPostController extends Controller
             $createData['link_files'] = is_string($linkFilesInput) ? json_decode($linkFilesInput, true) : $linkFilesInput;
         }
 
+        // Handle video upload
+        if ($request->hasFile('video')) {
+            $videoFile = $request->file('video');
+
+            // Create directory structure: shop_videos/shopid/year/month/day
+            $now = now();
+            $directory = "shop_videos/{$shopId}/{$now->year}/{$now->format('m')}/{$now->format('d')}";
+
+            // Generate unique filename
+            $filename = time() . '_' . Str::random(10) . '.' . $videoFile->getClientOriginalExtension();
+
+            try {
+                \Log::info('Uploading video to S3 for new shop post', [
+                    'filename' => $filename,
+                    'directory' => $directory,
+                    'originalName' => $videoFile->getClientOriginalName(),
+                    'size' => $videoFile->getSize(),
+                ]);
+
+                // Store file to S3
+                $path = \Storage::disk('s3')->putFileAs(
+                    $directory,
+                    $videoFile,
+                    $filename,
+                    'public'
+                );
+
+                if ($path) {
+                    // Store relative path: shopid/year/month/day/filename
+                    $createData['video'] = "{$shopId}/{$now->year}/{$now->format('m')}/{$now->format('d')}/{$filename}";
+
+                    \Log::info('Video uploaded successfully for new shop post', [
+                        'video_path' => $createData['video'],
+                    ]);
+                } else {
+                    \Log::error('Video upload failed (store): putFileAs returned false', [
+                        'filename' => $filename,
+                        'directory' => $directory,
+                    ]);
+                }
+            } catch (\Exception $e) {
+                \Log::error('Exception uploading video to S3 for new shop post', [
+                    'filename' => $filename,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
         $shopPost = ShopPost::create($createData);
 
         return response()->json([
@@ -345,6 +394,8 @@ class ShopPostController extends Controller
             'variant_option_images.*' => 'nullable|image|mimes:jpeg,jpg,png,gif,webp|max:5120', // 5MB max for variant option images
             'remove_images' => 'sometimes|array', // Array of image paths to remove
             'remove_images.*' => 'string',
+            'video' => 'nullable|file|mimes:mp4,mov,avi,webm|max:102400', // 100MB max for video
+            'remove_video' => 'nullable|boolean',
         ]);
 
         // Get current images
@@ -469,6 +520,76 @@ class ShopPostController extends Controller
             $shopPost->other_images = $otherImagePaths;
         }
 
+        // Handle video removal
+        $removeVideo = $request->input('remove_video');
+        if ($removeVideo === true || $removeVideo === 'true' || $removeVideo === '1' || $removeVideo === 1) {
+            if ($shopPost->video) {
+                $fullS3Path = "shop_videos/{$shopPost->video}";
+                if (\Storage::disk('s3')->exists($fullS3Path)) {
+                    \Storage::disk('s3')->delete($fullS3Path);
+                }
+                $shopPost->video = null;
+                \Log::info('Video removed from shop post', ['post_id' => $shopPost->id]);
+            }
+        }
+
+        // Handle video upload
+        if ($request->hasFile('video')) {
+            $videoFile = $request->file('video');
+
+            // Delete existing video if present
+            if ($shopPost->video) {
+                $fullS3Path = "shop_videos/{$shopPost->video}";
+                if (\Storage::disk('s3')->exists($fullS3Path)) {
+                    \Storage::disk('s3')->delete($fullS3Path);
+                }
+            }
+
+            // Create directory structure: shop_videos/shopid/year/month/day
+            $now = now();
+            $directory = "shop_videos/{$shopId}/{$now->year}/{$now->format('m')}/{$now->format('d')}";
+
+            // Generate unique filename
+            $filename = time() . '_' . Str::random(10) . '.' . $videoFile->getClientOriginalExtension();
+
+            try {
+                \Log::info('Uploading video to S3 for shop post', [
+                    'filename' => $filename,
+                    'directory' => $directory,
+                    'originalName' => $videoFile->getClientOriginalName(),
+                    'size' => $videoFile->getSize(),
+                ]);
+
+                // Store file to S3
+                $path = \Storage::disk('s3')->putFileAs(
+                    $directory,
+                    $videoFile,
+                    $filename,
+                    'public'
+                );
+
+                if ($path) {
+                    // Store relative path: shopid/year/month/day/filename
+                    $shopPost->video = "{$shopId}/{$now->year}/{$now->format('m')}/{$now->format('d')}/{$filename}";
+
+                    \Log::info('Video uploaded successfully for shop post', [
+                        'post_id' => $shopPost->id,
+                        'video_path' => $shopPost->video,
+                    ]);
+                } else {
+                    \Log::error('Video upload failed: putFileAs returned false', [
+                        'filename' => $filename,
+                        'directory' => $directory,
+                    ]);
+                }
+            } catch (\Exception $e) {
+                \Log::error('Exception uploading video to S3 for shop post', [
+                    'filename' => $filename,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
         // Generate new slug if title changed
         if (isset($validated['title']) && $validated['title'] !== $shopPost->title) {
             $slug = Str::slug($validated['title']);
@@ -573,6 +694,42 @@ class ShopPostController extends Controller
             return response()->json([
                 'message' => 'Unauthorized. You can only delete posts in your own shop.',
             ], 403);
+        }
+
+        // Delete featured images from S3
+        if (!empty($shopPost->featured_images)) {
+            foreach ($shopPost->featured_images as $imagePath) {
+                $fullS3Path = "shop_posts/{$imagePath}";
+                if (\Storage::disk('s3')->exists($fullS3Path)) {
+                    \Storage::disk('s3')->delete($fullS3Path);
+                }
+            }
+        }
+
+        // Delete main image from S3
+        if ($shopPost->main_image) {
+            $fullS3Path = "shop_posts/{$shopPost->main_image}";
+            if (\Storage::disk('s3')->exists($fullS3Path)) {
+                \Storage::disk('s3')->delete($fullS3Path);
+            }
+        }
+
+        // Delete other images from S3
+        if (!empty($shopPost->other_images)) {
+            foreach ($shopPost->other_images as $imagePath) {
+                $fullS3Path = "shop_posts/{$imagePath}";
+                if (\Storage::disk('s3')->exists($fullS3Path)) {
+                    \Storage::disk('s3')->delete($fullS3Path);
+                }
+            }
+        }
+
+        // Delete video from S3
+        if ($shopPost->video) {
+            $fullS3Path = "shop_videos/{$shopPost->video}";
+            if (\Storage::disk('s3')->exists($fullS3Path)) {
+                \Storage::disk('s3')->delete($fullS3Path);
+            }
         }
 
         $shopPost->delete();

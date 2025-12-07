@@ -2269,6 +2269,7 @@ export const orders = {
       postal_code?: string;
     };
     payment_method: 'cod' | 'qr' | 'bank_transfer';
+    order_reference?: string;
     bank_transfer_details?: {
       bank_name?: string;
       account_number?: string;

@@ -10,6 +10,7 @@ import Link from 'next/link';
 import { EngagementButtons } from './EngagementButtons';
 import { CommentsSection } from './CommentsSection';
 import { AuthorCard } from './AuthorCard';
+import { VideoEmbedList } from './VideoEmbed';
 import { useEngagement } from '@/contexts/EngagementContext';
 import { Post } from '@/lib/api';
 
@@ -67,6 +68,9 @@ export function PostCardExample({ post, currentUserId }: PostCardExampleProps) {
 
         {/* Content Preview */}
         <p className="text-gray-700 mb-4 line-clamp-3">{post.content}</p>
+
+        {/* Video Embeds */}
+        <VideoEmbedList content={post.content} className="mb-4" />
 
         {/* Engagement Stats Bar */}
         {engagement ? (

@@ -25,6 +25,7 @@ class ShopPost extends Model
         'sale_price',
         'main_image',
         'other_images',
+        'video',
         'categories',
         'short_description',
         'detail_description',

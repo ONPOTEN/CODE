@@ -51,6 +51,49 @@ class ShopPostResource extends JsonResource
     }
 
     /**
+     * Convert video path to full S3 URL if needed
+     */
+    private function getVideoUrl(?string $videoPath): ?string
+    {
+        if (!$videoPath) {
+            return null;
+        }
+
+        // If already a full URL, return as is
+        if (str_starts_with($videoPath, 'http://') || str_starts_with($videoPath, 'https://')) {
+            return $videoPath;
+        }
+
+        // Convert relative path to S3 URL
+        // Path format: shopid/year/month/day/filename
+        // S3 full path: shop_videos/shopid/year/month/day/filename
+        $fullPath = 'shop_videos/' . $videoPath;
+        $s3Url = \Storage::disk('s3')->url($fullPath);
+
+        // If URL generation failed or returned null, construct manually
+        if (!$s3Url || $s3Url === $fullPath) {
+            // Manual URL construction from S3 config
+            $endpoint = env('AWS_ENDPOINT') ?? env('AWS_URL');
+            $bucket = env('AWS_BUCKET');
+
+            if ($endpoint && $bucket) {
+                // Handle both path-style and virtual-hosted-style URLs
+                $usePathStyle = env('AWS_USE_PATH_STYLE_ENDPOINT', false);
+
+                if ($usePathStyle) {
+                    // Path-style: https://endpoint.com/bucket/key
+                    $s3Url = rtrim($endpoint, '/') . '/' . $bucket . '/' . ltrim($fullPath, '/');
+                } else {
+                    // Virtual-hosted-style: https://bucket.endpoint.com/key
+                    $s3Url = 'https://' . $bucket . '.' . preg_replace('#^https?://#', '', $endpoint) . '/' . ltrim($fullPath, '/');
+                }
+            }
+        }
+
+        return $s3Url;
+    }
+
+    /**
      * Transform the resource into an array.
      *
      * @return array<string, mixed>
@@ -67,6 +110,9 @@ class ShopPostResource extends JsonResource
         // Convert other_images array to full S3 URLs if present
         $otherImages = $this->other_images ?? [];
         $fullOtherImageUrls = array_map(fn($imagePath) => $this->getImageUrl($imagePath), $otherImages);
+
+        // Convert video path to full S3 URL if present
+        $videoUrl = $this->video ? $this->getVideoUrl($this->video) : null;
 
         return [
             'id' => $this->id,
@@ -93,6 +139,7 @@ class ShopPostResource extends JsonResource
             'link_files' => $this->link_files,
             'main_image' => $mainImageUrl,
             'other_images' => $fullOtherImageUrls,
+            'video' => $videoUrl,
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
             'shop' => new ShopResource($this->whenLoaded('shop')),

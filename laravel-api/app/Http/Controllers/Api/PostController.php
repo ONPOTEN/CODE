@@ -148,6 +148,9 @@ class PostController extends Controller
             $filesToProcess = $allFiles['images[]'];
         }
 
+        // Get video file if present
+        $videoFile = $allFiles['video'] ?? null;
+
         // Validate request data
         $validationRules = [
             'title' => 'required|string|max:255',
@@ -163,6 +166,11 @@ class PostController extends Controller
         if ($filesToProcess !== null) {
             $validationRules['images'] = 'nullable|array|max:10';
             $validationRules['images.*'] = 'file|max:5120';
+        }
+
+        // Add video validation if video file is present
+        if ($videoFile !== null) {
+            $validationRules['video'] = 'file|mimes:mp4,mov,avi,webm|max:102400'; // 100MB max
         }
 
         $validated = $request->validate($validationRules);
@@ -326,6 +334,52 @@ class PostController extends Controller
             }
         }
 
+        // Handle video upload
+        if ($videoFile instanceof \Illuminate\Http\UploadedFile) {
+            // Create folder structure for video: videos/userid/year/month/date
+            $userId = $user->ID;
+            $year = $now->format('Y');
+            $month = $now->format('m');
+            $date = $now->format('d');
+            $videoUploadPath = "videos/{$userId}/{$year}/{$month}/{$date}";
+            $videoFilename = time() . '_' . Str::random(10) . '.' . $videoFile->getClientOriginalExtension();
+
+            try {
+                \Log::info('Uploading video to S3 (store)', [
+                    'filename' => $videoFilename,
+                    'uploadPath' => $videoUploadPath,
+                    'originalName' => $videoFile->getClientOriginalName(),
+                    'size' => $videoFile->getSize(),
+                ]);
+
+                $videoPath = $videoFile->storeAs($videoUploadPath, $videoFilename, 's3');
+
+                if ($videoPath !== false && !empty($videoPath)) {
+                    // Store video path in post meta
+                    $post->meta()->create([
+                        'meta_key' => '_post_video',
+                        'meta_value' => $videoPath,
+                    ]);
+
+                    \Log::info('Video uploaded successfully (store)', [
+                        'post_id' => $post->ID,
+                        'video_path' => $videoPath,
+                    ]);
+                } else {
+                    \Log::error('Video upload failed (store): storeAs returned false/empty', [
+                        'filename' => $videoFilename,
+                        'uploadPath' => $videoUploadPath,
+                    ]);
+                }
+            } catch (\Throwable $e) {
+                \Log::error('Exception uploading video to S3 (store)', [
+                    'filename' => $videoFilename,
+                    'error' => $e->getMessage(),
+                    'exception_class' => get_class($e),
+                ]);
+            }
+        }
+
         return response()->json([
             'message' => 'Post created successfully',
             'post' => new PostResource($post->load(['author', 'meta'])),
@@ -355,6 +409,9 @@ class PostController extends Controller
             $filesToProcess = $allFiles['images[]'];
         }
 
+        // Get video file if present
+        $videoFile = $allFiles['video'] ?? null;
+
         // Build validation rules
         $validationRules = [
             'title' => 'nullable|string|max:255',
@@ -365,12 +422,18 @@ class PostController extends Controller
             'visibility' => 'nullable|string|in:public,private',
             'remove_images' => 'nullable|array',
             'remove_images.*' => 'integer',
+            'remove_video' => 'nullable|boolean',
         ];
 
         // Only add image validation if we actually have files
         if ($filesToProcess !== null) {
             $validationRules['images'] = 'nullable|array|max:10';
             $validationRules['images.*'] = 'file|max:5120';
+        }
+
+        // Add video validation if video file is present
+        if ($videoFile !== null) {
+            $validationRules['video'] = 'file|mimes:mp4,mov,avi,webm|max:102400'; // 100MB max
         }
 
         $validated = $request->validate($validationRules);
@@ -515,6 +578,70 @@ class PostController extends Controller
             }
         }
 
+        // Handle video removal
+        $removeVideo = $request->input('remove_video');
+        if ($removeVideo === true || $removeVideo === 'true' || $removeVideo === '1' || $removeVideo === 1) {
+            $videoMeta = $post->meta()->where('meta_key', '_post_video')->first();
+            if ($videoMeta) {
+                \Storage::disk('s3')->delete($videoMeta->meta_value);
+                $videoMeta->delete();
+                \Log::info('Video removed from post', ['post_id' => $post->ID]);
+            }
+        }
+
+        // Handle video upload
+        if ($videoFile instanceof \Illuminate\Http\UploadedFile) {
+            // Delete existing video if present
+            $existingVideoMeta = $post->meta()->where('meta_key', '_post_video')->first();
+            if ($existingVideoMeta) {
+                \Storage::disk('s3')->delete($existingVideoMeta->meta_value);
+                $existingVideoMeta->delete();
+            }
+
+            // Create folder structure for video: videos/userid/year/month/date
+            $userId = $user->ID;
+            $year = $now->format('Y');
+            $month = $now->format('m');
+            $date = $now->format('d');
+            $videoUploadPath = "videos/{$userId}/{$year}/{$month}/{$date}";
+            $videoFilename = time() . '_' . Str::random(10) . '.' . $videoFile->getClientOriginalExtension();
+
+            try {
+                \Log::info('Uploading video to S3', [
+                    'filename' => $videoFilename,
+                    'uploadPath' => $videoUploadPath,
+                    'originalName' => $videoFile->getClientOriginalName(),
+                    'size' => $videoFile->getSize(),
+                ]);
+
+                $videoPath = $videoFile->storeAs($videoUploadPath, $videoFilename, 's3');
+
+                if ($videoPath !== false && !empty($videoPath)) {
+                    // Store video path in post meta
+                    $post->meta()->updateOrCreate(
+                        ['post_id' => $post->ID, 'meta_key' => '_post_video'],
+                        ['meta_value' => $videoPath]
+                    );
+
+                    \Log::info('Video uploaded successfully', [
+                        'post_id' => $post->ID,
+                        'video_path' => $videoPath,
+                    ]);
+                } else {
+                    \Log::error('Video upload failed: storeAs returned false/empty', [
+                        'filename' => $videoFilename,
+                        'uploadPath' => $videoUploadPath,
+                    ]);
+                }
+            } catch (\Throwable $e) {
+                \Log::error('Exception uploading video to S3', [
+                    'filename' => $videoFilename,
+                    'error' => $e->getMessage(),
+                    'exception_class' => get_class($e),
+                ]);
+            }
+        }
+
         return response()->json([
             'message' => 'Post updated successfully',
             'post' => new PostResource($post->load(['author', 'meta'])),
@@ -573,6 +700,13 @@ class PostController extends Controller
         if ($thumbnailMeta) {
             \Storage::disk('s3')->delete($thumbnailMeta->meta_value);
             $thumbnailMeta->delete();
+        }
+
+        // Delete video
+        $videoMeta = $post->meta()->where('meta_key', '_post_video')->first();
+        if ($videoMeta) {
+            \Storage::disk('s3')->delete($videoMeta->meta_value);
+            $videoMeta->delete();
         }
 
         // Delete all meta

@@ -23,8 +23,10 @@ interface OrderItem {
 interface OrderDetail {
   id: number;
   order_number: string;
+  order_reference?: string;
   shop_id?: number;
   status: 'pending' | 'processing' | 'completed' | 'cancelled';
+  payment_method?: 'cod' | 'qr' | 'bank_transfer';
   subtotal: number;
   tax: number;
   shipping_fee: number;
@@ -142,6 +144,19 @@ export default function OrderDetailPage() {
     }
   };
 
+  const getPaymentMethodLabel = (method: string) => {
+    switch (method) {
+      case 'cod':
+        return 'Thanh toán khi nhận hàng (COD)';
+      case 'qr':
+        return 'Thanh toán QR Code';
+      case 'bank_transfer':
+        return 'Chuyển khoản ngân hàng';
+      default:
+        return method;
+    }
+  };
+
   const getProductTypeLabel = (type: string) => {
     switch (type) {
       case 'Đơn giản':
@@ -241,6 +256,32 @@ export default function OrderDetailPage() {
               {getStatusLabel(order.status)}
             </span>
           </div>
+
+          {/* Order Reference and Payment Method */}
+          {(order.order_reference || order.payment_method) && (
+            <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <div className="flex flex-wrap gap-6">
+                {order.order_reference && (
+                  <div className="flex items-center gap-2">
+                    <svg className="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
+                    </svg>
+                    <span className="text-gray-700 font-medium">Mã đơn hàng:</span>
+                    <span className="font-bold text-yellow-800 bg-yellow-100 px-2 py-1 rounded">{order.order_reference}</span>
+                  </div>
+                )}
+                {order.payment_method && (
+                  <div className="flex items-center gap-2">
+                    <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                    </svg>
+                    <span className="text-gray-700 font-medium">Thanh toán:</span>
+                    <span className="font-semibold text-blue-800">{getPaymentMethodLabel(order.payment_method)}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Order Summary Card */}

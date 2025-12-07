@@ -110,6 +110,7 @@ class PurchaseOrderController extends Controller
             'shipping_address.postal_code' => 'required|string|max:20',
             'billing_address' => 'nullable|array',
             'payment_method' => 'required|in:cod,qr,bank_transfer',
+            'order_reference' => 'nullable|string|max:50',
             'bank_transfer_details' => 'nullable|array',
             'bank_transfer_details.bank_name' => 'nullable|string|max:255',
             'bank_transfer_details.account_number' => 'nullable|string|max:50',
@@ -138,6 +139,7 @@ class PurchaseOrderController extends Controller
                 'user_id' => $user->ID,
                 'shop_id' => $shopId,
                 'order_number' => $orderNumber,
+                'order_reference' => $validated['order_reference'] ?? null,
                 'status' => $orderStatus,
                 'subtotal' => $validated['subtotal'],
                 'tax' => $validated['tax'] ?? 0,
@@ -147,6 +149,7 @@ class PurchaseOrderController extends Controller
                 'notes' => $validated['notes'] ?? null,
                 'shipping_address' => $validated['shipping_address'],
                 'billing_address' => $validated['billing_address'] ?? $validated['shipping_address'],
+                'payment_method' => $validated['payment_method'],
             ]);
 
             // Create order items

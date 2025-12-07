@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
 import { ShopPostEngagementButtons } from '@/components/ShopPostEngagementButtons';
 import { ShopPostComments } from '@/components/ShopPostComments';
+import { VideoEmbedList } from '@/components/VideoEmbed';
 
 interface ProductDetailClientProps {
   shopId: string;
@@ -564,6 +565,8 @@ export default function ProductDetailClient({ shopId, postId }: ProductDetailCli
               <div className="text-gray-700 leading-relaxed whitespace-pre-wrap">
                 {post.content}
               </div>
+              {/* Video Embeds from content */}
+              <VideoEmbedList content={post.content} className="mt-4" />
             </div>
           )}
 

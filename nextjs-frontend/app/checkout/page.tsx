@@ -7,7 +7,7 @@ import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { orders, ApiException, apiRequest } from '@/lib/api';
 
-type PaymentMethod = 'cod' | 'qr' | 'bank_transfer';
+type PaymentMethod = 'cod' | 'qr';
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -26,18 +26,67 @@ export default function CheckoutPage() {
     city: '',
     state: '',
     postal_code: '',
-    bank_name: '',
-    account_number: '',
-    account_holder: user?.display_name || user?.username || '',
-    transfer_reference: '',
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [shopQRCode, setShopQRCode] = useState<string | null>(null);
   const [loadingQR, setLoadingQR] = useState(false);
+  const [shopPaymentInfo, setShopPaymentInfo] = useState<{
+    bank_name: string;
+    account_number: string;
+    account_holder: string;
+  } | null>(null);
+  const [orderReference] = useState(() => {
+    // Generate a unique order reference for payment tracking
+    const timestamp = Date.now().toString(36).toUpperCase();
+    const random = Math.random().toString(36).substring(2, 6).toUpperCase();
+    return `DH${timestamp}${random}`;
+  });
 
   const totalPrice = getTotalPrice();
+
+  // Format price in VNĐ
+  const formatVND = (price: number) => {
+    return new Intl.NumberFormat('vi-VN').format(Math.round(price)) + ' VNĐ';
+  };
+
+  // Bank code mapping for VietQR
+  const bankCodes: Record<string, string> = {
+    'Sacombank': '970403',
+    'Vietcombank': '970436',
+    'VCB': '970436',
+    'Techcombank': '970407',
+    'TCB': '970407',
+    'BIDV': '970418',
+    'Agribank': '970405',
+    'VPBank': '970432',
+    'MBBank': '970422',
+    'MB': '970422',
+    'ACB': '970416',
+    'TPBank': '970423',
+    'VIB': '970441',
+    'SHB': '970443',
+    'HDBank': '970437',
+    'OCB': '970448',
+    'SeABank': '970440',
+    'MSB': '970426',
+    'Eximbank': '970431',
+    'LienVietPostBank': '970449',
+    'Vietinbank': '970415',
+    'CTG': '970415',
+    'Nam A Bank': '970428',
+    'Bac A Bank': '970409',
+    'PVcomBank': '970412',
+    'ABBank': '970425',
+    'NCB': '970419',
+    'Kienlongbank': '970452',
+    'Dong A Bank': '970406',
+    'GPBank': '970408',
+    'BaoViet Bank': '970438',
+    'VietABank': '970427',
+    'Saigonbank': '970400',
+  };
 
   // Load shop payment settings QR code
   useEffect(() => {
@@ -47,32 +96,62 @@ export default function CheckoutPage() {
         if (!items || items.length === 0) return;
 
         // Extract shop_id from the first item (assuming all items are from same shop)
-        // For now, we'll try to get it from the cart item structure
         const firstItem = items[0];
+        const shopId = firstItem.shopId;
 
-        // Try to load payment settings
-        // We need the shopId - let's make a request to get it from the shop post
-        if (firstItem.postId) {
-          setLoadingQR(true);
-          try {
-            // Get the shop post details to find the shop ID
-            const shopPostResponse = await apiRequest(`/shops/1/posts/${firstItem.postId}`);
-            const shopId = shopPostResponse?.data?.shop_id || shopPostResponse?.shop_id;
+        if (!shopId) {
+          console.log('No shopId found in cart item');
+          return;
+        }
 
-            if (shopId) {
-              // Load payment settings for this shop
-              const paymentSettingsResponse = await apiRequest(`/shops/${shopId}/payment-settings`);
+        setLoadingQR(true);
+        try {
+          // Load payment settings for this shop
+          const paymentSettingsResponse = await apiRequest(`/shops/${shopId}/payment-settings`);
+          const settings = paymentSettingsResponse?.data;
 
-              if (paymentSettingsResponse?.data?.qr_code) {
-                setShopQRCode(paymentSettingsResponse.data.qr_code);
+          // Save shop payment info for display
+          if (settings?.bank_name && settings?.account_number && settings?.account_holder) {
+            setShopPaymentInfo({
+              bank_name: settings.bank_name,
+              account_number: settings.account_number,
+              account_holder: settings.account_holder,
+            });
+          }
+
+          if (!settings?.qr_code) {
+            // Use saved QR code
+            setShopQRCode(settings.qr_code);
+          } else if (settings?.bank_name && settings?.account_number && settings?.account_holder) {
+            // Auto-generate QR code if bank info exists but no QR saved
+            const bankName = settings.bank_name;
+            let bankCode = bankCodes[bankName];
+
+            // Try partial match if exact match not found
+            if (!bankCode) {
+              const bankNameLower = bankName.toLowerCase();
+              for (const [name, code] of Object.entries(bankCodes)) {
+                if (bankNameLower.includes(name.toLowerCase()) || name.toLowerCase().includes(bankNameLower)) {
+                  bankCode = code;
+                  break;
+                }
               }
             }
-          } catch (err) {
-            console.log('Could not load QR code for this shop:', err);
-            // This is not critical - QR code is optional
-          } finally {
-            setLoadingQR(false);
+
+            if (bankCode) {
+              const amount = Math.round(totalPrice);
+              // Format: "DH123ABC TT 790000d" - Order reference + Total price
+              const addInfo = `${orderReference} TT ${amount.toLocaleString('vi-VN')}d`;
+              const qrUrl = `https://img.vietqr.io/image/${bankCode}-${settings.account_number}-compact2.jpg?amount=${amount}&addInfo=${encodeURIComponent(addInfo)}&accountName=${encodeURIComponent(settings.account_holder)}`;
+              console.log("qrUrl:" + qrUrl);
+              setShopQRCode(qrUrl);
+            }
           }
+        } catch (err) {
+          console.log('Could not load QR code for this shop:', err);
+          // This is not critical - QR code is optional
+        } finally {
+          setLoadingQR(false);
         }
       } catch (err) {
         console.error('Error loading shop payment settings:', err);
@@ -80,7 +159,7 @@ export default function CheckoutPage() {
     };
 
     loadShopPaymentSettings();
-  }, [items]);
+  }, [items, totalPrice, orderReference]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -109,14 +188,6 @@ export default function CheckoutPage() {
     if (!formData.city.trim()) newErrors.city = 'Thành phố là bắt buộc';
     if (!formData.state.trim()) newErrors.state = 'Tỉnh/Thành là bắt buộc';
     if (!formData.postal_code.trim()) newErrors.postal_code = 'Mã bưu điện là bắt buộc';
-
-    // Validate payment method-specific fields
-    if (paymentMethod === 'bank_transfer') {
-      if (!formData.bank_name.trim()) newErrors.bank_name = 'Tên ngân hàng là bắt buộc';
-      if (!formData.account_number.trim()) newErrors.account_number = 'Số tài khoản là bắt buộc';
-      if (!formData.account_holder.trim()) newErrors.account_holder = 'Tên chủ tài khoản là bắt buộc';
-      if (!formData.transfer_reference.trim()) newErrors.transfer_reference = 'Mã tham chiếu chuyển khoản là bắt buộc';
-    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -154,17 +225,6 @@ export default function CheckoutPage() {
         postal_code: formData.postal_code,
       };
 
-      // Prepare bank transfer details if applicable
-      let bankTransferDetails = undefined;
-      if (paymentMethod === 'bank_transfer') {
-        bankTransferDetails = {
-          bank_name: formData.bank_name,
-          account_number: formData.account_number,
-          account_holder: formData.account_holder,
-          transfer_reference: formData.transfer_reference,
-        };
-      }
-
       // Send order to backend
       const response = await orders.create({
         items: orderItems,
@@ -175,7 +235,7 @@ export default function CheckoutPage() {
         total_amount: totalPrice,
         shipping_address: shippingAddress,
         payment_method: paymentMethod,
-        bank_transfer_details: bankTransferDetails,
+        order_reference: orderReference,
       });
 
       console.log('Order created successfully:', response);
@@ -411,7 +471,7 @@ export default function CheckoutPage() {
                 <h2 className="text-xl font-bold text-gray-900 mb-4">Phương thức thanh toán</h2>
                 <div className="space-y-4">
                   {/* Payment Method Selection */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* COD Option */}
                     <label className={`relative flex items-start p-4 border-2 rounded-lg cursor-pointer transition-all ${
                       paymentMethod === 'cod'
@@ -461,31 +521,6 @@ export default function CheckoutPage() {
                         </svg>
                       )}
                     </label>
-
-                    {/* Bank Transfer Option */}
-                    <label className={`relative flex items-start p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                      paymentMethod === 'bank_transfer'
-                        ? 'border-purple-500 bg-grey-200'
-                        : 'border-gray-300 hover:border-gray-300'
-                    }`}>
-                      <input
-                        type="radio"
-                        name="payment_method"
-                        value="bank_transfer"
-                        checked={paymentMethod === 'bank_transfer'}
-                        onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
-                        className="mt-1 cursor-pointer"
-                      />
-                      <div className="ml-3 flex-1">
-                        <p className="font-semibold text-gray-900">Chuyển khoản ngân hàng</p>
-                        <p className="text-sm text-gray-600">Chuyển khoản vào tài khoản ngân hàng của chúng tôi</p>
-                      </div>
-                      {paymentMethod === 'bank_transfer' && (
-                        <svg className="w-5 h-5 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                        </svg>
-                      )}
-                    </label>
                   </div>
 
                   {/* COD Info */}
@@ -497,7 +532,7 @@ export default function CheckoutPage() {
                         </svg>
                         <div>
                           <p className="font-semibold text-green-900 text-sm">Thanh toán khi nhận hàng</p>
-                          <p className="text-green-800 text-sm mt-1">Bạn sẽ thanh toán ${totalPrice.toFixed(2)} khi người giao hàng đến nơi.</p>
+                          <p className="text-green-800 text-sm mt-1">Bạn sẽ thanh toán {formatVND(totalPrice)} khi người giao hàng đến nơi.</p>
                         </div>
                       </div>
                     </div>
@@ -512,7 +547,7 @@ export default function CheckoutPage() {
                         </svg>
                         <div>
                           <p className="font-semibold text-blue-900 text-sm">Thanh toán QR Code</p>
-                          <p className="text-blue-800 text-sm mt-1">Quét mã QR bên dưới bằng ứng dụng thanh toán để trả ${totalPrice.toFixed(2)}</p>
+                          <p className="text-blue-800 text-sm mt-1">Quét mã QR bên dưới bằng ứng dụng thanh toán để trả {formatVND(totalPrice)}</p>
                         </div>
                       </div>
                       <div className="bg-grey-200 p-4 rounded border border-blue-200">
@@ -542,98 +577,58 @@ export default function CheckoutPage() {
                                 <path d="M4 4h7v7H4V4zm2 2v3h3V6H6zM13 4h7v7h-7V4zm2 2v3h3V6h-3zM4 13h7v7H4v-7zm2 2v3h3v-3H6zm9 0v1h1v-1h-1zm-1 1h1v1h-1v-1zm2 0h1v1h-1v-1zm1 1v1h1v-1h-1zm-1 1h1v1h-1v-1zm2 0h1v1h-1v-1z" />
                               </svg>
                               <p className="text-gray-900 text-xs font-medium">Mã QR</p>
-                              <p className="text-blue-100 text-xs mt-1">Số tiền: ${totalPrice.toFixed(2)}</p>
+                              <p className="text-blue-100 text-xs mt-1">Số tiền: {formatVND(totalPrice)}</p>
                             </div>
                           </div>
                         )}
                       </div>
-                    </div>
-                  )}
 
-                  {/* Bank Transfer Form */}
-                  {paymentMethod === 'bank_transfer' && (
-                    <div className="bg-grey-200 border border-purple-200 rounded-lg p-4 space-y-4">
-                      <div className="flex gap-3 mb-4">
-                        <svg className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                        </svg>
-                        <div>
-                          <p className="font-semibold text-purple-900 text-sm">Thông tin chuyển khoản</p>
-                          <p className="text-purple-800 text-sm mt-1">Vui lòng chuyển khoản ${totalPrice.toFixed(2)} vào tài khoản ngân hàng dưới đây</p>
+                      {/* Order Reference ID */}
+                      <div className="bg-yellow-50 p-3 rounded border border-yellow-200 mt-3">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-xs text-yellow-700">Mã đơn hàng (Nội dung chuyển khoản)</p>
+                            <p className="font-bold text-yellow-900 text-lg">{orderReference}</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText(orderReference);
+                            }}
+                            className="px-3 py-1 text-xs bg-yellow-200 hover:bg-yellow-300 text-yellow-800 rounded transition-colors"
+                          >
+                            Sao chép
+                          </button>
                         </div>
+                        <p className="text-xs text-yellow-600 mt-2">
+                          Vui lòng ghi mã này vào nội dung chuyển khoản để chúng tôi xác nhận thanh toán.
+                        </p>
                       </div>
 
-                      <div className="space-y-4">
-                        {/* Bank Name */}
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Tên ngân hàng</label>
-                          <input
-                            type="text"
-                            name="bank_name"
-                            value={formData.bank_name}
-                            onChange={handleInputChange}
-                            className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 ${
-                              errors.bank_name ? 'border-red-500' : 'border-gray-300'
-                            }`}
-                            placeholder="VD: Vietcombank / Techcombank"
-                          />
-                          {errors.bank_name && <p className="text-red-600 text-sm mt-1">{errors.bank_name}</p>}
+                      {/* Shop Payment Info */}
+                      {shopPaymentInfo && (
+                        <div className="bg-white p-4 rounded border border-blue-200 mt-4">
+                          <h4 className="font-semibold text-gray-900 text-sm mb-3">Thông tin tài khoản nhận tiền</h4>
+                          <div className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Ngân hàng:</span>
+                              <span className="font-medium text-gray-900">{shopPaymentInfo.bank_name}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Số tài khoản:</span>
+                              <span className="font-medium text-gray-900">{shopPaymentInfo.account_number}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Chủ tài khoản:</span>
+                              <span className="font-medium text-gray-900">{shopPaymentInfo.account_holder}</span>
+                            </div>
+                            <div className="flex justify-between border-t border-gray-200 pt-2 mt-2">
+                              <span className="text-gray-600">Số tiền:</span>
+                              <span className="font-bold text-green-600">{formatVND(totalPrice)}</span>
+                            </div>
+                          </div>
                         </div>
-
-                        {/* Account Number */}
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Số tài khoản</label>
-                          <input
-                            type="text"
-                            name="account_number"
-                            value={formData.account_number}
-                            onChange={handleInputChange}
-                            className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 ${
-                              errors.account_number ? 'border-red-500' : 'border-gray-300'
-                            }`}
-                            placeholder="0123456789"
-                          />
-                          {errors.account_number && <p className="text-red-600 text-sm mt-1">{errors.account_number}</p>}
-                        </div>
-
-                        {/* Account Holder */}
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Tên chủ tài khoản</label>
-                          <input
-                            type="text"
-                            name="account_holder"
-                            value={formData.account_holder}
-                            onChange={handleInputChange}
-                            className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 ${
-                              errors.account_holder ? 'border-red-500' : 'border-gray-300'
-                            }`}
-                            placeholder="Tên chủ tài khoản"
-                          />
-                          {errors.account_holder && <p className="text-red-600 text-sm mt-1">{errors.account_holder}</p>}
-                        </div>
-
-                        {/* Transfer Reference */}
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Mã tham chiếu / Nội dung chuyển khoản</label>
-                          <input
-                            type="text"
-                            name="transfer_reference"
-                            value={formData.transfer_reference}
-                            onChange={handleInputChange}
-                            className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 ${
-                              errors.transfer_reference ? 'border-red-500' : 'border-gray-300'
-                            }`}
-                            placeholder="VD: Đơn hàng #12345"
-                          />
-                          {errors.transfer_reference && <p className="text-red-600 text-sm mt-1">{errors.transfer_reference}</p>}
-                        </div>
-
-                        <div className="bg-grey-200 rounded p-3 border border-purple-200">
-                          <p className="text-xs text-gray-600">
-                            <span className="font-semibold">Lưu ý:</span> Vui lòng sử dụng mã tham chiếu làm nội dung/ghi chú khi chuyển khoản. Điều này giúp chúng tôi đối chiếu thanh toán với đơn hàng của bạn.
-                          </p>
-                        </div>
-                      </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -667,11 +662,7 @@ export default function CheckoutPage() {
                         d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
                       />
                     </svg>
-                    {paymentMethod === 'cod'
-                      ? 'Đặt hàng'
-                      : paymentMethod === 'qr'
-                      ? 'Đặt hàng & Thanh toán QR'
-                      : 'Đặt hàng & Chuyển khoản'}
+                    {paymentMethod === 'cod' ? 'Đặt hàng' : 'Đặt hàng & Thanh toán QR'}
                   </>
                 )}
               </button>
@@ -688,7 +679,7 @@ export default function CheckoutPage() {
                 {items.map((item, index) => (
                   <div key={index} className="flex justify-between text-sm">
                     <span className="text-gray-600">{item.title} x{item.quantity}</span>
-                    <span className="font-medium text-gray-900">${(item.price * item.quantity).toFixed(2)}</span>
+                    <span className="font-medium text-gray-900">{formatVND(item.price * item.quantity)}</span>
                   </div>
                 ))}
               </div>
@@ -697,7 +688,7 @@ export default function CheckoutPage() {
               <div className="space-y-2">
                 <div className="flex justify-between text-lg font-bold text-gray-900">
                   <span>Tổng cộng:</span>
-                  <span className="text-green-600">${totalPrice.toFixed(2)}</span>
+                  <span className="text-green-600">{formatVND(totalPrice)}</span>
                 </div>
               </div>
 

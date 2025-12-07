@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { GroupPost, groupPosts } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
+import { VideoEmbedList } from './VideoEmbed';
 
 interface GroupPostCardProps {
   post: GroupPost;
@@ -294,6 +295,11 @@ export default function GroupPostCard({
           <div className="text-gray-700 mb-4 line-clamp-3">
             {post.post_content.replace(/<[^>]*>/g, '').substring(0, 300)}...
           </div>
+        )}
+
+        {/* Video Embeds */}
+        {post.post_content && (
+          <VideoEmbedList content={post.post_content} className="mb-4" />
         )}
 
         {/* Engagement Stats */}

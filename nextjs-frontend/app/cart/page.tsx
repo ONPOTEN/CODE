@@ -25,6 +25,11 @@ export default function CartPage() {
   const totalPrice = getTotalPrice();
   const itemCount = items.length;
 
+  // Format price in VNĐ
+  const formatVND = (price: number) => {
+    return new Intl.NumberFormat('vi-VN').format(Math.round(price)) + ' VNĐ';
+  };
+
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
@@ -99,7 +104,7 @@ export default function CartPage() {
                       </div>
                     )}
                     <p className="text-lg font-bold text-green-600 mt-2">
-                      ${item.price.toFixed(2)}
+                      {formatVND(item.price)}
                     </p>
 
                     {/* Quantity Control */}
@@ -137,7 +142,7 @@ export default function CartPage() {
                         </button>
                       </div>
                       <span className="text-sm text-gray-600 ml-4">
-                        Tạm tính: ${(item.price * item.quantity).toFixed(2)}
+                        Tạm tính: {formatVND(item.price * item.quantity)}
                       </span>
                     </div>
                   </div>
@@ -164,7 +169,7 @@ export default function CartPage() {
                 <div className="space-y-2">
                   <div className="flex justify-between text-gray-600">
                     <span>Sản phẩm ({itemCount})</span>
-                    <span>${totalPrice.toFixed(2)}</span>
+                    <span>{formatVND(totalPrice)}</span>
                   </div>
                 </div>
 
@@ -175,7 +180,7 @@ export default function CartPage() {
                 <div className="space-y-4">
                   <div className="flex justify-between text-lg font-bold text-gray-900">
                     <span>Tổng cộng:</span>
-                    <span className="text-green-600">${totalPrice.toFixed(2)}</span>
+                    <span className="text-green-600">{formatVND(totalPrice)}</span>
                   </div>
 
                   {/* Checkout Button */}

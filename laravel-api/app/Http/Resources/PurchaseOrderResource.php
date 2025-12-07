@@ -17,7 +17,9 @@ class PurchaseOrderResource extends JsonResource
         return [
             'id' => $this->id,
             'order_number' => $this->order_number,
+            'order_reference' => $this->order_reference,
             'status' => $this->status,
+            'payment_method' => $this->payment_method,
             'user_id' => $this->user_id,
             'shop_id' => $this->shop_id,
             'subtotal' => (float) $this->subtotal,
