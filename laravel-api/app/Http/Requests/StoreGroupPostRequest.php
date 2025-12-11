@@ -23,7 +23,7 @@ class StoreGroupPostRequest extends FormRequest
     {
         return [
             'group_id' => 'required|integer|exists:groups,group_id',
-            'title' => 'required|string|max:255',
+            'title' => 'nullable|string|max:255', // Optional - auto-generated from content if not provided
             'content' => 'required|string',
             'excerpt' => 'nullable|string|max:500',
             'status' => 'nullable|in:publish,draft,pending,trash',
@@ -44,7 +44,6 @@ class StoreGroupPostRequest extends FormRequest
         return [
             'group_id.required' => 'Group is required',
             'group_id.exists' => 'The selected group does not exist',
-            'title.required' => 'Title is required',
             'title.max' => 'Title must not exceed 255 characters',
             'content.required' => 'Content is required',
             'excerpt.max' => 'Excerpt must not exceed 500 characters',

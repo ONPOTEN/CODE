@@ -180,6 +180,15 @@ async function handleResponse<T>(response: Response): Promise<T> {
     console.error(`[handleResponse] Error ${response.status}:`, errorMessage);
     console.error(`[handleResponse] Error details:`, error);
 
+    // Enhanced validation error logging
+    if (response.status === 422 && error.errors) {
+      console.error(`[handleResponse] Validation Errors (422):`);
+      Object.entries(error.errors).forEach(([field, messages]) => {
+        console.error(`  - ${field}:`, messages);
+      });
+      console.error(`[handleResponse] Full validation errors object:`, JSON.stringify(error.errors, null, 2));
+    }
+
     throw new ApiException(
       errorMessage,
       response.status,
@@ -815,6 +824,7 @@ export interface GroupPost {
   author?: User;
   group?: Group;
   images?: string[];
+  video?: string;
   likes_count?: number;
   dislikes_count?: number;
   comments_count?: number;
@@ -1360,6 +1370,7 @@ export interface ShopPost {
   main_image?: string; // Product main image
   featured_image?: string; // Legacy field for backward compatibility
   featured_images?: string[]; // New field for multiple images
+  video?: string; // Product video
   view_count: number;
   created_at: string;
   updated_at: string;

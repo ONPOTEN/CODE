@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { EngagementButtons } from '@/components/EngagementButtons';
 import { AuthorCard } from '@/components/AuthorCard';
 import { ImageCarousel } from '@/components/ImageCarousel';
+import VideoPlayer from '@/components/VideoPlayer';
 
 export default function InfiniteScrollPosts() {
   const [postsList, setPostsList] = useState<Post[]>([]);
@@ -312,6 +313,17 @@ export default function InfiniteScrollPosts() {
     {post.images && post.images.length > 0 && (
       <div className="w-full overflow-hidden">
         <ImageCarousel images={post.images} postId={post.id} />
+      </div>
+    )}
+
+    {/* Video Player */}
+    {post.video && (
+      <div className="mt-3 w-full rounded-lg overflow-hidden">
+        <VideoPlayer
+          src={post.video}
+          poster={post.featured_image || (post.images && post.images.length > 0 ? post.images[0].url : undefined)}
+          className="aspect-video w-full"
+        />
       </div>
     )}
 

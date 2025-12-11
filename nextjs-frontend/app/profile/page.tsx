@@ -336,7 +336,6 @@ export default function ProfilePage() {
                           {prequest.sender?.name || 'Người dùng không xác định'}
                         </p>
                       </Link>
-                      <p className="text-sm text-gray-500">@{prequest.sender?.username}</p>
                       <p className="text-xs text-gray-600 mt-1">
                         {new Date(prequest.created_at).toLocaleDateString('vi-VN', {
                           month: 'short',

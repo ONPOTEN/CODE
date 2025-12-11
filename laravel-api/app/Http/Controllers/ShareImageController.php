@@ -47,12 +47,17 @@ class ShareImageController extends Controller
     public function generate(int $postId)
     {
         try {
-            // Check cache for existing image URL
-            $cacheKey = "share_image_{$postId}";
-            $cachedUrl = Cache::get($cacheKey);
+            // Check cache for existing image data (stored as base64 to avoid MySQL binary issues)
+            $cacheKey = "share_image_data_b64_{$postId}";
+            $cachedBase64 = Cache::get($cacheKey);
 
-            if ($cachedUrl) {
-                return redirect($cachedUrl);
+            if ($cachedBase64) {
+                // Return image directly for Facebook crawler compatibility
+                $imageData = base64_decode($cachedBase64);
+                return response($imageData, 200)
+                    ->header('Content-Type', 'image/jpeg')
+                    ->header('Cache-Control', 'public, max-age=86400')
+                    ->header('X-Content-Type-Options', 'nosniff');
             }
 
             // Try to find the post in different tables
@@ -60,7 +65,7 @@ class ShareImageController extends Controller
 
             if (!$postData) {
                 Log::warning('[ShareImage] Post not found in any table', ['post_id' => $postId]);
-                return $this->generatePlaceholder();
+                return $this->generatePlaceholderDirect();
             }
 
             // Get thumbnail URL based on post type
@@ -69,29 +74,40 @@ class ShareImageController extends Controller
             // Generate image using GD
             $imageData = $this->createShareImageGeneric($postData['title'], $postData['author'], $thumbnailUrl);
 
-            // Upload to S3
+            // Upload to S3 (for backup/CDN)
             $s3Url = $this->uploadToS3($postId, $imageData);
 
-            // Cache the URL for 24 hours
-            Cache::put($cacheKey, $s3Url, now()->addHours(24));
+            // Cache the image data as base64 for 24 hours (MySQL can't store raw binary)
+            Cache::put($cacheKey, base64_encode($imageData), now()->addHours(24));
+
+            // Also cache URL for API endpoint
+            Cache::put("share_image_{$postId}", $s3Url, now()->addHours(24));
 
             Log::info('[ShareImage] Generated and uploaded to S3', [
                 'post_id' => $postId,
                 'url' => $s3Url,
             ]);
 
-            // Redirect to S3 URL
-            return redirect($s3Url);
+            // Return image directly for Facebook crawler compatibility
+            return response($imageData, 200)
+                ->header('Content-Type', 'image/jpeg')
+                ->header('Cache-Control', 'public, max-age=86400')
+                ->header('X-Content-Type-Options', 'nosniff');
 
         } catch (\Exception $e) {
+            // Safely log error without potentially malformed data
+            $errorMsg = mb_convert_encoding($e->getMessage(), 'UTF-8', 'UTF-8');
+            $errorMsg = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $errorMsg);
+
             Log::error('[ShareImage] Error generating share image', [
                 'post_id' => $postId,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
+                'error' => $errorMsg ?: 'Unknown error',
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
             ]);
 
             // Return a default placeholder image
-            return $this->generatePlaceholder();
+            return $this->generatePlaceholderDirect();
         }
     }
 
@@ -104,12 +120,17 @@ class ShareImageController extends Controller
     public function generateShopPost(int $postId)
     {
         try {
-            // Check cache for existing image URL (use different cache key for shop posts)
-            $cacheKey = "share_image_shop_post_{$postId}";
-            $cachedUrl = Cache::get($cacheKey);
+            // Check cache for existing image data (stored as base64 to avoid MySQL binary issues)
+            $cacheKey = "share_image_shop_post_data_b64_{$postId}";
+            $cachedBase64 = Cache::get($cacheKey);
 
-            if ($cachedUrl) {
-                return redirect($cachedUrl);
+            if ($cachedBase64) {
+                // Return image directly for Facebook crawler compatibility
+                $imageData = base64_decode($cachedBase64);
+                return response($imageData, 200)
+                    ->header('Content-Type', 'image/jpeg')
+                    ->header('Cache-Control', 'public, max-age=86400')
+                    ->header('X-Content-Type-Options', 'nosniff');
             }
 
             // Find ShopPost specifically with shop relationship
@@ -117,7 +138,7 @@ class ShareImageController extends Controller
 
             if (!$shopPost) {
                 Log::warning('[ShareImage] ShopPost not found', ['post_id' => $postId]);
-                return $this->generatePlaceholder();
+                return $this->generatePlaceholderDirect();
             }
 
             // Get product image first, then fall back to shop images
@@ -152,16 +173,22 @@ class ShareImageController extends Controller
             // Upload to S3 (use different path for shop posts)
             $s3Url = $this->uploadToS3ShopPost($postId, $imageData);
 
-            // Cache the URL for 24 hours
-            Cache::put($cacheKey, $s3Url, now()->addHours(24));
+            // Cache the image data as base64 for 24 hours (MySQL can't store raw binary)
+            Cache::put($cacheKey, base64_encode($imageData), now()->addHours(24));
+
+            // Also cache URL for API endpoint
+            Cache::put("share_image_shop_post_{$postId}", $s3Url, now()->addHours(24));
 
             Log::info('[ShareImage] ShopPost share image generated and uploaded to S3', [
                 'post_id' => $postId,
                 'url' => $s3Url,
             ]);
 
-            // Redirect to S3 URL
-            return redirect($s3Url);
+            // Return image directly for Facebook crawler compatibility
+            return response($imageData, 200)
+                ->header('Content-Type', 'image/jpeg')
+                ->header('Cache-Control', 'public, max-age=86400')
+                ->header('X-Content-Type-Options', 'nosniff');
 
         } catch (\Exception $e) {
             Log::error('[ShareImage] Error generating ShopPost share image', [
@@ -171,7 +198,7 @@ class ShareImageController extends Controller
             ]);
 
             // Return a default placeholder image
-            return $this->generatePlaceholder();
+            return $this->generatePlaceholderDirect();
         }
     }
 
@@ -595,6 +622,96 @@ class ShareImageController extends Controller
     }
 
     /**
+     * Debug endpoint to check any post's share image data
+     *
+     * @param int $postId
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function debug(int $postId)
+    {
+        $result = [
+            'post_id' => $postId,
+            'timestamp' => now()->toIso8601String(),
+            'cache_status' => [],
+            'post_data' => null,
+            'image_generation' => [],
+            's3_config' => [
+                'bucket' => $this->bucket,
+                'endpoint' => env('AWS_ENDPOINT'),
+                'region' => env('AWS_DEFAULT_REGION'),
+            ],
+        ];
+
+        // Check cache status
+        $cacheKey = "share_image_{$postId}";
+        $cacheDataKey = "share_image_data_{$postId}";
+        $result['cache_status'] = [
+            'url_cached' => Cache::has($cacheKey),
+            'url_value' => Cache::get($cacheKey),
+            'data_cached' => Cache::has($cacheDataKey),
+            'data_size' => Cache::has($cacheDataKey) ? strlen(Cache::get($cacheDataKey)) . ' bytes' : null,
+        ];
+
+        // Find post
+        $postData = $this->findPost($postId);
+        if (!$postData) {
+            $result['post_data'] = [
+                'found' => false,
+                'error' => 'Post not found in GroupPost, ShopPost, or WpPost tables',
+            ];
+            return response()->json($result);
+        }
+
+        $result['post_data'] = [
+            'found' => true,
+            'type' => $postData['type'],
+            'title' => $postData['title'],
+            'author' => $postData['author'],
+            'thumbnail_url' => $postData['thumbnail'],
+        ];
+
+        // Test image loading
+        if ($postData['thumbnail']) {
+            $result['image_generation']['thumbnail_url'] = $postData['thumbnail'];
+
+            // Check URL validation
+            $result['image_generation']['url_allowed'] = $this->isAllowedUrl($postData['thumbnail']);
+
+            // Test loading
+            $image = $this->loadImageFromUrl($postData['thumbnail']);
+            $result['image_generation']['image_load'] = $image ? 'SUCCESS' : 'FAILED';
+            if ($image) {
+                $result['image_generation']['image_dimensions'] = [
+                    'width' => imagesx($image),
+                    'height' => imagesy($image),
+                ];
+                imagedestroy($image);
+            }
+        } else {
+            $result['image_generation']['thumbnail_url'] = null;
+            $result['image_generation']['note'] = 'No thumbnail found, will use placeholder';
+        }
+
+        // Check GD library
+        $result['image_generation']['gd_available'] = function_exists('imagecreatetruecolor');
+        $result['image_generation']['gd_info'] = function_exists('gd_info') ? gd_info() : 'GD not available';
+
+        // Check font files
+        $result['image_generation']['fonts'] = [
+            'Inter-Bold' => file_exists(public_path('fonts/Inter-Bold.ttf')),
+            'Inter-Regular' => file_exists(public_path('fonts/Inter-Regular.ttf')),
+        ];
+
+        // Check logo
+        $result['image_generation']['logo_exists'] = file_exists(public_path('logo/cm2-logo.png'));
+
+        // Generate expected S3 URL
+        $result['expected_s3_url'] = $this->getPublicUrl("share-images/{$postId}.jpg");
+
+        return response()->json($result);
+    }
+
+    /**
      * Debug endpoint to check ShopPost image data
      *
      * @param int $postId
@@ -655,6 +772,17 @@ class ShareImageController extends Controller
      */
     private function createShareImageGeneric(string $title, string $author, ?string $thumbnailUrl): string
     {
+        // Check if GD library is available
+        if (!function_exists('imagecreatetruecolor')) {
+            Log::warning('[ShareImage] GD library not available');
+            // Return empty string - caller should handle this
+            throw new \Exception('GD library not available. Please install php-gd extension.');
+        }
+
+        // Sanitize text inputs to ensure valid UTF-8
+        $title = $this->sanitizeText($title);
+        $author = $this->sanitizeText($author);
+
         $width = 1200;
         $height = 630;
 
@@ -978,6 +1106,136 @@ class ShareImageController extends Controller
 
 
     /**
+     * SECURITY: Validate URL before fetching to prevent SSRF attacks
+     *
+     * @param string $url
+     * @return bool
+     */
+    private function isAllowedUrl(string $url): bool
+    {
+        $parsedUrl = parse_url($url);
+
+        if (!$parsedUrl || !isset($parsedUrl['host'])) {
+            Log::warning('[Security] Invalid URL format', ['url' => $url]);
+            return false;
+        }
+
+        // Only allow http/https schemes
+        if (!isset($parsedUrl['scheme']) || !in_array($parsedUrl['scheme'], ['http', 'https'])) {
+            Log::warning('[Security] Invalid URL scheme', ['url' => $url, 'scheme' => $parsedUrl['scheme'] ?? 'none']);
+            return false;
+        }
+
+        // Whitelist of allowed domains
+        $allowedHosts = [
+            'centimet2.com',
+            'www.centimet2.com',
+            'atm288528-s3user.vcos1.cloudstorage.com.vn',
+            'i.imgur.com',
+            'cdn.shopify.com',
+        ];
+
+        // Check if host is in allowed list
+        $host = strtolower($parsedUrl['host']);
+        $isAllowed = false;
+        foreach ($allowedHosts as $allowed) {
+            if ($host === $allowed || str_ends_with($host, '.' . $allowed)) {
+                $isAllowed = true;
+                break;
+            }
+        }
+
+        if (!$isAllowed) {
+            Log::warning('[Security] Blocked unauthorized domain', ['url' => $url, 'host' => $host]);
+            return false;
+        }
+
+        // Resolve hostname to IP and block private/local IPs
+        $ip = gethostbyname($host);
+        if ($this->isPrivateIP($ip)) {
+            Log::warning('[Security] Blocked private IP address', ['url' => $url, 'host' => $host, 'ip' => $ip]);
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * SECURITY: Check if IP is private/local/reserved to prevent SSRF to internal network
+     *
+     * @param string $ip
+     * @return bool
+     */
+    private function isPrivateIP(string $ip): bool
+    {
+        // Block private, local, and reserved IP ranges
+        return filter_var(
+            $ip,
+            FILTER_VALIDATE_IP,
+            FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE
+        ) === false;
+    }
+
+    /**
+     * SECURITY: Validate DNS safety to prevent DNS rebinding attacks
+     *
+     * @param string $url
+     * @return bool
+     */
+    private function validateDnsSafety(string $url): bool
+    {
+        $parsedUrl = parse_url($url);
+        if (!$parsedUrl || !isset($parsedUrl['host'])) {
+            return false;
+        }
+
+        $host = $parsedUrl['host'];
+
+        // Get ALL IP addresses for the hostname
+        $ips = [];
+
+        // IPv4
+        $records = @dns_get_record($host, DNS_A);
+        if ($records) {
+            foreach ($records as $record) {
+                if (isset($record['ip'])) {
+                    $ips[] = $record['ip'];
+                }
+            }
+        }
+
+        // IPv6
+        $records = @dns_get_record($host, DNS_AAAA);
+        if ($records) {
+            foreach ($records as $record) {
+                if (isset($record['ipv6'])) {
+                    $ips[] = $record['ipv6'];
+                }
+            }
+        }
+
+        // If no IPs resolved, block the request
+        if (empty($ips)) {
+            Log::warning('[Security] DNS resolution failed', ['host' => $host]);
+            return false;
+        }
+
+        // Check ALL resolved IPs (prevent DNS rebinding)
+        foreach ($ips as $ip) {
+            if ($this->isPrivateIP($ip)) {
+                Log::warning('[Security] DNS resolved to private IP', [
+                    'host' => $host,
+                    'ip' => $ip,
+                    'url' => $url,
+                ]);
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
      * Load image from URL
      *
      * @param string $url
@@ -985,6 +1243,18 @@ class ShareImageController extends Controller
      */
     private function loadImageFromUrl(string $url)
     {
+        // SECURITY: Validate URL before fetching to prevent SSRF attacks
+        if (!$this->isAllowedUrl($url)) {
+            Log::error('[Security] BLOCKED unauthorized URL in loadImageFromUrl', ['url' => $url]);
+            return false;
+        }
+
+        // SECURITY: Double-check DNS after initial validation (prevent DNS rebinding)
+        if (!$this->validateDnsSafety($url)) {
+            Log::error('[Security] BLOCKED due to unsafe DNS resolution', ['url' => $url]);
+            return false;
+        }
+
         Log::info('[ShareImage] Attempting to load image from URL', ['url' => $url]);
 
         // Try cURL first (more reliable for HTTPS)
@@ -994,10 +1264,13 @@ class ShareImageController extends Controller
                 CURLOPT_URL => $url,
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_FOLLOWLOCATION => true,
-                CURLOPT_TIMEOUT => 15,
-                CURLOPT_SSL_VERIFYPEER => false,
-                CURLOPT_SSL_VERIFYHOST => false,
+                CURLOPT_MAXREDIRS => 3, // SECURITY: Limit redirects
+                CURLOPT_TIMEOUT => 10, // SECURITY: Reduced from 15 to 10
+                CURLOPT_CONNECTTIMEOUT => 5, // SECURITY: Connection timeout
+                CURLOPT_SSL_VERIFYPEER => true, // SECURITY: ENABLE SSL verification
+                CURLOPT_SSL_VERIFYHOST => 2, // SECURITY: ENABLE host verification
                 CURLOPT_USERAGENT => 'Mozilla/5.0 (compatible; CM2Bot/1.0)',
+                CURLOPT_PROTOCOLS => CURLPROTO_HTTP | CURLPROTO_HTTPS, // SECURITY: Only HTTP/HTTPS
             ]);
 
             $imageData = curl_exec($ch);
@@ -1058,6 +1331,32 @@ class ShareImageController extends Controller
     }
 
     /**
+     * Sanitize text to ensure valid UTF-8 encoding
+     *
+     * @param string $text
+     * @return string
+     */
+    private function sanitizeText(string $text): string
+    {
+        // Convert to UTF-8, handling various encodings
+        $text = mb_convert_encoding($text, 'UTF-8', 'UTF-8');
+
+        // Remove any invalid UTF-8 sequences and control characters
+        $text = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $text);
+
+        // Strip HTML tags
+        $text = strip_tags($text);
+
+        // Decode HTML entities
+        $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+        // Normalize whitespace
+        $text = preg_replace('/\s+/', ' ', trim($text));
+
+        return $text ?: 'Untitled';
+    }
+
+    /**
      * Truncate text to max length
      *
      * @param string $text
@@ -1066,11 +1365,23 @@ class ShareImageController extends Controller
      */
     private function truncateText(string $text, int $maxLength): string
     {
-        if (mb_strlen($text) <= $maxLength) {
+        // Ensure text is valid UTF-8
+        $text = mb_convert_encoding($text, 'UTF-8', 'UTF-8');
+
+        // Remove any invalid UTF-8 sequences
+        $text = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $text);
+
+        // Strip HTML tags
+        $text = strip_tags($text);
+
+        // Normalize whitespace
+        $text = preg_replace('/\s+/', ' ', trim($text));
+
+        if (mb_strlen($text, 'UTF-8') <= $maxLength) {
             return $text;
         }
 
-        return mb_substr($text, 0, $maxLength - 1) . '…';
+        return mb_substr($text, 0, $maxLength - 1, 'UTF-8') . '…';
     }
 
     /**
@@ -1276,5 +1587,135 @@ class ShareImageController extends Controller
                 ->header('Content-Type', 'image/jpeg')
                 ->header('Cache-Control', 'public, max-age=3600');
         }
+    }
+
+    /**
+     * Generate placeholder image and return directly (for Facebook crawler compatibility)
+     *
+     * @return Response
+     */
+    private function generatePlaceholderDirect()
+    {
+        // Check cache for placeholder data (stored as base64 to avoid binary storage issues)
+        $cacheKey = "share_image_placeholder_data_b64";
+        $cachedBase64 = Cache::get($cacheKey);
+
+        if ($cachedBase64) {
+            $imageData = base64_decode($cachedBase64);
+            return response($imageData, 200)
+                ->header('Content-Type', 'image/jpeg')
+                ->header('Cache-Control', 'public, max-age=86400')
+                ->header('X-Content-Type-Options', 'nosniff');
+        }
+
+        // Check if GD library is available
+        if (!function_exists('imagecreatetruecolor')) {
+            Log::warning('[ShareImage] GD library not available, using static placeholder');
+            // Return a static placeholder or redirect to a default image
+            $staticPlaceholder = public_path('images/og-placeholder.jpg');
+            if (file_exists($staticPlaceholder)) {
+                $imageData = file_get_contents($staticPlaceholder);
+                return response($imageData, 200)
+                    ->header('Content-Type', 'image/jpeg')
+                    ->header('Cache-Control', 'public, max-age=86400')
+                    ->header('X-Content-Type-Options', 'nosniff');
+            }
+            // If no static placeholder, return 1x1 transparent pixel
+            $pixel = base64_decode('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7');
+            return response($pixel, 200)
+                ->header('Content-Type', 'image/gif')
+                ->header('Cache-Control', 'public, max-age=86400');
+        }
+
+        $width = 1200;
+        $height = 630;
+
+        $canvas = imagecreatetruecolor($width, $height);
+        $bgColor = imagecolorallocate($canvas, 50, 50, 60);
+        $accentColor = imagecolorallocate($canvas, 255, 102, 0);
+
+        imagefill($canvas, 0, 0, $bgColor);
+
+        // Add logo if exists
+        $logoPath = public_path('logo/cm2-logo.png');
+        if (file_exists($logoPath)) {
+            $logo = @imagecreatefrompng($logoPath);
+            if ($logo) {
+                $logoWidth = 150;
+                $logoHeight = 150;
+                $logoResized = imagecreatetruecolor($logoWidth, $logoHeight);
+                imagesavealpha($logoResized, true);
+                $transparent = imagecolorallocatealpha($logoResized, 0, 0, 0, 127);
+                imagefill($logoResized, 0, 0, $transparent);
+
+                imagecopyresampled(
+                    $logoResized, $logo,
+                    0, 0, 0, 0,
+                    $logoWidth, $logoHeight, imagesx($logo), imagesy($logo)
+                );
+
+                $logoX = ($width - $logoWidth) / 2;
+                $logoY = ($height - $logoHeight) / 2 - 50;
+                imagecopy($canvas, $logoResized, $logoX, $logoY, 0, 0, $logoWidth, $logoHeight);
+                imagedestroy($logo);
+                imagedestroy($logoResized);
+            }
+        }
+
+        // Draw site name
+        $fontPath = public_path('fonts/Inter-Bold.ttf');
+        $fontUsed = false;
+        if (file_exists($fontPath) && is_readable($fontPath)) {
+            try {
+                $text = "centimet2.com";
+                $fontSize = 36;
+                $bbox = @imagettfbbox($fontSize, 0, $fontPath, $text);
+                if ($bbox !== false) {
+                    $textWidth = $bbox[2] - $bbox[0];
+                    $textX = ($width - $textWidth) / 2;
+                    @imagettftext($canvas, $fontSize, 0, $textX, $height / 2 + 80, $accentColor, $fontPath, $text);
+                    $fontUsed = true;
+                }
+            } catch (\Exception $e) {
+                // Font failed, use fallback
+            }
+        }
+
+        if (!$fontUsed) {
+            // Fallback to built-in font
+            $text = "centimet2.com";
+            $textWidth = strlen($text) * imagefontwidth(5);
+            $textX = ($width - $textWidth) / 2;
+            imagestring($canvas, 5, $textX, $height / 2 + 50, $text, $accentColor);
+        }
+
+        ob_start();
+        imagejpeg($canvas, null, 90);
+        $imageData = ob_get_clean();
+
+        imagedestroy($canvas);
+
+        // Cache the placeholder data as base64 for 7 days (MySQL can't store raw binary)
+        Cache::put($cacheKey, base64_encode($imageData), now()->addDays(7));
+
+        // Also upload to S3 in background (non-blocking)
+        try {
+            $key = "share-images/placeholder.jpg";
+            $this->s3Client->putObject([
+                'Bucket' => $this->bucket,
+                'Key'    => $key,
+                'Body'   => $imageData,
+                'ContentType' => 'image/jpeg',
+                'ACL'    => 'public-read',
+                'CacheControl' => 'max-age=604800',
+            ]);
+        } catch (\Exception $e) {
+            // Ignore S3 upload errors for placeholder
+        }
+
+        return response($imageData, 200)
+            ->header('Content-Type', 'image/jpeg')
+            ->header('Cache-Control', 'public, max-age=86400')
+            ->header('X-Content-Type-Options', 'nosniff');
     }
 }

@@ -77,8 +77,8 @@ export default function EditShopPostPage() {
       // Set existing images from the post
       setExistingImages(postData.featured_images || []);
       // Set existing video if available
-      if ((postData as any).video) {
-        setExistingVideo((postData as any).video);
+      if (postData.video) {
+        setExistingVideo(postData.video);
       }
     } catch (error) {
       console.error('Error fetching post:', error);
@@ -467,8 +467,8 @@ export default function EditShopPostPage() {
                 </div>
               )}
 
-              {/* Video Upload Input */}
-              {!videoPreview && (
+              {/* Video Upload Input - show only when no existing video and no new video preview */}
+              {!videoPreview && (!existingVideo || removeExistingVideo) && (
                 <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
                   <div className="flex flex-col items-center justify-center pt-5 pb-6">
                     <span className="text-3xl mb-2">🎬</span>

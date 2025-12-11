@@ -151,9 +151,39 @@ class PostController extends Controller
         // Get video file if present
         $videoFile = $allFiles['video'] ?? null;
 
+        // Log video file details for debugging
+        if ($videoFile !== null) {
+            \Log::info('Video upload attempt', [
+                'original_name' => $videoFile->getClientOriginalName(),
+                'size' => $videoFile->getSize(),
+                'mime_type' => $videoFile->getMimeType(),
+                'error' => $videoFile->getError(),
+                'error_message' => $videoFile->getErrorMessage(),
+                'is_valid' => $videoFile->isValid(),
+                'php_upload_max_filesize' => ini_get('upload_max_filesize'),
+                'php_post_max_size' => ini_get('post_max_size'),
+            ]);
+
+            // Check if the file upload failed
+            if (!$videoFile->isValid()) {
+                return response()->json([
+                    'message' => 'Video upload failed',
+                    'errors' => [
+                        'video' => [$videoFile->getErrorMessage() ?: 'The video file could not be uploaded. Max file size is ' . ini_get('upload_max_filesize')],
+                    ],
+                    'debug' => [
+                        'error_code' => $videoFile->getError(),
+                        'php_upload_max' => ini_get('upload_max_filesize'),
+                        'php_post_max' => ini_get('post_max_size'),
+                    ],
+                ], 422);
+            }
+        }
+
         // Validate request data
+        // Title is optional - will be auto-generated from content if not provided
         $validationRules = [
-            'title' => 'required|string|max:255',
+            'title' => 'nullable|string|max:255',
             'content' => 'required|string',
             'excerpt' => 'nullable|string',
             'type' => 'nullable|string|in:post,page,product',
@@ -177,8 +207,14 @@ class PostController extends Controller
 
         $user = $request->user();
 
+        // Auto-generate title from content if not provided
+        $title = $validated['title'] ?? null;
+        if (empty($title)) {
+            $title = $this->generateTitleFromContent($validated['content']);
+        }
+
         // Generate slug from title
-        $slug = Str::slug($validated['title']);
+        $slug = Str::slug($title);
         $originalSlug = $slug;
         $counter = 1;
 
@@ -198,7 +234,7 @@ class PostController extends Controller
             'post_date' => $now,
             'post_date_gmt' => $now,
             'post_content' => $validated['content'],
-            'post_title' => $validated['title'],
+            'post_title' => $title,
             'post_excerpt' => $validated['excerpt'] ?? '',
             'post_status' => $validated['status'] ?? 'draft',
             'post_name' => $slug,
@@ -237,15 +273,31 @@ class PostController extends Controller
             $files = [$files];
         }
 
-        // Validate that we have proper UploadedFile objects
+        // Validate that we have proper UploadedFile objects with valid paths
         $validFiles = [];
         foreach ($files as $file) {
             if ($file instanceof \Illuminate\Http\UploadedFile) {
+                // Check if the file is valid and has a real path
+                if (!$file->isValid()) {
+                    \Log::warning('Invalid file upload detected', [
+                        'original_name' => $file->getClientOriginalName(),
+                        'error' => $file->getError(),
+                        'error_message' => $file->getErrorMessage(),
+                    ]);
+                    continue;
+                }
+                if (!$file->getRealPath() || !file_exists($file->getRealPath())) {
+                    \Log::warning('File temp path does not exist', [
+                        'original_name' => $file->getClientOriginalName(),
+                        'path' => $file->getRealPath(),
+                    ]);
+                    continue;
+                }
                 $validFiles[] = $file;
             } else {
                 \Log::warning('Invalid file object received', [
                     'file_type' => gettype($file),
-                    'file_class' => get_class($file),
+                    'file_class' => is_object($file) ? get_class($file) : 'not an object',
                 ]);
             }
         }
@@ -336,47 +388,61 @@ class PostController extends Controller
 
         // Handle video upload
         if ($videoFile instanceof \Illuminate\Http\UploadedFile) {
-            // Create folder structure for video: videos/userid/year/month/date
-            $userId = $user->ID;
-            $year = $now->format('Y');
-            $month = $now->format('m');
-            $date = $now->format('d');
-            $videoUploadPath = "videos/{$userId}/{$year}/{$month}/{$date}";
-            $videoFilename = time() . '_' . Str::random(10) . '.' . $videoFile->getClientOriginalExtension();
-
-            try {
-                \Log::info('Uploading video to S3 (store)', [
-                    'filename' => $videoFilename,
-                    'uploadPath' => $videoUploadPath,
-                    'originalName' => $videoFile->getClientOriginalName(),
-                    'size' => $videoFile->getSize(),
+            // Verify the video file is still valid and readable
+            if (!$videoFile->isValid()) {
+                \Log::error('Video file is no longer valid', [
+                    'error' => $videoFile->getError(),
+                    'error_message' => $videoFile->getErrorMessage(),
                 ]);
+            } elseif (!$videoFile->getRealPath() || !file_exists($videoFile->getRealPath())) {
+                \Log::error('Video temp file does not exist', [
+                    'path' => $videoFile->getRealPath(),
+                    'original_name' => $videoFile->getClientOriginalName(),
+                ]);
+            } else {
+                // Create folder structure for video: videos/userid/year/month/date
+                $userId = $user->ID;
+                $year = $now->format('Y');
+                $month = $now->format('m');
+                $date = $now->format('d');
+                $videoUploadPath = "videos/{$userId}/{$year}/{$month}/{$date}";
+                $videoFilename = time() . '_' . Str::random(10) . '.' . $videoFile->getClientOriginalExtension();
 
-                $videoPath = $videoFile->storeAs($videoUploadPath, $videoFilename, 's3');
-
-                if ($videoPath !== false && !empty($videoPath)) {
-                    // Store video path in post meta
-                    $post->meta()->create([
-                        'meta_key' => '_post_video',
-                        'meta_value' => $videoPath,
-                    ]);
-
-                    \Log::info('Video uploaded successfully (store)', [
-                        'post_id' => $post->ID,
-                        'video_path' => $videoPath,
-                    ]);
-                } else {
-                    \Log::error('Video upload failed (store): storeAs returned false/empty', [
+                try {
+                    \Log::info('Uploading video to S3 (store)', [
                         'filename' => $videoFilename,
                         'uploadPath' => $videoUploadPath,
+                        'originalName' => $videoFile->getClientOriginalName(),
+                        'size' => $videoFile->getSize(),
+                        'realPath' => $videoFile->getRealPath(),
+                    ]);
+
+                    $videoPath = $videoFile->storeAs($videoUploadPath, $videoFilename, 's3');
+
+                    if ($videoPath !== false && !empty($videoPath)) {
+                        // Store video path in post meta
+                        $post->meta()->create([
+                            'meta_key' => '_post_video',
+                            'meta_value' => $videoPath,
+                        ]);
+
+                        \Log::info('Video uploaded successfully (store)', [
+                            'post_id' => $post->ID,
+                            'video_path' => $videoPath,
+                        ]);
+                    } else {
+                        \Log::error('Video upload failed (store): storeAs returned false/empty', [
+                            'filename' => $videoFilename,
+                            'uploadPath' => $videoUploadPath,
+                        ]);
+                    }
+                } catch (\Throwable $e) {
+                    \Log::error('Exception uploading video to S3 (store)', [
+                        'filename' => $videoFilename,
+                        'error' => $e->getMessage(),
+                        'exception_class' => get_class($e),
                     ]);
                 }
-            } catch (\Throwable $e) {
-                \Log::error('Exception uploading video to S3 (store)', [
-                    'filename' => $videoFilename,
-                    'error' => $e->getMessage(),
-                    'exception_class' => get_class($e),
-                ]);
             }
         }
 
@@ -1107,5 +1173,45 @@ class PostController extends Controller
                 'title' => $title,
             ],
         ]);
+    }
+
+    /**
+     * Generate a title from content by extracting the first meaningful text
+     *
+     * @param string $content
+     * @return string
+     */
+    private function generateTitleFromContent(string $content): string
+    {
+        // Strip HTML tags
+        $text = strip_tags($content);
+
+        // Decode HTML entities
+        $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+        // Normalize whitespace
+        $text = preg_replace('/\s+/', ' ', trim($text));
+
+        // If empty, return default title with timestamp
+        if (empty($text)) {
+            return 'Bài viết ' . now()->format('d/m/Y H:i');
+        }
+
+        // Get first 100 characters as title (reasonable title length)
+        $maxLength = 100;
+        if (mb_strlen($text, 'UTF-8') <= $maxLength) {
+            return $text;
+        }
+
+        // Truncate at word boundary
+        $truncated = mb_substr($text, 0, $maxLength, 'UTF-8');
+
+        // Try to cut at last space to avoid cutting words
+        $lastSpace = mb_strrpos($truncated, ' ', 0, 'UTF-8');
+        if ($lastSpace !== false && $lastSpace > 50) {
+            $truncated = mb_substr($truncated, 0, $lastSpace, 'UTF-8');
+        }
+
+        return $truncated . '...';
     }
 }

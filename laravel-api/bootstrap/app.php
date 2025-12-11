@@ -16,10 +16,15 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->statefulApi();
         $middleware->api(append: [
             \App\Http\Middleware\EnsureJsonApiResponse::class,
+            \App\Http\Middleware\ValidateUrlInput::class,  // SECURITY: Block malicious input
+            \App\Http\Middleware\SecureUrlValidator::class, // SECURITY: Enhanced SSRF protection
+            \App\Http\Middleware\LogSecurityEvents::class, // SECURITY: Log all requests
         ]);
         $middleware->alias([
             'admin' => \App\Http\Middleware\AdminMiddleware::class,
+            'admin.ip' => \App\Http\Middleware\AdminIpWhitelist::class,
             'optional.auth' => \App\Http\Middleware\OptionalAuth::class,
+            'throttle.advanced' => \App\Http\Middleware\AdvancedRateLimiting::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
@@ -69,14 +74,24 @@ return Application::configure(basePath: dirname(__DIR__))
 
                 // Catch any other exception and return JSON for API routes
                 if (!($e instanceof \Symfony\Component\HttpKernel\Exception\HttpException)) {
+                    // Safely handle error message - some may contain binary data
+                    $errorMessage = $e->getMessage();
+                    if (!mb_check_encoding($errorMessage, 'UTF-8')) {
+                        $errorMessage = 'An error occurred (message contains invalid encoding)';
+                    }
+                    $errorMessage = mb_convert_encoding($errorMessage, 'UTF-8', 'UTF-8');
+                    $errorMessage = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $errorMessage);
+
                     \Log::error('API Exception', [
                         'exception' => class_basename($e),
-                        'message' => $e->getMessage(),
+                        'message' => $errorMessage ?: 'Unknown error',
                         'path' => $request->path(),
+                        'file' => $e->getFile(),
+                        'line' => $e->getLine(),
                     ]);
                     return response()->json([
                         'message' => 'Server error',
-                        'error' => $e->getMessage(),
+                        'error' => $errorMessage ?: 'An unexpected error occurred',
                     ], 500);
                 }
             }

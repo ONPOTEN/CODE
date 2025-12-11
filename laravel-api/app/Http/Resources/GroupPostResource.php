@@ -40,6 +40,7 @@ class GroupPostResource extends JsonResource
                 'visibility' => $this->visibility,
                 'featured_image' => $this->getFeaturedImage(),
                 'images' => $this->getImages(),
+                'video' => $this->getVideo(),
                 'likes_count' => $this->getLikesCount(),
                 'dislikes_count' => $this->getDislikesCount(),
                 'comments_count' => $this->getCommentsCount(),
@@ -69,6 +70,22 @@ class GroupPostResource extends JsonResource
         }
 
         return \Storage::disk('s3')->url($featuredImagePath);
+    }
+
+    /**
+     * Get video URL from S3
+     */
+    protected function getVideo()
+    {
+        $videoPath = $this->meta()
+            ->where('meta_key', '_post_video')
+            ->first()?->meta_value;
+
+        if (!$videoPath) {
+            return null;
+        }
+
+        return \Storage::disk('s3')->url($videoPath);
     }
 
     /**

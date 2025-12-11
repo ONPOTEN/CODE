@@ -235,7 +235,7 @@ export function EngagementButtons({
         className={`${baseButtonClasses} ${
           engagement.likes.user_liked
             ? 'bg-blue-100 text-blue-600 hover:bg-blue-200'
-            : 'bg-blue-100 text-gray-700 hover:bg-blue-200'
+            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
         } disabled:opacity-50 disabled:cursor-not-allowed`}
         title={isAuthenticated ? 'Thích bài viết' : 'Đăng nhập để thích bài viết'}
       >
@@ -255,7 +255,7 @@ export function EngagementButtons({
         className={`${baseButtonClasses} ${
           engagement.dislikes.user_disliked
             ? 'bg-red-100 text-red-600 hover:bg-red-200'
-            : 'bg-red-100 text-red-700 hover:bg-red-200'
+            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
         } disabled:opacity-50 disabled:cursor-not-allowed`}
         title={isAuthenticated ? 'Không thích bài viết' : 'Đăng nhập để không thích bài viết'}
       >

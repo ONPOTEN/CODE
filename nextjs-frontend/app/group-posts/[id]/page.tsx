@@ -1,9 +1,12 @@
 import { Metadata } from 'next';
 import GroupPostDetailClient from './GroupPostDetailClient';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://centimet2.com:8000/api/v1';
+// For server-side metadata fetch, use LARAVEL_API_URL directly (not the proxy)
+const LARAVEL_API_URL = process.env.LARAVEL_API_URL || 'https://centimet2.com:8000/api/v1';
+// For OG image URLs that will be accessed by external crawlers, use the public proxy URL
+const PUBLIC_API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://centimet2.com:8088/api/proxy';
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://centimet2.com';
-const LARAVEL_URL = process.env.NEXT_PUBLIC_LARAVEL_URL || 'https://centimet2.com:8000';
+const FB_APP_ID = process.env.NEXT_PUBLIC_FB_APP_ID || '';
 
 interface GroupPostData {
   id: number;
@@ -29,18 +32,28 @@ interface GroupPostData {
 // Server-side fetch function for metadata
 async function getGroupPost(id: string): Promise<GroupPostData | null> {
   try {
-    const response = await fetch(`${API_BASE_URL}/group-posts/${id}`, {
+    console.log('[Metadata] Fetching group post from:', `${LARAVEL_API_URL}/group-posts/${id}`);
+
+    const response = await fetch(`${LARAVEL_API_URL}/group-posts/${id}`, {
       next: { revalidate: 60 }, // Cache for 60 seconds
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'NextJS-Server/1.0',
+      },
     });
 
+    console.log('[Metadata] Response status:', response.status);
+
     if (!response.ok) {
+      console.error('[Metadata] API returned error:', response.status, response.statusText);
       return null;
     }
 
     const data = await response.json();
+    console.log('[Metadata] Group post data received:', { id: data.data?.id || data?.id });
     return data.data || data;
   } catch (error) {
-    console.error('Error fetching group post for metadata:', error);
+    console.error('[Metadata] Error fetching group post:', error);
     return null;
   }
 }
@@ -55,23 +68,44 @@ export async function generateMetadata({
   const post = await getGroupPost(id);
 
   if (!post) {
+    // Use placeholder image (post ID 0 returns placeholder)
     return {
       title: 'Bài viết không tìm thấy | Centimet2',
       description: 'Bài viết này không tồn tại hoặc đã bị xóa.',
+      openGraph: {
+        type: 'article',
+        title: 'Bài viết không tìm thấy',
+        description: 'Bài viết này không tồn tại hoặc đã bị xóa.',
+        url: `${SITE_URL}/group-posts/${id}`,
+        siteName: 'Centimet2',
+        images: [
+          {
+            url: `${PUBLIC_API_URL}/share-image/0/image`,
+            width: 1200,
+            height: 630,
+            alt: 'Centimet2',
+          },
+        ],
+      },
+      other: {
+        ...(FB_APP_ID && { 'fb:app_id': FB_APP_ID }),
+      },
     };
   }
 
-  // Get the image for OG - use Laravel share image
-  const ogImage = `${LARAVEL_URL}/share-image/${post.id}`;
-
-  // Get first post image as fallback
+  // Get first post image as primary OG image (more reliable than generated images)
   const firstImage = post.images && post.images.length > 0 ? post.images[0] : undefined;
+
+  // Use post image directly, or fallback to share-image endpoint (returns actual image)
+  const ogImage = firstImage || `${PUBLIC_API_URL}/share-image/${post.id}/image`;
 
   const title = post.post_title || 'Bài viết nhóm';
   const description = post.post_excerpt || post.post_content?.substring(0, 160).replace(/<[^>]*>/g, '') || 'Xem bài viết nhóm trên Centimet2';
   const authorName = post.author?.display_name || post.author?.name || post.author?.username || 'Centimet2 User';
   const groupName = post.group?.group_name || 'Nhóm';
-  const postUrl = `${SITE_URL}/group-posts/${post.id}`;
+  // og:url must match the URL being accessed
+  const postUrl = `${SITE_URL}/group-posts/${id}`;
+  const canonicalUrl = `${SITE_URL}/group-posts/${post.id}`;
 
   return {
     title: `${title} - ${groupName} | Centimet2`,
@@ -86,17 +120,10 @@ export async function generateMetadata({
       images: [
         {
           url: ogImage,
-          width: 1200,
-          height: 630,
+          width: firstImage ? 800 : 1200,
+          height: firstImage ? 600 : 630,
           alt: title,
         },
-        // Include first image as fallback
-        ...(firstImage ? [{
-          url: firstImage,
-          width: 800,
-          height: 600,
-          alt: title,
-        }] : []),
       ],
       publishedTime: post.post_date,
       modifiedTime: post.post_modified,
@@ -110,13 +137,14 @@ export async function generateMetadata({
       creator: `@${post.author?.username || 'centimet2'}`,
     },
     alternates: {
-      canonical: postUrl,
+      canonical: canonicalUrl,
     },
     other: {
       'article:author': authorName,
       'article:published_time': post.post_date || '',
       'article:modified_time': post.post_modified || '',
       'article:section': groupName,
+      ...(FB_APP_ID && { 'fb:app_id': FB_APP_ID }),
     },
   };
 }

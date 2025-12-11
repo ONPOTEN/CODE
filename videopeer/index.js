@@ -574,29 +574,93 @@ io.on("connection", (socket) => {
     // Shop chat room management
     socket.on("join:shop:chat", ({ userId, shopId, shopOwnerId, roomName, userName }) => {
         console.log(`\n💬 [SHOP CHAT] User ${userId} (${userName}) joining chat room: ${roomName}`);
+
+        // Join the room
         socket.join(roomName);
         console.log(`✅ User ${socket.id} (ID: ${userId}) joined chat room ${roomName}`);
-        console.log(`📍 Chat room members:`, io.sockets.adapter.rooms.get(roomName)?.size || 0);
+
+        // Log room members after joining (matching direct message format)
+        const roomMembers = io.sockets.adapter.rooms.get(roomName);
+        console.log(`📍 Chat room members: ${roomMembers?.size || 0}`);
+        if (roomMembers && roomMembers.size > 0) {
+            console.log(`   Member socket IDs: [${Array.from(roomMembers).map(id => `'${id}'`).join(', ')}]`);
+        }
+
+        // Emit acknowledgment back to the joining user
+        socket.emit('shop:chat:joined', {
+            roomName,
+            userId,
+            shopId,
+            timestamp: new Date().toISOString()
+        });
+
+        // Notify other members that a user has joined
+        socket.to(roomName).emit('user:joined:chat', {
+            userId,
+            userName,
+            roomName,
+            timestamp: new Date().toISOString()
+        });
+
+        // BROADCAST: Emit join notification to ALL connected sockets (matching direct message pattern)
+        io.emit('user:joined:shop:chat', {
+            userId,
+            userName,
+            roomName,
+            shopId,
+            timestamp: new Date().toISOString()
+        });
+        console.log(`💬 [SHOP CHAT] room: ${roomName}:📢 BROADCAST: Message emitted to ALL connected sockets`);
     });
 
     socket.on("leave:shop:chat", ({ userId, shopId, shopOwnerId, roomName }) => {
         console.log(`\n💬 [SHOP CHAT] User ${userId} leaving chat room: ${roomName}`);
         socket.leave(roomName);
         console.log(`✅ User ${socket.id} (ID: ${userId}) left chat room ${roomName}`);
+
+        // Log room members after leaving (matching direct message format)
+        const roomMembersAfter = io.sockets.adapter.rooms.get(roomName);
+        console.log(`📍 Chat room members after leave: ${roomMembersAfter?.size || 0}`);
+        if (roomMembersAfter && roomMembersAfter.size > 0) {
+            console.log(`   Member socket IDs: [${Array.from(roomMembersAfter).map(id => `'${id}'`).join(', ')}]`);
+        }
+
+        // Notify other members that a user has left
+        io.to(roomName).emit('user:left:chat', {
+            userId,
+            roomName,
+            timestamp: new Date().toISOString()
+        });
+
+        // BROADCAST: Emit leave notification to ALL connected sockets (matching direct message pattern)
+        io.emit('user:left:shop:chat', {
+            userId,
+            roomName,
+            timestamp: new Date().toISOString()
+        });
+        console.log(`💬 [SHOP CHAT] room: ${roomName}:📢 BROADCAST: Message emitted to ALL connected sockets`);
     });
 
-    // Shop chat message handling
+    // Shop chat message handling - Mirrors direct message format from Laravel
     socket.on("shop:chat:message", async (data) => {
         const { shopId, shopName, shopOwnerId, senderId, senderName, message, roomName, timestamp } = data;
 
-        console.log(`\n💬 [SHOP CHAT MESSAGE] Received`);
-        console.log(`   Shop ID: ${shopId}`);
-        console.log(`   Shop Name: ${shopName}`);
+        // Format like: 💬 [CHAT MESSAGE] Received from Laravel
+        console.log(`\n💬 [SHOP CHAT MESSAGE] Received from Frontend Client`);
         console.log(`   Sender ID: ${senderId}`);
         console.log(`   Sender Name: ${senderName}`);
         console.log(`   Message: ${message}`);
-        console.log(`   Room Name: ${roomName}`);
-        console.log(`   Timestamp: ${timestamp}`);
+        console.log(`   Shop Chat Room: ${roomName}`);
+
+        // Validate required fields
+        if (!shopId || !senderId || !senderName || !message || !roomName) {
+            console.error(`❌ [SHOP CHAT MESSAGE] Missing required fields!`);
+            socket.emit('shop:chat:message:error', {
+                error: 'Missing required fields',
+                received: { shopId, senderId, senderName, message, roomName }
+            });
+            return;
+        }
 
         // Create the chat message object
         const chatMessage = {
@@ -607,8 +671,12 @@ io.on("connection", (socket) => {
             senderName,
             message,
             roomName,
-            timestamp
+            timestamp: timestamp || new Date().toISOString()
         };
+
+        // Check who's in the room before emitting (matching direct message format)
+        const roomMembers = io.sockets.adapter.rooms.get(roomName);
+        console.log(`📊 Room ${roomName} has ${roomMembers ? roomMembers.size : 0} members:`, roomMembers ? Array.from(roomMembers) : []);
 
         // Save to database asynchronously (don't wait for response)
         saveShopMessageToDatabase({
@@ -616,22 +684,58 @@ io.on("connection", (socket) => {
             userId: senderId,
             shopOwnerId,
             message,
-            timestamp
+            timestamp: timestamp || new Date().toISOString()
         }).then(dbResult => {
             if (dbResult) {
-                console.log(`✅ [SHOP CHAT MESSAGE] Database save completed`);
+                console.log(`✅ [SHOP CHAT MESSAGE] Database save completed - Record ID: ${dbResult.data?.id || dbResult.id || 'unknown'}`);
             }
         }).catch(err => {
             console.error(`❌ [SHOP CHAT MESSAGE] Database save failed:`, err.message);
         });
 
-        // Emit to the specific chat room
+        // Emit to the specific chat room (targeted broadcast)
         io.to(roomName).emit('shop:chat:message', chatMessage);
-        console.log(`✅ Chat message emitted to room: ${roomName}`);
+        console.log(`✅ Message emitted to room: ${roomName} (${roomMembers ? roomMembers.size : 0} users in room)`);
 
-        // Log room members
-        const roomMembers = io.sockets.adapter.rooms.get(roomName);
-        console.log(`📍 Room ${roomName} has ${roomMembers?.size || 0} members`);
+        // Also emit acknowledgment back to sender
+        socket.emit('shop:chat:message:ack', {
+            roomName,
+            timestamp,
+            status: 'sent'
+        });
+
+        // Log all registered users (matching direct message format)
+        console.log(`📋 Registered users:`, Array.from(userIdToSocket.entries()));
+
+        // Also emit directly to shop owner's socket if connected (matching direct message format)
+        const shopOwnerSocketId = userIdToSocket.get(shopOwnerId.toString());
+        if (shopOwnerSocketId) {
+            io.to(shopOwnerSocketId).emit('shop:chat:message', chatMessage);
+            console.log(`✅ Direct message to shop owner socket: ${shopOwnerSocketId}`);
+
+            // Verify socket exists
+            const shopOwnerSocket = io.sockets.sockets.get(shopOwnerSocketId);
+            console.log(`   Shop owner socket connected: ${shopOwnerSocket ? 'YES' : 'NO'}`);
+        } else {
+            console.log(`⚠️  Shop owner ${shopOwnerId} not found in userIdToSocket map`);
+        }
+
+        // Also emit directly to sender's socket if connected (matching direct message format)
+        const senderSocketId = userIdToSocket.get(senderId ? senderId.toString() : null);
+        if (senderSocketId) {
+            io.to(senderSocketId).emit('shop:chat:message', chatMessage);
+            console.log(`✅ Direct message to sender socket: ${senderSocketId}`);
+
+            // Verify socket exists
+            const senderSocket = io.sockets.sockets.get(senderSocketId);
+            console.log(`   Sender socket connected: ${senderSocket ? 'YES' : 'NO'}`);
+        } else {
+            console.log(`⚠️  Sender ${senderId} not found in userIdToSocket map`);
+        }
+
+        // FALLBACK: Emit to ALL connected sockets (let frontend filter by shop_id)
+        io.emit('shop:chat:message', chatMessage);
+        console.log(`💬 [SHOP CHAT] room: ${roomName}:📢 BROADCAST: Message emitted to ALL connected sockets`);
     });
 
     // Handle shop message replies - join reply chat room
@@ -647,6 +751,101 @@ io.on("connection", (socket) => {
             socketId: socket.id,
             timestamp: new Date().toISOString()
         });
+    });
+
+    // Group chat message handling - send from frontend group chat
+    socket.on("group-message", (data, callback) => {
+        const { groupId, message, userId, timestamp } = data;
+
+        console.log(`\n👥 [GROUP CHAT MESSAGE] Received from frontend`);
+        console.log(`   Group ID: ${groupId}`);
+        console.log(`   User ID: ${userId}`);
+        console.log(`   Message: ${message}`);
+        console.log(`   Message Length: ${message.length}`);
+        console.log(`   Timestamp: ${timestamp}`);
+        console.log(`   Socket ID: ${socket.id}`);
+
+        // Validate required fields
+        if (!groupId || !message || !userId) {
+            console.error(`❌ [GROUP CHAT MESSAGE] Missing required fields!`);
+            if (callback) {
+                callback({
+                    success: false,
+                    error: 'Missing required fields (groupId, message, userId)'
+                });
+            }
+            return;
+        }
+
+        // Create the group chat message object
+        const groupMessage = {
+            groupId,
+            userId,
+            message,
+            timestamp: timestamp || new Date().toISOString(),
+            socketId: socket.id
+        };
+
+        // Get the room name for this group
+        const roomName = `group-${groupId}`;
+
+        // Check who's in the group room
+        const roomMembers = io.sockets.adapter.rooms.get(roomName);
+        console.log(`📊 Room "${roomName}" has ${roomMembers ? roomMembers.size : 0} members`);
+        if (roomMembers && roomMembers.size > 0) {
+            console.log(`   Member socket IDs: [${Array.from(roomMembers).map(id => `'${id}'`).join(', ')}]`);
+        }
+
+        // Broadcast message to group room
+        io.to(roomName).emit('group-message', groupMessage);
+        console.log(`✅ [GROUP CHAT MESSAGE] Broadcasted to room: ${roomName}`);
+
+        // Also broadcast to ALL connected sockets (fallback for discovery)
+        io.emit('group-message', groupMessage);
+        console.log(`📢 [GROUP CHAT MESSAGE] FALLBACK: Broadcasted to ALL connected sockets`);
+
+        // Send acknowledgment back to sender with success
+        if (callback) {
+            callback({
+                success: true,
+                data: {
+                    id: socket.id,
+                    groupId,
+                    timestamp: new Date().toISOString()
+                }
+            });
+            console.log(`✅ [GROUP CHAT MESSAGE] Acknowledgment sent to sender`);
+        }
+    });
+
+    // Join group chat room
+    socket.on("join-group-chat", ({ groupId, userId }) => {
+        const roomName = `group-${groupId}`;
+        console.log(`\n👥 [GROUP CHAT] User ${userId} joining group ${groupId}`);
+        console.log(`   Room Name: ${roomName}`);
+        console.log(`   Socket ID: ${socket.id}`);
+
+        socket.join(roomName);
+
+        const roomMembers = io.sockets.adapter.rooms.get(roomName);
+        console.log(`✅ [GROUP CHAT] User joined room - now ${roomMembers?.size || 1} members in room`);
+
+        // Map user to this socket for direct messaging
+        userIdToSocket.set(userId.toString(), socket.id);
+        socketToUserId.set(socket.id, userId.toString());
+        console.log(`📍 [GROUP CHAT] Mapped user ${userId} to socket ${socket.id}`);
+    });
+
+    // Leave group chat room
+    socket.on("leave-group-chat", ({ groupId, userId }) => {
+        const roomName = `group-${groupId}`;
+        console.log(`\n👥 [GROUP CHAT] User ${userId} leaving group ${groupId}`);
+        console.log(`   Room Name: ${roomName}`);
+
+        socket.leave(roomName);
+
+        const roomMembers = io.sockets.adapter.rooms.get(roomName);
+        console.log(`✅ [GROUP CHAT] User left room - now ${roomMembers?.size || 0} members in room`);
     });
 
     socket.on("disconnect", () => {

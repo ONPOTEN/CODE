@@ -147,7 +147,6 @@ export default function FriendsPage() {
                           </h3>
                         </Link>
                         <p className="text-sm text-gray-500 truncate">@{friend.username}</p>
-                        <p className="text-xs text-gray-600 mt-1">{friend.email}</p>
                       </div>
 
                       {/* Friend Since Badge */}

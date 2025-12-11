@@ -76,15 +76,15 @@ function CommentItem({
     >
       {/* Avatar */}
       <div className="flex-shrink-0">
-        {comment.author?.avatar ? (
+        {(comment.author?.avatar || (comment.author as any)?.avatar_url) ? (
           <img
-            src={comment.author.avatar}
-            alt={comment.author?.name || comment.author_name}
+            src={comment.author?.avatar || (comment.author as any)?.avatar_url}
+            alt={comment.author?.name || comment.author_name || 'User'}
             className="w-8 h-8 rounded-full object-cover"
           />
         ) : (
           <div className="w-8 h-8 bg-blue-400 rounded-full flex items-center justify-center text-gray-900 text-sm font-bold">
-            {comment.author?.name?.charAt(0).toUpperCase() || 'U'}
+            {(comment.author?.name || comment.author_name || 'U').charAt(0).toUpperCase()}
           </div>
         )}
       </div>
@@ -93,16 +93,16 @@ function CommentItem({
       <div className="flex-1 min-w-0">
         {/* Author Info */}
         <div className="flex items-center gap-2">
-          {comment.author?.id ? (
+          {comment.author?.id || comment.user_id ? (
             <Link
-              href={`/users/${comment.author.id}`}
+              href={`/users/${comment.author?.id || comment.user_id}`}
               className="font-semibold text-sm text-gray-900 hover:text-blue-600 hover:underline transition-colors"
             >
-              {comment.author?.name || comment.author_name}
+              {comment.author?.name || comment.author_name || 'Anonymous'}
             </Link>
           ) : (
             <span className="font-semibold text-sm text-gray-900">
-              {comment.author?.name || comment.author_name}
+              {comment.author?.name || comment.author_name || 'Anonymous'}
             </span>
           )}
           <span className="text-xs text-gray-500">

@@ -9,6 +9,7 @@ import { useCart } from '@/contexts/CartContext';
 import { ShopPostEngagementButtons } from '@/components/ShopPostEngagementButtons';
 import { ShopPostComments } from '@/components/ShopPostComments';
 import { VideoEmbedList } from '@/components/VideoEmbed';
+import VideoPlayer from '@/components/VideoPlayer';
 
 interface ProductDetailClientProps {
   shopId: string;
@@ -359,6 +360,20 @@ export default function ProductDetailClient({ shopId, postId }: ProductDetailCli
                   ))}
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Video Player */}
+          {post.video && (
+            <div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-4">Video sản phẩm</h3>
+              <div className="rounded-lg overflow-hidden">
+                <VideoPlayer
+                  src={post.video}
+                  poster={(post as any).main_image || (post.featured_images && post.featured_images.length > 0 ? post.featured_images[0] : undefined)}
+                  className="aspect-video w-full"
+                />
+              </div>
             </div>
           )}
 

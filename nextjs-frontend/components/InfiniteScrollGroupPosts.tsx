@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { GroupEngagementProvider } from '@/contexts/GroupEngagementContext';
 import { GroupEngagementButtons } from '@/components/GroupEngagementButtons';
+import VideoPlayer from '@/components/VideoPlayer';
 
 // Image Carousel Component with touch/swipe support
 function ImageCarousel({ images, postId, onImageClick }: { images: string[]; postId: number; onImageClick: () => void }) {
@@ -296,7 +297,7 @@ export default function InfiniteScrollGroupPosts({
     setExistingImages(post.images || []);
     setEditImages([]);
     setEditImagePreviews([]);
-    setExistingVideo((post as any).video || null);
+    setExistingVideo(post.video || null);
     setEditVideo(null);
     setEditVideoPreview(null);
     setRemoveExistingVideo(false);
@@ -615,6 +616,17 @@ export default function InfiniteScrollGroupPosts({
                         />
                       )}
 
+                      {/* Video Player */}
+                      {post.video && (
+                        <div className="mt-3 w-full rounded-lg overflow-hidden">
+                          <VideoPlayer
+                            src={post.video}
+                            poster={post.featured_image || (post.images && post.images.length > 0 ? post.images[0] : undefined)}
+                            className="aspect-video w-full"
+                          />
+                        </div>
+                      )}
+
                       {/* Engagement buttons */}
                       <div className="flex gap-6 mt-3 text-gray-600">
                         <GroupEngagementButtons
@@ -813,8 +825,8 @@ export default function InfiniteScrollGroupPosts({
                     </div>
                   )}
 
-                  {/* Video Upload Input */}
-                  {!editVideoPreview && (
+                  {/* Video Upload Input - show only when no existing video and no new video preview */}
+                  {!editVideoPreview && (!existingVideo || removeExistingVideo) && (
                     <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
                       <div className="flex flex-col items-center justify-center py-4">
                         <span className="text-2xl mb-1">🎬</span>

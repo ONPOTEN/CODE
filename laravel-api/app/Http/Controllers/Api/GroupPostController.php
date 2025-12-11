@@ -15,6 +15,7 @@ use App\Http\Requests\StoreGroupPostRequest;
 use App\Http\Requests\UpdateGroupPostRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class GroupPostController extends Controller
 {
@@ -136,6 +137,23 @@ class GroupPostController extends Controller
                 ]);
             }
 
+            // Auto-generate title from content if not provided
+            $title = $request->input('title');
+            if (empty($title)) {
+                $title = $this->generateTitleFromContent($request->input('content'));
+            }
+
+            // Generate slug from title
+            $slug = Str::slug($title);
+            $originalSlug = $slug;
+            $counter = 1;
+
+            // Ensure unique slug
+            while (GroupPost::where('post_name', $slug)->exists()) {
+                $slug = $originalSlug . '-' . $counter;
+                $counter++;
+            }
+
             // Create the post
             $post = GroupPost::create([
                 'group_id' => $request->input('group_id'),
@@ -144,7 +162,8 @@ class GroupPostController extends Controller
                 'post_date_gmt' => now(),
                 'post_modified' => now(),
                 'post_modified_gmt' => now(),
-                'post_title' => $request->input('title'),
+                'post_title' => $title,
+                'post_name' => $slug,
                 'post_content' => $request->input('content'),
                 'post_excerpt' => $request->input('excerpt'),
                 'post_status' => $postStatus,
@@ -171,6 +190,48 @@ class GroupPostController extends Controller
                     $post->meta()->create([
                         'meta_key' => 'image',
                         'meta_value' => $path,
+                    ]);
+                }
+            }
+
+            // Handle video upload if provided
+            if ($request->hasFile('video')) {
+                $videoFile = $request->file('video');
+
+                // Validate video file
+                if ($videoFile->isValid()) {
+                    // Create folder structure for video
+                    $userId = auth()->id();
+                    $now = now();
+                    $year = $now->format('Y');
+                    $month = $now->format('m');
+                    $date = $now->format('d');
+                    $videoUploadPath = "group-posts/videos/{$userId}/{$year}/{$month}/{$date}";
+                    $videoFilename = time() . '_' . Str::random(10) . '.' . $videoFile->getClientOriginalExtension();
+
+                    try {
+                        $videoPath = $videoFile->storeAs($videoUploadPath, $videoFilename, 's3');
+
+                        if ($videoPath !== false && !empty($videoPath)) {
+                            $post->meta()->create([
+                                'meta_key' => '_post_video',
+                                'meta_value' => $videoPath,
+                            ]);
+
+                            \Log::info('[GroupPostController::store] Video uploaded successfully', [
+                                'post_id' => $post->id,
+                                'video_path' => $videoPath,
+                            ]);
+                        }
+                    } catch (\Exception $e) {
+                        \Log::error('[GroupPostController::store] Video upload failed', [
+                            'post_id' => $post->id,
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
+                } else {
+                    \Log::warning('[GroupPostController::store] Invalid video file', [
+                        'error' => $videoFile->getErrorMessage(),
                     ]);
                 }
             }
@@ -268,8 +329,69 @@ class GroupPostController extends Controller
                 }
             }
 
+            // Handle video removal if requested
+            if ($request->input('remove_video') === true || $request->input('remove_video') === 'true') {
+                $oldVideo = $post->meta()->where('meta_key', '_post_video')->first();
+                if ($oldVideo) {
+                    \Storage::disk('s3')->delete($oldVideo->meta_value);
+                    $oldVideo->delete();
+                    \Log::info('[GroupPostController::update] Video removed', [
+                        'post_id' => $post->id,
+                    ]);
+                }
+            }
+
+            // Handle video upload if provided
+            if ($request->hasFile('video')) {
+                $videoFile = $request->file('video');
+
+                // Validate video file
+                if ($videoFile->isValid()) {
+                    // Remove old video first
+                    $oldVideo = $post->meta()->where('meta_key', '_post_video')->first();
+                    if ($oldVideo) {
+                        \Storage::disk('s3')->delete($oldVideo->meta_value);
+                        $oldVideo->delete();
+                    }
+
+                    // Create folder structure for video
+                    $userId = auth()->id();
+                    $now = now();
+                    $year = $now->format('Y');
+                    $month = $now->format('m');
+                    $date = $now->format('d');
+                    $videoUploadPath = "group-posts/videos/{$userId}/{$year}/{$month}/{$date}";
+                    $videoFilename = time() . '_' . Str::random(10) . '.' . $videoFile->getClientOriginalExtension();
+
+                    try {
+                        $videoPath = $videoFile->storeAs($videoUploadPath, $videoFilename, 's3');
+
+                        if ($videoPath !== false && !empty($videoPath)) {
+                            $post->meta()->create([
+                                'meta_key' => '_post_video',
+                                'meta_value' => $videoPath,
+                            ]);
+
+                            \Log::info('[GroupPostController::update] Video uploaded successfully', [
+                                'post_id' => $post->id,
+                                'video_path' => $videoPath,
+                            ]);
+                        }
+                    } catch (\Exception $e) {
+                        \Log::error('[GroupPostController::update] Video upload failed', [
+                            'post_id' => $post->id,
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
+                } else {
+                    \Log::warning('[GroupPostController::update] Invalid video file', [
+                        'error' => $videoFile->getErrorMessage(),
+                    ]);
+                }
+            }
+
             return response()->json([
-                'data' => new GroupPostResource($post),
+                'data' => new GroupPostResource($post->fresh()),
                 'message' => 'Group post updated successfully',
             ]);
         } catch (\Exception $e) {
@@ -312,6 +434,12 @@ class GroupPostController extends Controller
             $featuredImage = $post->meta()->where('meta_key', 'featured_image')->first();
             if ($featuredImage) {
                 \Storage::disk('s3')->delete($featuredImage->meta_value);
+            }
+
+            // Delete video from S3
+            $video = $post->meta()->where('meta_key', '_post_video')->first();
+            if ($video) {
+                \Storage::disk('s3')->delete($video->meta_value);
             }
 
             $post->delete();
@@ -1290,5 +1418,45 @@ class GroupPostController extends Controller
                 'group_id' => $groupId,
             ],
         ]);
+    }
+
+    /**
+     * Generate a title from content by extracting the first meaningful text
+     *
+     * @param string $content
+     * @return string
+     */
+    private function generateTitleFromContent(string $content): string
+    {
+        // Strip HTML tags
+        $text = strip_tags($content);
+
+        // Decode HTML entities
+        $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+        // Normalize whitespace
+        $text = preg_replace('/\s+/', ' ', trim($text));
+
+        // If empty, return default title with timestamp
+        if (empty($text)) {
+            return 'Bài viết ' . now()->format('d/m/Y H:i');
+        }
+
+        // Get first 100 characters as title (reasonable title length)
+        $maxLength = 100;
+        if (mb_strlen($text, 'UTF-8') <= $maxLength) {
+            return $text;
+        }
+
+        // Truncate at word boundary
+        $truncated = mb_substr($text, 0, $maxLength, 'UTF-8');
+
+        // Try to cut at last space to avoid cutting words
+        $lastSpace = mb_strrpos($truncated, ' ', 0, 'UTF-8');
+        if ($lastSpace !== false && $lastSpace > 50) {
+            $truncated = mb_substr($truncated, 0, $lastSpace, 'UTF-8');
+        }
+
+        return $truncated . '...';
     }
 }

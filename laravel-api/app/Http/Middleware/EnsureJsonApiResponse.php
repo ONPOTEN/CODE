@@ -22,13 +22,31 @@ class EnsureJsonApiResponse
 
         $response = $next($request);
 
+        $contentType = $response->headers->get('Content-Type', '');
+
+        // Skip processing for binary/image responses
+        if (str_contains($contentType, 'image/') ||
+            str_contains($contentType, 'application/octet-stream') ||
+            str_contains($contentType, 'application/pdf')) {
+            return $response;
+        }
+
         // If it's an API route and response is HTML, it's an error
-        if ($request->is('api/*') && str_contains($response->headers->get('Content-Type', ''), 'text/html')) {
+        if ($request->is('api/*') && str_contains($contentType, 'text/html')) {
+            // Safely get content preview - avoid binary data
+            $content = $response->content();
+            $contentPreview = '';
+            if (is_string($content) && mb_check_encoding($content, 'UTF-8')) {
+                $contentPreview = substr($content, 0, 500);
+            } else {
+                $contentPreview = '[Binary or non-UTF-8 content]';
+            }
+
             \Log::error('API returned HTML instead of JSON', [
                 'path' => $request->path(),
                 'method' => $request->method(),
                 'status' => $response->status(),
-                'content' => substr((string)$response->content(), 0, 500),
+                'content' => $contentPreview,
             ]);
 
             return response()->json([

@@ -11,6 +11,7 @@ import ShopMessageInbox from '@/components/ShopMessageInbox';
 import { SimpleProductsList } from '@/app/shops/[id]/posts/SimpleProductsList';
 import { VariantProductsList } from '@/app/shops/[id]/posts/VariantProductsList';
 import { DownloadProductsList } from '@/app/shops/[id]/posts/DownloadProductsList';
+import VideoPlayer from '@/components/VideoPlayer';
 
 export default function ShopDetailPage() {
   const params = useParams();
@@ -1007,6 +1008,20 @@ export default function ShopDetailPage() {
                                 ))}
                               </div>
                             )}
+                          </div>
+                        )}
+
+                        {/* Video */}
+                        {post.video && (
+                          <div className="mb-6">
+                            <h4 className="text-sm font-semibold text-gray-700 mb-3">Video sản phẩm</h4>
+                            <div className="rounded-lg overflow-hidden shadow-md">
+                              <VideoPlayer
+                                src={post.video}
+                                poster={(post as any).main_image || (post.featured_images && post.featured_images.length > 0 ? post.featured_images[0] : undefined)}
+                                className="aspect-video w-full"
+                              />
+                            </div>
                           </div>
                         )}
 

@@ -30,31 +30,240 @@ use Illuminate\Support\Facades\Route;
 
 // Public routes
 Route::prefix('v1')->group(function () {
-    // Authentication
-    Route::post('/auth/register', [AuthController::class, 'register']);
-    Route::post('/auth/login', [AuthController::class, 'login']);
+    // Authentication (with strict rate limiting to prevent brute force)
+    Route::post('/auth/register', [AuthController::class, 'register'])
+        ->middleware('throttle.advanced:auth');
+    Route::post('/auth/login', [AuthController::class, 'login'])
+        ->middleware('throttle.advanced:auth');
     Route::post('/auth/logout', [AuthController::class, 'logout']);
 
-    // Firebase Authentication
-    Route::post('/auth/firebase-register', [AuthController::class, 'firebaseRegister']);
-    Route::post('/auth/firebase-login', [AuthController::class, 'firebaseLogin']);
-    Route::post('/auth/test-reset-endpoint', [AuthController::class, 'testResetEndpoint']);
-    Route::post('/auth/reset-password-by-phone', [AuthController::class, 'resetPasswordByPhone']);
-    Route::post('/auth/setup-password-by-phone', [AuthController::class, 'setupPasswordByPhone']);
+    // Firebase Authentication (with rate limiting)
+    Route::post('/auth/firebase-register', [AuthController::class, 'firebaseRegister'])
+        ->middleware('throttle.advanced:auth');
+    Route::post('/auth/firebase-login', [AuthController::class, 'firebaseLogin'])
+        ->middleware('throttle.advanced:auth');
+    Route::post('/auth/test-reset-endpoint', [AuthController::class, 'testResetEndpoint'])
+        ->middleware('throttle.advanced:auth');
+    Route::post('/auth/reset-password-by-phone', [AuthController::class, 'resetPasswordByPhone'])
+        ->middleware('throttle.advanced:auth');
+    Route::post('/auth/setup-password-by-phone', [AuthController::class, 'setupPasswordByPhone'])
+        ->middleware('throttle.advanced:auth');
 
-    // Facebook OAuth
-    Route::post('/auth/facebook-login', [AuthController::class, 'facebookLogin']);
+    // Facebook OAuth (with rate limiting)
+    Route::post('/auth/facebook-login', [AuthController::class, 'facebookLogin'])
+        ->middleware('throttle.advanced:auth');
 
-    // Google OAuth
-    Route::post('/auth/google-login', [AuthController::class, 'googleLogin']);
+    // Google OAuth (with rate limiting)
+    Route::post('/auth/google-login', [AuthController::class, 'googleLogin'])
+        ->middleware('throttle.advanced:auth');
 
-    // Debug endpoints
-    Route::get('/debug/users-with-phone', [AuthController::class, 'debugUsersWithPhone']);
-    Route::get('/debug/login-query', [AuthController::class, 'debugLoginQuery']);
-    Route::get('/debug/test-auth', [AuthController::class, 'debugTestAuth']);
-    Route::get('/debug/tokens', [AuthController::class, 'debugTokens']);
-    Route::post('/debug/test-token', [AuthController::class, 'debugTestToken']);
-    Route::get('/debug/password-reset', [AuthController::class, 'debugPasswordReset']);
+    // SECURITY: Debug endpoints - DISABLE in production or add authentication!
+    // WARNING: These expose sensitive information and should be protected
+    Route::middleware('throttle.advanced:debug')->group(function () {
+        Route::get('/debug/users-with-phone', [AuthController::class, 'debugUsersWithPhone']);
+        Route::get('/debug/login-query', [AuthController::class, 'debugLoginQuery']);
+        Route::get('/debug/test-auth', [AuthController::class, 'debugTestAuth']);
+        Route::get('/debug/tokens', [AuthController::class, 'debugTokens']);
+        Route::post('/debug/test-token', [AuthController::class, 'debugTestToken']);
+        Route::get('/debug/password-reset', [AuthController::class, 'debugPasswordReset']);
+        Route::get('/debug/php-limits', function () {
+            return response()->json([
+                'upload_max_filesize' => ini_get('upload_max_filesize'),
+                'post_max_size' => ini_get('post_max_size'),
+                'max_execution_time' => ini_get('max_execution_time'),
+                'max_input_time' => ini_get('max_input_time'),
+                'memory_limit' => ini_get('memory_limit'),
+                'file_uploads' => ini_get('file_uploads'),
+                'max_file_uploads' => ini_get('max_file_uploads'),
+                'upload_tmp_dir' => ini_get('upload_tmp_dir') ?: sys_get_temp_dir(),
+                'temp_dir_writable' => is_writable(ini_get('upload_tmp_dir') ?: sys_get_temp_dir()),
+            ]);
+        });
+
+        // Debug video upload endpoint
+        Route::post('/debug/upload-video', function (\Illuminate\Http\Request $request) {
+            $response = [
+                'php_limits' => [
+                    'upload_max_filesize' => ini_get('upload_max_filesize'),
+                    'post_max_size' => ini_get('post_max_size'),
+                    'max_execution_time' => ini_get('max_execution_time'),
+                    'memory_limit' => ini_get('memory_limit'),
+                ],
+                'request_info' => [
+                    'content_length' => $request->header('Content-Length'),
+                    'content_type' => $request->header('Content-Type'),
+                    'method' => $request->method(),
+                ],
+                'files_info' => [],
+                'all_files_keys' => array_keys($request->allFiles()),
+                'all_input_keys' => array_keys($request->all()),
+                'errors' => [],
+            ];
+
+            // Check all uploaded files
+            $allFiles = $request->allFiles();
+            foreach ($allFiles as $key => $file) {
+                if (is_array($file)) {
+                    foreach ($file as $index => $f) {
+                        $response['files_info']["{$key}[{$index}]"] = [
+                            'original_name' => $f->getClientOriginalName(),
+                            'size' => $f->getSize(),
+                            'size_mb' => round($f->getSize() / 1024 / 1024, 2),
+                            'mime_type' => $f->getMimeType(),
+                            'extension' => $f->getClientOriginalExtension(),
+                            'error' => $f->getError(),
+                            'error_message' => $f->getErrorMessage(),
+                            'is_valid' => $f->isValid(),
+                            'real_path' => $f->getRealPath(),
+                            'real_path_exists' => $f->getRealPath() ? file_exists($f->getRealPath()) : false,
+                        ];
+                        if (!$f->isValid()) {
+                            $response['errors'][] = "{$key}[{$index}]: " . $f->getErrorMessage();
+                        }
+                    }
+                } else {
+                    $response['files_info'][$key] = [
+                        'original_name' => $file->getClientOriginalName(),
+                        'size' => $file->getSize(),
+                        'size_mb' => round($file->getSize() / 1024 / 1024, 2),
+                        'mime_type' => $file->getMimeType(),
+                        'extension' => $file->getClientOriginalExtension(),
+                        'error' => $file->getError(),
+                        'error_message' => $file->getErrorMessage(),
+                        'is_valid' => $file->isValid(),
+                        'real_path' => $file->getRealPath(),
+                        'real_path_exists' => $file->getRealPath() ? file_exists($file->getRealPath()) : false,
+                    ];
+                    if (!$file->isValid()) {
+                        $response['errors'][] = "{$key}: " . $file->getErrorMessage();
+                    }
+                }
+            }
+
+            // Check if video specifically exists
+            if ($request->hasFile('video')) {
+                $video = $request->file('video');
+                $response['video_specific'] = [
+                    'exists' => true,
+                    'is_valid' => $video->isValid(),
+                    'error' => $video->getError(),
+                    'error_message' => $video->getErrorMessage(),
+                ];
+            } else {
+                $response['video_specific'] = [
+                    'exists' => false,
+                    'reason' => 'No video file in request or upload failed before reaching Laravel',
+                ];
+            }
+
+            return response()->json($response);
+        });
+
+        // Debug video upload to S3 endpoint
+        Route::post('/debug/upload-video-s3', function (\Illuminate\Http\Request $request) {
+            $response = [
+                'php_limits' => [
+                    'upload_max_filesize' => ini_get('upload_max_filesize'),
+                    'post_max_size' => ini_get('post_max_size'),
+                    'max_execution_time' => ini_get('max_execution_time'),
+                    'memory_limit' => ini_get('memory_limit'),
+                ],
+                'request_info' => [
+                    'content_length' => $request->header('Content-Length'),
+                    'content_type' => $request->header('Content-Type'),
+                ],
+                's3_config' => [
+                    'disk' => config('filesystems.default'),
+                    's3_bucket' => config('filesystems.disks.s3.bucket'),
+                    's3_region' => config('filesystems.disks.s3.region'),
+                    's3_endpoint' => config('filesystems.disks.s3.endpoint'),
+                ],
+                'upload_result' => null,
+                'errors' => [],
+            ];
+
+            // Check if video file exists
+            if (!$request->hasFile('video')) {
+                $response['errors'][] = 'No video file received';
+                $response['all_files_keys'] = array_keys($request->allFiles());
+                return response()->json($response, 400);
+            }
+
+            $video = $request->file('video');
+
+            // File info
+            $response['video_info'] = [
+                'original_name' => $video->getClientOriginalName(),
+                'size' => $video->getSize(),
+                'size_mb' => round($video->getSize() / 1024 / 1024, 2),
+                'mime_type' => $video->getMimeType(),
+                'extension' => $video->getClientOriginalExtension(),
+                'error' => $video->getError(),
+                'error_message' => $video->getErrorMessage(),
+                'is_valid' => $video->isValid(),
+                'real_path' => $video->getRealPath(),
+                'real_path_exists' => $video->getRealPath() ? file_exists($video->getRealPath()) : false,
+            ];
+
+            // Check if file is valid
+            if (!$video->isValid()) {
+                $response['errors'][] = 'Video file is not valid: ' . $video->getErrorMessage();
+                return response()->json($response, 400);
+            }
+
+            // Check if real path exists
+            if (!$video->getRealPath() || !file_exists($video->getRealPath())) {
+                $response['errors'][] = 'Video temp file does not exist at: ' . ($video->getRealPath() ?: 'empty path');
+                return response()->json($response, 400);
+            }
+
+            // Try to upload to S3
+            try {
+                $filename = 'debug_' . time() . '_' . \Illuminate\Support\Str::random(10) . '.' . $video->getClientOriginalExtension();
+                $uploadPath = 'debug-uploads';
+
+                \Log::info('Debug: Attempting S3 upload', [
+                    'filename' => $filename,
+                    'uploadPath' => $uploadPath,
+                    'size' => $video->getSize(),
+                    'realPath' => $video->getRealPath(),
+                ]);
+
+                $path = $video->storeAs($uploadPath, $filename, 's3');
+
+                if ($path) {
+                    // Get the full URL
+                    $url = \Illuminate\Support\Facades\Storage::disk('s3')->url($path);
+
+                    $response['upload_result'] = [
+                        'success' => true,
+                        'path' => $path,
+                        'url' => $url,
+                        'message' => 'Video uploaded successfully to S3',
+                    ];
+
+                    // Optionally delete the test file
+                    // \Illuminate\Support\Facades\Storage::disk('s3')->delete($path);
+                } else {
+                    $response['upload_result'] = [
+                        'success' => false,
+                        'message' => 'storeAs returned false/empty',
+                    ];
+                    $response['errors'][] = 'S3 upload failed: storeAs returned false';
+                }
+            } catch (\Throwable $e) {
+                $response['upload_result'] = [
+                    'success' => false,
+                    'message' => $e->getMessage(),
+                    'exception_class' => get_class($e),
+                    'trace' => array_slice(explode("\n", $e->getTraceAsString()), 0, 10),
+                ];
+                $response['errors'][] = 'S3 upload exception: ' . $e->getMessage();
+            }
+
+            return response()->json($response);
+        });
+    });
 
     // QR Code (public - no auth required)
     Route::post('/qr-code/generate-vietqr', [QRCodeController::class, 'generateVietQR']);
@@ -74,8 +283,32 @@ Route::prefix('v1')->group(function () {
     Route::get('/posts/{postId}/likes', [EngagementController::class, 'getPostLikes'])->where('postId', '[0-9]+');
     Route::get('/posts/{postId}/shares', [EngagementController::class, 'getPostShares'])->where('postId', '[0-9]+');
 
-    // Share Image (public)
-    Route::get('/share-image/{postId}', [ShareImageController::class, 'getUrl'])->where('postId', '[0-9]+');
+    // Share Image (public - with rate limiting to prevent DoS)
+    // Returns JSON with S3 URL (generates if not cached)
+    Route::get('/share-image/{postId}', [ShareImageController::class, 'getUrl'])
+        ->where('postId', '[0-9]+')
+        ->middleware('throttle.advanced:share_image');
+
+    // Returns actual image binary (for direct use in OG meta tags)
+    Route::get('/share-image/{postId}/image', [ShareImageController::class, 'generate'])
+        ->where('postId', '[0-9]+')
+        ->middleware('throttle.advanced:share_image');
+
+    // Shop Post share image (returns actual image binary)
+    Route::get('/share-image/shop-post/{postId}/image', [ShareImageController::class, 'generateShopPost'])
+        ->where('postId', '[0-9]+')
+        ->middleware('throttle.advanced:share_image');
+
+    // Share Image Debug (for troubleshooting OG image generation)
+    Route::get('/share-image/{postId}/debug', [ShareImageController::class, 'debug'])
+        ->where('postId', '[0-9]+')
+        ->middleware('throttle.advanced:debug');
+    Route::get('/share-image/{postId}/debug-shop', [ShareImageController::class, 'debugShopPost'])
+        ->where('postId', '[0-9]+')
+        ->middleware('throttle.advanced:debug');
+    Route::post('/share-image/{postId}/invalidate', [ShareImageController::class, 'invalidateCache'])
+        ->where('postId', '[0-9]+')
+        ->middleware('throttle.advanced:debug');
 
     // Users
     Route::get('/users', [UserController::class, 'index']);
@@ -138,10 +371,13 @@ Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
         return $request->user();
     });
 
-    // S3 (authenticated)
-    Route::post('/s3/presigned-url', [S3Controller::class, 'generatePresignedUrl']);
-    Route::post('/s3/upload', [S3Controller::class, 'uploadFile']);
-    Route::delete('/s3/delete-object', [S3Controller::class, 'deleteObject']);
+    // S3 (authenticated - with rate limiting)
+    Route::post('/s3/presigned-url', [S3Controller::class, 'generatePresignedUrl'])
+        ->middleware('throttle.advanced:upload');
+    Route::post('/s3/upload', [S3Controller::class, 'uploadFile'])
+        ->middleware('throttle.advanced:upload');
+    Route::delete('/s3/delete-object', [S3Controller::class, 'deleteObject'])
+        ->middleware('throttle.advanced:upload');
 
     // Posts (authenticated)
     Route::get('/my-posts', [PostController::class, 'myPosts']);
@@ -320,8 +556,9 @@ Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
     Route::get('/conversations/{conversationId}/search', [ChatController::class, 'searchMessages'])->where('conversationId', '[0-9]+');
     Route::post('/conversations/{conversationId}/messages/delivered', [ChatController::class, 'markAsDelivered'])->where('conversationId', '[0-9]+');
 
-    // Admin routes
-    Route::middleware('admin')->group(function () {
+    // Admin routes (with IP whitelist for additional security)
+    // IMPORTANT: Configure allowed IPs in AdminIpWhitelist middleware
+    Route::middleware(['admin', 'admin.ip'])->group(function () {
         // Shop management
         Route::get('/admin/shops', [ShopController::class, 'pendingShops']);
         Route::get('/admin/shops/pending', [ShopController::class, 'pendingShops']);

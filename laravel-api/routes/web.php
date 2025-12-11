@@ -8,14 +8,16 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-// Share Image Routes (public, no auth required)
+// Share Image Routes (public, no auth required - with rate limiting)
 Route::get('/share-image/{postId}', [ShareImageController::class, 'generate'])
     ->where('postId', '[0-9]+')
+    ->middleware('throttle.advanced:share_image')
     ->name('share-image.generate');
 
-// Shop Post Share Image Route (specific for shop posts)
+// Shop Post Share Image Route (specific for shop posts - with rate limiting)
 Route::get('/share-image/shop-post/{postId}', [ShareImageController::class, 'generateShopPost'])
     ->where('postId', '[0-9]+')
+    ->middleware('throttle.advanced:share_image')
     ->name('share-image.shop-post');
 
 // Share Page Routes with OG meta tags (for social media crawlers)

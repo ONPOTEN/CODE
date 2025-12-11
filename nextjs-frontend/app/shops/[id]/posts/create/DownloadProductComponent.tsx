@@ -40,7 +40,7 @@ export const DownloadProductComponent: React.FC<DownloadProductComponentProps> =
     formData.main_image instanceof File ? URL.createObjectURL(formData.main_image) : (typeof formData.main_image === 'string' ? formData.main_image : null)
   );
   const [otherImagePreviews, setOtherImagePreviews] = useState<string[]>(
-    (formData.other_images || []).map((img) =>
+    (Array.isArray(formData.other_images) ? formData.other_images : []).map((img) =>
       img instanceof File ? URL.createObjectURL(img) : typeof img === 'string' ? img : ''
     ).filter(Boolean)
   );

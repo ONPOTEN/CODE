@@ -3,6 +3,15 @@ import { NextRequest, NextResponse } from 'next/server';
 // Get the backend API URL - this must be a server-side environment variable
 const LARAVEL_API_URL = process.env.LARAVEL_API_URL || 'https://centimet2.com:8000/api/v1';
 
+// Configure body size limit for file uploads (150MB)
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '150mb',
+    },
+  },
+};
+
 console.log('[API Proxy] Initialized with LARAVEL_API_URL:', LARAVEL_API_URL);
 
 export async function GET(
@@ -179,8 +188,11 @@ async function proxyRequest(
       }
     });
 
-    // Add CORS headers - get origin from request
-    const origin = request.headers.get('origin') || '*';
+    // Add CORS headers - STRICT: only allow your domain
+    const allowedOrigins = ['https://centimet2.com', 'https://www.centimet2.com'];
+    const requestOrigin = request.headers.get('origin');
+    const origin = requestOrigin && allowedOrigins.includes(requestOrigin) ? requestOrigin : allowedOrigins[0];
+
     responseHeaders.set('Access-Control-Allow-Origin', origin);
     responseHeaders.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
     responseHeaders.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -250,7 +262,11 @@ async function proxyRequest(
 
 // Handle OPTIONS requests for CORS preflight
 export async function OPTIONS(request: NextRequest) {
-  const origin = request.headers.get('origin') || '*';
+  // STRICT: only allow your domain
+  const allowedOrigins = ['https://centimet2.com', 'https://www.centimet2.com'];
+  const requestOrigin = request.headers.get('origin');
+  const origin = requestOrigin && allowedOrigins.includes(requestOrigin) ? requestOrigin : allowedOrigins[0];
+
   return new NextResponse(null, {
     status: 200,
     headers: {

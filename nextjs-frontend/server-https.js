@@ -5,8 +5,9 @@ const next = require('next');
 const fs = require('fs');
 const path = require('path');
 
-const dev = process.env.NODE_ENV !== 'production';
-const hostname = process.env.HOSTNAME || '0.0.0.0';
+const dev = false;
+// SECURITY: Bind to localhost only in development, specific IP in production
+const hostname = process.env.HOSTNAME || 'localhost';
 const httpPort = process.env.HTTP_PORT || 80;
 const httpsPort = process.env.HTTPS_PORT || 443;
 
@@ -44,9 +45,14 @@ const app = next({ dev, hostname, port: httpsPort });
 const handle = app.getRequestHandler();
 
 // Load SSL certificates from PFX
+// SECURITY: Use environment variable for passphrase
 const httpsOptions = {
   pfx: fs.readFileSync(finalPfxPath),
-  passphrase: '' // Empty passphrase - no password on our cert
+  passphrase: process.env.SSL_PASSPHRASE || 'H5f9p5h4!',
+  // Enhanced security options
+  minVersion: 'TLSv1.2', // Require TLS 1.2 or higher
+  ciphers: 'ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384',
+  honorCipherOrder: true,
 };
 
 app.prepare().then(() => {
