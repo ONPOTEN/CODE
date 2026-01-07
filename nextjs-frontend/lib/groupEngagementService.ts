@@ -25,6 +25,7 @@ export interface GroupComment {
   id: number;
   post_id: number;
   comment_content: string;
+  image?: string;
   user_id: number;
   status: 'approved' | 'pending' | 'spam' | 'trash';
   parent_id?: number;
@@ -44,7 +45,7 @@ class GroupEngagementService {
   private token: string = '';
 
   constructor() {
-    this.apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://centimet2.com:8000/api/v1';
+    this.apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.centimet2.com/api/v1';
   }
 
   setToken(token: string): void {
@@ -153,18 +154,43 @@ class GroupEngagementService {
     return await response.json();
   }
 
-  async addGroupPostComment(postId: number, content: string, parentId?: number): Promise<any> {
-    const response = await fetch(`${this.apiBaseUrl}/group-posts/${postId}/comments`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${this.token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        comment_content: content,
-        parent_id: parentId || null,
-      }),
-    });
+  async addGroupPostComment(postId: number, content: string, parentId?: number, image?: File): Promise<any> {
+    let response: Response;
+
+    if (image) {
+      // Use FormData for image upload via Next.js API proxy
+      const formData = new FormData();
+      formData.append('comment_content', content || '');
+      if (parentId) {
+        formData.append('parent_id', parentId.toString());
+      }
+      formData.append('image', image);
+
+      // Use the Next.js API proxy for file uploads
+      const proxyUrl = `/api/proxy/group-posts/${postId}/comments`;
+
+      response = await fetch(proxyUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.token}`,
+        },
+        body: formData,
+      });
+    } else {
+      // Use JSON for text-only comments
+      response = await fetch(`${this.apiBaseUrl}/group-posts/${postId}/comments`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          comment_content: content,
+          parent_id: parentId || null,
+        }),
+      });
+    }
+
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.message || 'Failed to add comment');

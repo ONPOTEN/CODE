@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { posts, Post, ApiException } from '@/lib/api';
+import { posts, Post, ApiException, settings, ImageSettings, VideoSettings } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
 import { EngagementButtons } from '@/components/EngagementButtons';
@@ -25,8 +25,167 @@ export default function PostDetailClient({ postId }: PostDetailClientProps) {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [touchStart, setTouchStart] = useState(0);
   const [touchEnd, setTouchEnd] = useState(0);
+  const [imageSettings, setImageSettings] = useState<ImageSettings>({
+    image_width: 1200,
+    image_height: 1200,
+    image_quality: 80,
+    max_file_size: 10,
+  });
+  const [videoSettings, setVideoSettings] = useState<VideoSettings>({
+    video_width: 1920,
+    video_height: 1080,
+    video_max_file_size: 100,
+  });
 
   const shouldScrollToComments = searchParams.get('scrollToComments') === 'true';
+
+  // Fetch settings on mount
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const [imageResponse, videoResponse] = await Promise.all([
+          settings.getImageSettings(),
+          settings.getVideoSettings(),
+        ]);
+        if (imageResponse.success) {
+          setImageSettings(imageResponse.data);
+        }
+        if (videoResponse.success) {
+          setVideoSettings(videoResponse.data);
+        }
+      } catch (error) {
+        console.error('Error fetching settings:', error);
+      }
+    };
+    fetchSettings();
+  }, []);
+
+  // Process img tags to add width/height from settings
+  const processImgTags = (content: string): string => {
+    return content.replace(/<img\s+([^>]*)>/gi, (_match, attributes) => {
+      const maxWidthStyle = `max-width: ${imageSettings.image_width}px`;
+      const maxHeightStyle = `max-height: ${imageSettings.image_height}px`;
+
+      // Check if style attribute exists
+      if (/style\s*=\s*["']/i.test(attributes)) {
+        // Add to existing style
+        const newAttributes = attributes.replace(
+          /style\s*=\s*["']([^"']*)["']/i,
+          (_styleMatch: string, styleContent: string) => {
+            return `style="${styleContent}; ${maxWidthStyle}; ${maxHeightStyle}; width: auto; height: auto;"`;
+          }
+        );
+        return `<img ${newAttributes}>`;
+      } else {
+        // Add new style attribute
+        return `<img ${attributes} style="${maxWidthStyle}; ${maxHeightStyle}; width: auto; height: auto;">`;
+      }
+    });
+  };
+
+  // Process video URLs and iframes to add responsive container with settings dimensions
+  const processVideoContent = (content: string): string => {
+    const aspectRatio = (videoSettings.video_height / videoSettings.video_width) * 100;
+    const wrapperStyle = `position: relative; width: 100%; max-width: ${videoSettings.video_width}px; padding-bottom: ${aspectRatio}%; height: 0; overflow: hidden; margin: 10px 0; background: #000;`;
+    const iframeStyle = `position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;`;
+
+    const createResponsiveContainer = (iframeSrc: string, allow: string) => {
+      return `<div class="video-container" style="${wrapperStyle}"><iframe src="${iframeSrc}" style="${iframeStyle}" frameborder="0" allow="${allow}" allowfullscreen></iframe></div>`;
+    };
+
+    let processedContent = content;
+
+    // First, process existing iframes that contain video URLs
+    // Match iframes with YouTube, Vimeo, Facebook, or TikTok sources
+    processedContent = processedContent.replace(
+      /<iframe[^>]*src=["']([^"']*(?:youtube|vimeo|facebook|tiktok)[^"']*)["'][^>]*>[\s\S]*?<\/iframe>/gi,
+      (match, src) => {
+        // Skip if already wrapped in a video-container
+        if (match.includes('video-container')) return match;
+
+        let allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+        if (src.includes('vimeo')) {
+          allow = 'autoplay; fullscreen; picture-in-picture';
+        } else if (src.includes('facebook')) {
+          allow = 'autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share';
+        }
+        return createResponsiveContainer(src, allow);
+      }
+    );
+
+    // Process standalone YouTube URLs (not inside iframe src or href attributes)
+    // Only match URLs that are NOT preceded by src=" or href="
+    processedContent = processedContent.replace(
+      /(?<!src=["']|href=["'])(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})(?:[^\s<"']*)?/gi,
+      (_match, videoId) => {
+        return createResponsiveContainer(
+          `https://www.youtube.com/embed/${videoId}`,
+          'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture'
+        );
+      }
+    );
+
+    // Process standalone Vimeo URLs
+    processedContent = processedContent.replace(
+      /(?<!src=["']|href=["'])(?:https?:\/\/)?(?:www\.)?vimeo\.com\/(\d+)(?:[^\s<"']*)?/gi,
+      (_match, videoId) => {
+        return createResponsiveContainer(
+          `https://player.vimeo.com/video/${videoId}`,
+          'autoplay; fullscreen; picture-in-picture'
+        );
+      }
+    );
+
+    // Process standalone Facebook video URLs
+    processedContent = processedContent.replace(
+      /(?<!src=["']|href=["'])(?:https?:\/\/)?(?:www\.)?(?:facebook\.com|fb\.watch)\/(?:watch\/?\?v=|video\.php\?v=|[^\/]+\/videos\/)(\d+)(?:[^\s<"']*)?/gi,
+      (_match, videoId) => {
+        const fbUrl = encodeURIComponent(`https://www.facebook.com/video.php?v=${videoId}`);
+        return createResponsiveContainer(
+          `https://www.facebook.com/plugins/video.php?href=${fbUrl}&show_text=false`,
+          'autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share'
+        );
+      }
+    );
+
+    // Process standalone TikTok URLs
+    processedContent = processedContent.replace(
+      /(?<!src=["']|href=["'])(?:https?:\/\/)?(?:www\.)?(?:tiktok\.com\/@[^\/]+\/video\/|vm\.tiktok\.com\/)(\d+)(?:[^\s<"']*)?/gi,
+      (_match, videoId) => {
+        return createResponsiveContainer(
+          `https://www.tiktok.com/embed/v2/${videoId}`,
+          'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture'
+        );
+      }
+    );
+
+    return processedContent;
+  };
+
+  const normalizeContent = (content: string | undefined): string => {
+    if (!content) return '';
+
+    // Normalize line breaks: convert \n to <br>, preserve <br> and <div> tags
+    let normalizedContent = content
+      .replace(/\n/g, '<br>')  // Convert newlines to <br>
+      .replace(/<\/div>\s*<div>/gi, '<br>')  // Convert consecutive divs to line breaks
+      .replace(/<div>/gi, '')  // Remove opening div tags
+      .replace(/<\/div>/gi, '<br>');  // Convert closing div to <br>
+
+    // Clean up multiple consecutive <br> tags
+    normalizedContent = normalizedContent
+      .replace(/(<br\s*\/?>\s*){3,}/gi, '<br><br>')  // Max 2 line breaks
+      .replace(/^(<br\s*\/?>\s*)+/gi, '')  // Remove leading <br>
+      .replace(/(<br\s*\/?>\s*)+$/gi, '');  // Remove trailing <br>
+
+    // Process images with settings dimensions
+    normalizedContent = processImgTags(normalizedContent);
+
+    // Process video URLs and iframes with settings dimensions
+    normalizedContent = processVideoContent(normalizedContent);
+
+    return normalizedContent;
+  };
 
   useEffect(() => {
     async function fetchPost() {
@@ -217,9 +376,19 @@ export default function PostDetailClient({ postId }: PostDetailClientProps) {
               )}
             </header>
 
+            {/* Content - Displayed before images */}
+            <div className="px-4">
+              <div className="prose prose-lg max-w-none prose-video">
+                <div
+                  className="text-gray-800 leading-normal bg-white rounded-lg post-content"
+                  dangerouslySetInnerHTML={{ __html: normalizeContent(post.content) || 'Không có nội dung.' }}
+                />
+              </div>
+            </div>
+
             {/* Additional Images Carousel */}
             {post.images && post.images.length > 0 && (
-              <div className="">
+              <div className="px-4">
                 {/* Main Carousel */}
                 <div
                   className="relative bg-gray-900 rounded-lg overflow-hidden mb-4 cursor-grab active:cursor-grabbing"
@@ -293,15 +462,6 @@ export default function PostDetailClient({ postId }: PostDetailClientProps) {
                 </p>
               </div>
             )}
-
-            {/* Content */}
-            <div className="">
-              <div className="prose prose-lg max-w-none">
-                <div className="text-gray-800 whitespace-pre-wrap leading-relaxed bg-white rounded-lg">
-                  {post.content || 'Không có nội dung.'}
-                </div>
-              </div>
-            </div>
 
             {/* Engagement Buttons */}
             <div className="mb-8 px-4 md:px-8 border-t border-gray-300 pt-4">

@@ -12,7 +12,7 @@ dotenv.config();
 const app = express();
 
 // Configuration
-const PORT = process.env.PORT || 3000;
+const PORT = 3000;
 const HOSTNAME = process.env.HOSTNAME || '0.0.0.0';
 
 console.log(`\n[${'═'.repeat(50)}]`);
@@ -42,19 +42,8 @@ if (!fs.existsSync(pfxPath)) {
   console.log(`PFX Path: ${pfxPath} ✓ Found`);
 }
 
-console.log();
-
-// Read SSL certificate files - PFX format (no passphrase)
-const serverOptions = {
-  pfx: fs.readFileSync(finalPfxPath),
-  passphrase: 'MatKhauBaoMat123' // Empty passphrase - no password on our cert
-};
-
-// Create HTTPS server
-const server = https.createServer(serverOptions, app);
-
-// Configure CORS for Socket.IO
-const io = new Server(server, {
+const httpServer = http.createServer();
+const io = new Server(httpServer, {
     cors: {
         origin: "*",
         methods: ["GET", "POST"],
@@ -153,7 +142,7 @@ app.post("/api/emit-message", (req, res) => {
 // Helper function to save shop message to database
 async function saveShopMessageToDatabase(messageData) {
     try {
-        const laravelApiUrl = process.env.LARAVEL_API_URL || 'https://centimet2:8000/api/v1';
+        const laravelApiUrl = process.env.LARAVEL_API_URL || 'https://api.centimet2.com/api/v1';
         const apiToken = process.env.LARAVEL_API_TOKEN || '';
 
         const payload = {
@@ -217,7 +206,7 @@ async function saveShopMessageToDatabase(messageData) {
 // Helper function to create shop message room in Laravel database
 async function createShopMessageRoomInLaravel(roomData) {
     try {
-        const laravelApiUrl = process.env.LARAVEL_API_URL || 'https://centimet2:8000/api/v1';
+        const laravelApiUrl = process.env.LARAVEL_API_URL || 'https://api.centimet2.com/api/v1';
         const apiToken = process.env.LARAVEL_API_TOKEN || '';
 
         const payload = {
@@ -865,7 +854,7 @@ io.on("connection", (socket) => {
     });
 });
 
-server.listen(PORT, HOSTNAME, () => {
+httpServer.listen(PORT, HOSTNAME, () => {
     console.log(`\n[${'═'.repeat(50)}]`);
     console.log('✓ VideoPeer Socket.IO HTTPS Server Started Successfully');
     console.log(`[${'═'.repeat(50)}]\n`);
@@ -878,7 +867,7 @@ server.listen(PORT, HOSTNAME, () => {
 });
 
 // Error handling
-server.on('error', (err) => {
+httpServer.on('error', (err) => {
     if (err.code === 'EADDRINUSE') {
         console.error(`✗ ERROR: Port ${PORT} is already in use`);
     } else {

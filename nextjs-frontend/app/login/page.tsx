@@ -8,19 +8,17 @@ import { useAuth } from '@/contexts/AuthContext';
 // Facebook App credentials
 const FACEBOOK_APP_ID = '1122464965761712';
 
-// Google OAuth - Client ID is configured in AuthContext
-
 export default function LoginPage() {
   const [username, setUsername] = useState(''); // email, username, or phone
   const [password, setPassword] = useState('');
-  const [fbLoaded, setFbLoaded] = useState(false);
-  const [googleLoaded, setGoogleLoaded] = useState(false);
+  const [loginError, setLoginError] = useState('');
+  const [isPhoneInput, setIsPhoneInput] = useState(false);
+
   const { login, firebaseLoginPhonePassword, googleLogin, facebookLogin, isLoading, error } = useAuth();
   const router = useRouter();
 
   // Initialize Facebook SDK
   useEffect(() => {
-    // Load Facebook SDK
     if (typeof window !== 'undefined' && !(window as any).FB) {
       const script = document.createElement('script');
       script.src = 'https://connect.facebook.net/en_US/sdk.js';
@@ -34,70 +32,100 @@ export default function LoginPage() {
           xfbml: true,
           version: 'v18.0'
         });
-        setFbLoaded(true);
         console.log('[Login] Facebook SDK initialized');
       };
       document.body.appendChild(script);
-    } else if ((window as any).FB) {
-      setFbLoaded(true);
     }
   }, []);
 
   // Initialize Google Identity Services SDK
   useEffect(() => {
-    // Load Google Identity Services SDK
     if (typeof window !== 'undefined' && !(window as any).google?.accounts) {
       const script = document.createElement('script');
       script.src = 'https://accounts.google.com/gsi/client';
       script.async = true;
       script.defer = true;
       script.onload = () => {
-        setGoogleLoaded(true);
         console.log('[Login] Google Identity Services SDK initialized');
       };
       document.body.appendChild(script);
-    } else if ((window as any).google?.accounts) {
-      setGoogleLoaded(true);
     }
   }, []);
 
+  // Detect if input looks like a phone number
+  const handleUsernameChange = (value: string) => {
+    setUsername(value);
+    setLoginError('');
+
+    // Check if input looks like a phone number
+    const cleanedInput = value.trim().replace(/\s/g, '');
+    const looksLikePhone = /^(\+?\d{9,15}|0\d{9,10})$/.test(cleanedInput);
+    setIsPhoneInput(looksLikePhone && !value.includes('@'));
+  };
+
+  // Normalize phone number to international format
+  const normalizePhoneNumber = (phone: string): string => {
+    let cleaned = phone.trim().replace(/\s/g, '');
+
+    // If starts with 0, replace with +84 (Vietnam)
+    if (cleaned.startsWith('0')) {
+      cleaned = '+84' + cleaned.substring(1);
+    }
+    // If doesn't start with +, add +
+    else if (!cleaned.startsWith('+')) {
+      cleaned = '+' + cleaned;
+    }
+
+    return cleaned;
+  };
+
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
+    setLoginError('');
 
     if (!username) {
-      alert('Vui lòng nhập email hoặc số điện thoại');
+      setLoginError('Vui lòng nhập email hoặc số điện thoại');
       return;
     }
 
     if (!password) {
-      alert('Vui lòng nhập mật khẩu');
+      setLoginError('Vui lòng nhập mật khẩu');
       return;
     }
 
     try {
-      // Check if it's a phone number or can be treated as phone
       const cleanedInput = username.trim();
 
-      const looksLikePhone = /^\+?\d{10,}$/.test(cleanedInput);
-      const hasPlus = cleanedInput.startsWith('+');
-      const isEmail = cleanedInput.includes('@');
-
-      if (looksLikePhone && !isEmail) {
+      if (isPhoneInput) {
         // Phone + Password login via Firebase
-        let phoneNumber = cleanedInput;
-        if (!hasPlus && /^\d{10,}$/.test(cleanedInput)) {
-          phoneNumber = '+' + cleanedInput;
-        }
-        console.log('[Login] Detected phone number format, using Firebase phone auth:', cleanedInput, '→', phoneNumber);
+        const phoneNumber = normalizePhoneNumber(cleanedInput);
+        console.log('[Login] Phone login:', cleanedInput, '→', phoneNumber);
         await firebaseLoginPhonePassword(phoneNumber, password);
       } else {
         // Email or username login via Laravel backend
-        console.log('[Login] Detected email/username format, using Laravel backend:', cleanedInput);
+        console.log('[Login] Email/username login:', cleanedInput);
         await login(cleanedInput, password);
       }
       router.push('/');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Login failed:', err);
+
+      // Provide specific error messages
+      if (isPhoneInput) {
+        if (err?.message?.includes('not found') || err?.code === 'auth/user-not-found') {
+          setLoginError('Không tìm thấy tài khoản với số điện thoại này. Vui lòng đăng ký trước.');
+        } else if (err?.message?.includes('password') || err?.message?.includes('credentials')) {
+          setLoginError('Mật khẩu không đúng. Vui lòng thử lại.');
+        } else {
+          setLoginError(err?.message || 'Đăng nhập thất bại. Vui lòng thử lại.');
+        }
+      } else {
+        if (err?.message?.includes('credentials') || err?.message?.includes('password')) {
+          setLoginError('Email/tên đăng nhập hoặc mật khẩu không đúng.');
+        } else {
+          setLoginError(err?.message || 'Đăng nhập thất bại. Vui lòng thử lại.');
+        }
+      }
     }
   };
 
@@ -123,15 +151,15 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-white py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-4">
         {/* Error Message */}
-        {error && (
-          <div className="rounded-md bg-red-50 p-4">
-            <div className="text-sm font-medium text-red-800">{error}</div>
+        {(error || loginError) && (
+          <div className="rounded-md bg-red-50 border border-red-200 p-4">
+            <div className="text-sm font-medium text-red-800">{loginError || error}</div>
           </div>
         )}
 
         {/* Social Login Buttons - Stacked vertically */}
         <div className="space-y-3">
-          {/* Phone Login Button */}
+          {/* Phone Login Button - Link to SMS verification page */}
           <Link
             href="/firebase-phone-login"
             className="w-full flex items-center py-3 px-4 rounded-md text-white font-semibold text-lg"
@@ -140,7 +168,7 @@ export default function LoginPage() {
             <svg className="w-8 h-8 mr-3" viewBox="0 0 24 24" fill="currentColor">
               <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
             </svg>
-            <span>Tiếp tục với số điện thoại</span>
+            <span>Đăng ký bằng số điện thoại (SMS)</span>
           </Link>
 
           {/* Google Login Button */}
@@ -191,9 +219,15 @@ export default function LoginPage() {
               className="w-full px-4 py-3 border-2 border-gray-800 rounded-md text-gray-900 text-lg placeholder-gray-400 focus:outline-none focus:border-blue-500"
               placeholder="email hoặc phone"
               value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              onChange={(e) => handleUsernameChange(e.target.value)}
               disabled={isLoading}
             />
+            {/* Show phone detection hint */}
+            {username && (
+              <p className="mt-1 text-xs text-gray-500">
+                {isPhoneInput ? '📱 Đăng nhập bằng số điện thoại' : '✉️ Đăng nhập bằng email/tên đăng nhập'}
+              </p>
+            )}
           </div>
 
           {/* Password Input */}

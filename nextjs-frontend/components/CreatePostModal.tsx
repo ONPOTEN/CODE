@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { posts, CreatePostData, ApiException } from '@/lib/api';
@@ -26,9 +26,44 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<Record<string, string[]> | null>(null);
+  const [isHtmlMode, setIsHtmlMode] = useState(true);
+  const contentEditableRef = useRef<HTMLDivElement>(null);
 
   const { isAuthenticated } = useAuth();
   const router = useRouter();
+
+  // Handle paste event to clean up pasted HTML
+  const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const html = e.clipboardData.getData('text/html');
+    const text = e.clipboardData.getData('text/plain');
+
+    if (html && isHtmlMode) {
+      // Insert HTML content
+      document.execCommand('insertHTML', false, html);
+    } else {
+      // Insert plain text
+      document.execCommand('insertText', false, text);
+    }
+
+    // Update formData
+    if (contentEditableRef.current) {
+      setFormData({
+        ...formData,
+        content: contentEditableRef.current.innerHTML,
+      });
+    }
+  };
+
+  // Handle content change in contentEditable
+  const handleContentChange = () => {
+    if (contentEditableRef.current) {
+      setFormData({
+        ...formData,
+        content: contentEditableRef.current.innerHTML,
+      });
+    }
+  };
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -135,6 +170,10 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
       setImagePreviews([]);
       setSelectedVideo(null);
       setVideoPreview(null);
+      setIsHtmlMode(false);
+      if (contentEditableRef.current) {
+        contentEditableRef.current.innerHTML = '';
+      }
       onClose();
 
       // Show success message
@@ -234,15 +273,31 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
             </div>
           )}
 
-          {/* Content Textarea */}
-          <textarea
-            name="content"
-            value={formData.content}
-            onChange={handleChange}
-            rows={4}
-            placeholder="Chia sẻ trạng thái..."
-            className="w-full text-lg focus:outline-none resize-none"
-          />
+          {/* Content Editor */}
+          <div className="relative">
+            {/* ContentEditable Div */}
+            <div
+              ref={contentEditableRef}
+              contentEditable
+              onInput={handleContentChange}
+              onPaste={handlePaste}
+              data-placeholder="Chia sẻ trạng thái..."
+              className="w-full min-h-[120px] text-lg focus:outline-none resize-none border border-gray-200 rounded-lg p-3 empty:before:content-[attr(data-placeholder)] empty:before:text-gray-400 prose prose-sm max-w-none"
+              style={{ whiteSpace: 'pre-wrap' }}
+            />
+
+            {/* Raw HTML Preview (when in HTML mode) */}
+            {isHtmlMode && formData.content && (
+              <details className="mt-2">
+                <summary className="text-xs text-gray-500 cursor-pointer hover:text-gray-700">
+                  Xem HTML source
+                </summary>
+                <pre className="mt-1 p-2 bg-gray-100 rounded text-xs overflow-x-auto max-h-32">
+                  {formData.content}
+                </pre>
+              </details>
+            )}
+          </div>
           {getFieldError('content') && (
             <p className="text-red-600 text-xs mt-1">{getFieldError('content')}</p>
           )}

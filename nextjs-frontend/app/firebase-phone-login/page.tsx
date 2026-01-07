@@ -1,11 +1,10 @@
 'use client';
 
-import { useState, useEffect, FormEvent } from 'react';
+import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
-import { RecaptchaVerifier } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { useRecaptchaVerifier } from '@/hooks/useRecaptchaVerifier';
 import { validateFirebasePhoneNumber } from '@/lib/api';
 
 export default function FirebasePhoneLoginPage() {
@@ -13,62 +12,50 @@ export default function FirebasePhoneLoginPage() {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [smsCode, setSmsCode] = useState('');
   const [confirmationResult, setConfirmationResult] = useState<any>(null);
-  const [recaptchaVerifier, setRecaptchaVerifier] = useState<RecaptchaVerifier | null>(null);
+  const [localError, setLocalError] = useState<string | null>(null);
   const { firebasePhoneVerify, firebasePhoneConfirm, isLoading, error } = useAuth();
   const router = useRouter();
 
-  useEffect(() => {
-    // Initialize reCAPTCHA
-    if (typeof window !== 'undefined' && !recaptchaVerifier) {
-      try {
-        console.log('Initializing reCAPTCHA for domain:', window.location.hostname);
-        const verifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-          size: 'invisible',
-          callback: (response: any) => {
-            console.log('reCAPTCHA verified', response);
-          },
-          'expired-callback': () => {
-            console.log('reCAPTCHA expired');
-          },
-          'error-callback': () => {
-            console.error('reCAPTCHA error');
-          },
-        });
-        setRecaptchaVerifier(verifier);
-        console.log('reCAPTCHA initialized successfully');
-      } catch (error) {
-        console.error('Error initializing reCAPTCHA:', error);
-      }
-    }
-
-    return () => {
-      if (recaptchaVerifier) {
-        try {
-          recaptchaVerifier.clear();
-        } catch (error) {
-          console.error('Error clearing reCAPTCHA:', error);
-        }
-      }
-    };
-  }, [recaptchaVerifier]);
+  // Use the custom reCAPTCHA verifier hook
+  const {
+    recaptchaVerifier,
+    isReady: isRecaptchaReady,
+    error: recaptchaError,
+    reset: resetRecaptcha,
+  } = useRecaptchaVerifier({
+    containerId: 'recaptcha-container',
+    size: 'invisible',
+    onSuccess: (token) => {
+      console.log('[Firebase Phone Login] reCAPTCHA verified');
+    },
+    onExpired: () => {
+      console.log('[Firebase Phone Login] reCAPTCHA expired, resetting...');
+      setLocalError('Phiên xác thực đã hết hạn. Vui lòng thử lại.');
+    },
+    onError: (err) => {
+      console.error('[Firebase Phone Login] reCAPTCHA error:', err);
+      setLocalError('Lỗi xác thực reCAPTCHA. Vui lòng tải lại trang.');
+    },
+  });
 
   const handlePhoneSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    setLocalError(null);
 
     if (!phoneNumber) {
-      alert('Vui lòng nhập số điện thoại');
+      setLocalError('Vui lòng nhập số điện thoại');
       return;
     }
 
     // Validate and normalize phone number (auto-adds +84 prefix)
     const validation = validateFirebasePhoneNumber(phoneNumber);
     if (!validation.valid) {
-      alert(validation.error || 'Số điện thoại không hợp lệ');
+      setLocalError(validation.error || 'Số điện thoại không hợp lệ');
       return;
     }
 
-    if (!recaptchaVerifier) {
-      alert('reCAPTCHA đang khởi tạo. Vui lòng đợi một chút và thử lại.');
+    if (!recaptchaVerifier || !isRecaptchaReady) {
+      setLocalError('reCAPTCHA đang khởi tạo. Vui lòng đợi một chút và thử lại.');
       return;
     }
 
@@ -78,24 +65,36 @@ export default function FirebasePhoneLoginPage() {
       const result = await firebasePhoneVerify(validation.normalized!, recaptchaVerifier);
       setConfirmationResult(result);
       setStep('verify');
+      setLocalError(null);
     } catch (err: any) {
       console.error('Phone verification failed:', err);
+
+      // Reset reCAPTCHA for retry
+      resetRecaptcha();
+
       // Handle specific Firebase errors
       if (err?.code === 'auth/captcha-check-failed') {
-        alert('Xác thực reCAPTCHA thất bại. Vui lòng đảm bảo tên miền của bạn được ủy quyền trong Firebase Console. Hãy chắc chắn tên miền (ví dụ: localhost, yourdomain.com) đã được thêm vào Firebase Authentication > Settings > Authorized Domains.');
+        setLocalError('Xác thực reCAPTCHA thất bại. Vui lòng đảm bảo tên miền của bạn được ủy quyền trong Firebase Console.');
       } else if (err?.code === 'auth/invalid-phone-number') {
-        alert('Số điện thoại không hợp lệ. Yêu cầu 10 chữ số (ví dụ: 0867631313 hoặc 867631313). Tiền tố +84 sẽ được thêm tự động.');
+        setLocalError('Số điện thoại không hợp lệ. Yêu cầu 10 chữ số (ví dụ: 0867631313).');
+      } else if (err?.code === 'auth/too-many-requests') {
+        setLocalError('Quá nhiều yêu cầu. Vui lòng đợi vài phút và thử lại.');
+      } else if (err?.code === 'auth/quota-exceeded') {
+        setLocalError('Đã vượt quá giới hạn SMS. Vui lòng thử lại sau.');
+      } else if (err?.message?.includes('-39') || err?.code?.includes('-39')) {
+        setLocalError('Lỗi xác thực Firebase. Vui lòng kiểm tra cấu hình Phone Authentication trong Firebase Console.');
       } else {
-        alert(err?.message || 'Xác thực số điện thoại thất bại. Vui lòng thử lại.');
+        setLocalError(err?.message || 'Xác thực số điện thoại thất bại. Vui lòng thử lại.');
       }
     }
   };
 
   const handleCodeSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    setLocalError(null);
 
     if (!smsCode || !confirmationResult) {
-      alert('Vui lòng nhập mã SMS');
+      setLocalError('Vui lòng nhập mã SMS');
       return;
     }
 
@@ -113,7 +112,14 @@ export default function FirebasePhoneLoginPage() {
       router.push(`/firebase-phone-password-setup?${params.toString()}`);
     } catch (err: any) {
       console.error('[Firebase Phone Login] Code verification failed:', err);
-      alert(err?.message || 'Xác thực thất bại. Vui lòng thử lại.');
+
+      if (err?.code === 'auth/invalid-verification-code') {
+        setLocalError('Mã xác thực không đúng. Vui lòng kiểm tra lại.');
+      } else if (err?.code === 'auth/code-expired') {
+        setLocalError('Mã xác thực đã hết hạn. Vui lòng gửi lại mã mới.');
+      } else {
+        setLocalError(err?.message || 'Xác thực thất bại. Vui lòng thử lại.');
+      }
     }
   };
 
@@ -134,9 +140,24 @@ export default function FirebasePhoneLoginPage() {
         </div>
 
         {/* Error Message */}
-        {error && (
-          <div className="rounded-md bg-grey-200 p-4">
-            <div className="text-sm font-medium text-red-800">{error}</div>
+        {(error || localError || recaptchaError) && (
+          <div className="rounded-md bg-red-50 border border-red-200 p-4">
+            <div className="text-sm font-medium text-red-800">
+              {localError || error || recaptchaError}
+            </div>
+          </div>
+        )}
+
+        {/* reCAPTCHA Status (for debugging) */}
+        {!isRecaptchaReady && step === 'phone' && (
+          <div className="rounded-md bg-yellow-50 border border-yellow-200 p-3">
+            <div className="text-sm text-yellow-700 flex items-center">
+              <svg className="animate-spin h-4 w-4 mr-2" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+              Đang khởi tạo reCAPTCHA...
+            </div>
           </div>
         )}
 
@@ -168,10 +189,10 @@ export default function FirebasePhoneLoginPage() {
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={isLoading}
-              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-gray-900 bg-blue-500 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={isLoading || !isRecaptchaReady}
+              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoading ? 'Đang gửi mã...' : 'Gửi mã xác thực'}
+              {isLoading ? 'Đang gửi mã...' : !isRecaptchaReady ? 'Đang khởi tạo...' : 'Gửi mã xác thực'}
             </button>
           </form>
         )}

@@ -70,6 +70,7 @@ class ChatController extends Controller
                     'id' => $otherUser->ID,
                     'name' => $otherUser->display_name ?? $otherUser->user_login,
                     'email' => $otherUser->user_email,
+                    'avatar' => $otherUser->avatar,
                 ],
                 'last_message' => $lastMessage ? [
                     'message' => $lastMessage->message,
@@ -85,18 +86,14 @@ class ChatController extends Controller
     }
 
     /**
-     * Get or create a conversation with a specific user (only if friends)
+     * Get or create a conversation with a specific user (allows chat with any user)
      */
     public function getOrCreateConversation(Request $request, $otherUserId)
     {
         $userId = $request->user()->ID;
 
-        // Check if users are friends
-        if (!$this->areFriends($userId, $otherUserId)) {
-            return response()->json([
-                'message' => 'You can only chat with friends. Send a friend request first.'
-            ], 403);
-        }
+        // Allow chat with any user (no friendship check)
+        // Previously required friendship - now removed to allow messaging any user
 
         // Ensure consistent ordering for unique constraint
         $user1 = min($userId, $otherUserId);
@@ -121,6 +118,7 @@ class ChatController extends Controller
                 'id' => $otherUser->ID,
                 'name' => $otherUser->display_name ?? $otherUser->user_login,
                 'email' => $otherUser->user_email,
+                'avatar' => $otherUser->avatar,
             ],
         ]);
     }

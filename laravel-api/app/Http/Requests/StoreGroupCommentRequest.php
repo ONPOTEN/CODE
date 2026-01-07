@@ -22,9 +22,25 @@ class StoreGroupCommentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'comment_content' => 'required|string|min:1|max:5000',
+            'comment_content' => 'nullable|string|max:5000',
             'parent_id' => 'nullable|integer|exists:group_comments,id',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120', // 5MB max
         ];
+    }
+
+    /**
+     * Configure the validator instance.
+     */
+    public function withValidator($validator)
+    {
+        $validator->after(function ($validator) {
+            $content = $this->input('comment_content');
+            $hasImage = $this->hasFile('image');
+
+            if (empty($content) && !$hasImage) {
+                $validator->errors()->add('comment_content', 'Comment must have either content or an image');
+            }
+        });
     }
 
     /**
@@ -33,10 +49,11 @@ class StoreGroupCommentRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'comment_content.required' => 'Comment content is required',
-            'comment_content.min' => 'Comment must not be empty',
             'comment_content.max' => 'Comment must not exceed 5000 characters',
             'parent_id.exists' => 'The parent comment does not exist',
+            'image.image' => 'The file must be an image',
+            'image.mimes' => 'Only JPEG, PNG, JPG, GIF and WebP images are allowed',
+            'image.max' => 'Image size must not exceed 5MB',
         ];
     }
 }

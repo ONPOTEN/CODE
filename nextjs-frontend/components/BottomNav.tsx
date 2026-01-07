@@ -13,6 +13,13 @@ interface NavItem {
 const BottomNav: React.FC = () => {
   const pathname = usePathname();
 
+  // Hide bottom nav on post detail pages (e.g., /posts/123 or /posts/slug-name)
+  const isPostDetailPage = pathname?.startsWith('/posts/') && pathname !== '/posts/create';
+
+  if (isPostDetailPage) {
+    return null;
+  }
+
   const navItems: NavItem[] = [
     {
       label: 'Home',

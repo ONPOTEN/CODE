@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -22,7 +22,7 @@ export default function AdminStaticPagesPage() {
   useEffect(() => {
     const fetchPages = async () => {
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://centimet2.com:8000/api/v1';
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.centimet2.com/api/v1';
         const token = localStorage.getItem('api_token');
 
         if (!token) {

@@ -9,6 +9,7 @@ use App\Models\WpPost;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\Storage;
 
 class CommentController extends Controller
 {
@@ -34,9 +35,17 @@ class CommentController extends Controller
     public function storeComment(Request $request, $postId): JsonResponse
     {
         $validated = $request->validate([
-            'content' => 'required|string|min:1|max:5000',
+            'content' => 'nullable|string|max:5000',
             'parent_id' => 'nullable|integer|exists:wp_comments,comment_ID',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120', // 5MB max
         ]);
+
+        // Require either content or image
+        if (empty($validated['content']) && !$request->hasFile('image')) {
+            return response()->json([
+                'message' => 'Comment must have either content or an image',
+            ], 422);
+        }
 
         $user = $request->user();
         $post = WpPost::findOrFail($postId);
@@ -48,6 +57,15 @@ class CommentController extends Controller
             ], 403);
         }
 
+        // Handle image upload
+        $imagePath = null;
+        if ($request->hasFile('image')) {
+            $image = $request->file('image');
+            $filename = 'comment_' . time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
+            $path = $image->storeAs('comments', $filename, 's3');
+            $imagePath = Storage::disk('s3')->url($path);
+        }
+
         $comment = WpComment::create([
             'comment_post_ID' => $postId,
             'comment_author' => $user->user_nicename ?? $user->user_login,
@@ -56,7 +74,8 @@ class CommentController extends Controller
             'comment_author_IP' => $request->ip(),
             'comment_date' => now(),
             'comment_date_gmt' => now(),
-            'comment_content' => $validated['content'],
+            'comment_content' => $validated['content'] ?? '',
+            'image' => $imagePath,
             'comment_approved' => 1, // Auto-approve for now
             'comment_agent' => $request->userAgent(),
             'comment_type' => '',

@@ -23,7 +23,7 @@ interface EngagementContextType {
   toggleLike: (postId: number, type?: 'post' | 'group-post') => Promise<void>;
   toggleDislike: (postId: number, type?: 'post' | 'group-post') => Promise<void>;
   sharePost: (postId: number, platform: string) => Promise<void>;
-  addComment: (postId: number, content: string, parentId?: number) => Promise<void>;
+  addComment: (postId: number, content: string, parentId?: number, image?: File) => Promise<void>;
   updateComment: (commentId: number, content: string) => Promise<void>;
   deleteComment: (postId: number, commentId: number) => Promise<void>;
   fetchEngagementStats: (postId: number, type?: 'post' | 'group-post') => Promise<void>;
@@ -345,10 +345,10 @@ export function EngagementProvider({ children, token }: { children: React.ReactN
 
   // Add comment
   const addComment = useCallback(
-    async (postId: number, content: string, parentId?: number) => {
+    async (postId: number, content: string, parentId?: number, image?: File) => {
       try {
         setCommentLoading((prev) => new Map(prev).set(postId, true));
-        await engagementService.createComment(postId, content, parentId);
+        await engagementService.createComment(postId, content, parentId, 'post', image);
 
         // Refresh comments
         await fetchComments(postId);

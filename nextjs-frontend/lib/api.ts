@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://centimet2.com:8000/api/v1';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.centimet2.com/api/v1';
 
 // Token storage utilities
 const TOKEN_KEY = 'api_token';
@@ -1529,6 +1529,7 @@ export interface Conversation {
     id: number;
     name: string;
     email: string;
+    avatar?: string;
   };
   last_message?: {
     message: string;
@@ -2472,6 +2473,122 @@ export const categories = {
   },
 };
 
+// Settings interfaces
+export interface Setting {
+  id: number;
+  key: string;
+  value: string;
+  type: 'string' | 'integer' | 'boolean' | 'json';
+  group: string;
+  description?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ImageSettings {
+  image_width: number;
+  image_height: number;
+  image_quality: number;
+  max_file_size: number;
+}
+
+export interface VideoSettings {
+  video_width: number;
+  video_height: number;
+  video_max_file_size: number;
+}
+
+// Settings API
+export const settings = {
+  // Get image settings (public)
+  getImageSettings: async (): Promise<{ success: boolean; data: ImageSettings }> => {
+    return apiRequest('/settings/image');
+  },
+
+  // Get all settings (admin only)
+  getAll: async (params?: { group?: string }): Promise<{ success: boolean; data: Setting[] }> => {
+    const queryString = new URLSearchParams();
+    if (params?.group) queryString.append('group', params.group);
+    const query = queryString.toString() ? `?${queryString}` : '';
+    return apiRequest(`/admin/settings${query}`);
+  },
+
+  // Get settings by group (admin only)
+  getByGroup: async (group: string): Promise<{ success: boolean; data: Record<string, any> }> => {
+    return apiRequest(`/admin/settings/group/${group}`);
+  },
+
+  // Get a single setting (admin only)
+  get: async (key: string): Promise<{ success: boolean; data: Setting }> => {
+    return apiRequest(`/admin/settings/${key}`);
+  },
+
+  // Create or update a setting (admin only)
+  save: async (data: {
+    key: string;
+    value: string;
+    type?: 'string' | 'integer' | 'boolean' | 'json';
+    group?: string;
+    description?: string;
+  }): Promise<{ success: boolean; message: string; data: Setting }> => {
+    return apiRequest('/admin/settings', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  // Update multiple settings at once (admin only)
+  saveBatch: async (settingsData: {
+    key: string;
+    value: string;
+    type?: 'string' | 'integer' | 'boolean' | 'json';
+    group?: string;
+    description?: string;
+  }[]): Promise<{ success: boolean; message: string; data: Setting[] }> => {
+    return apiRequest('/admin/settings/batch', {
+      method: 'POST',
+      body: JSON.stringify({ settings: settingsData }),
+    });
+  },
+
+  // Update image settings (admin only)
+  updateImageSettings: async (data: {
+    image_width?: number;
+    image_height?: number;
+    image_quality?: number;
+    max_file_size?: number;
+  }): Promise<{ success: boolean; message: string; data: Setting[] }> => {
+    return apiRequest('/admin/settings/image', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  // Delete a setting (admin only)
+  delete: async (key: string): Promise<{ success: boolean; message: string }> => {
+    return apiRequest(`/admin/settings/${key}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // Get video settings (public)
+  getVideoSettings: async (): Promise<{ success: boolean; data: VideoSettings }> => {
+    return apiRequest('/settings/video');
+  },
+
+  // Update video settings (admin only)
+  updateVideoSettings: async (data: {
+    video_width?: number;
+    video_height?: number;
+    video_max_file_size?: number;
+  }): Promise<{ success: boolean; message: string; data: Setting[] }> => {
+    return apiRequest('/admin/settings/video', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+};
+
 export default {
   auth,
   posts,
@@ -2485,4 +2602,5 @@ export default {
   orders,
   admin,
   categories,
+  settings,
 };

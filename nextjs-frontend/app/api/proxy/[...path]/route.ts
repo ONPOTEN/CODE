@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 // Get the backend API URL - this must be a server-side environment variable
-const LARAVEL_API_URL = process.env.LARAVEL_API_URL || 'https://centimet2.com:8000/api/v1';
+// Using api.centimet2.com subdomain on standard HTTPS port 443 (works with Cloudflare)
+const LARAVEL_API_URL = process.env.LARAVEL_API_URL || 'https://api.centimet2.com/api/v1';
 
 // Configure body size limit for file uploads (150MB)
 export const config = {
@@ -66,7 +67,10 @@ async function proxyRequest(
 
     console.log(`[API Proxy] ${method} ${url}`);
 
-    const headers: Record<string, string> = {};
+    const headers: Record<string, string> = {
+      'Accept': 'application/json',
+      'X-Requested-With': 'XMLHttpRequest',
+    };
 
     // Forward important headers
     const headersToForward = [

@@ -7,9 +7,10 @@ import Footer from "@/components/Footer";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { SocketProvider } from "@/contexts/SocketContext";
 import { CartProvider } from "@/contexts/CartContext";
+import { SidebarProvider } from "@/contexts/SidebarContext";
 import { EngagementProviderWrapper } from "@/components/EngagementProviderWrapper";
 
-const DEFAULT_OG_IMAGE = `${process.env.NEXT_PUBLIC_API_URL || 'https://centimet2.com:8000/api/v1'}/share-image/0/image`;
+const DEFAULT_OG_IMAGE = `${process.env.NEXT_PUBLIC_API_URL || 'https://api.centimet2.com/api/v1'}/share-image/0/image`;
 
 export const metadata: Metadata = {
   title: "Centimet2 - Marketplace",
@@ -51,24 +52,26 @@ export default function RootLayout({
         <AuthProvider>
           <SocketProvider>
             <CartProvider>
-              <EngagementProviderWrapper>
-                {/* Desktop Sidebar Navigation */}
-                <Sidebar />
+              <SidebarProvider>
+                <EngagementProviderWrapper>
+                  {/* Desktop Sidebar Navigation */}
+                  <Sidebar />
 
-                {/* Mobile Header */}
-                <Header />
+                  {/* Mobile Header */}
+                  <Header />
 
-                {/* Main Content - Add padding bottom for mobile bottom nav */}
-                <main className="min-h-screen lg:pb-0 pb-20">
-                  {children}
-                </main>
+                  {/* Main Content - Add padding bottom for mobile bottom nav */}
+                  <main className="min-h-screen lg:pb-0 pb-20">
+                    {children}
+                  </main>
 
-                {/* Mobile Bottom Navigation */}
-                <BottomNav />
+                  {/* Mobile Bottom Navigation */}
+                  <BottomNav />
 
-                {/* Footer - Hidden on mobile */}
-                <Footer />
-              </EngagementProviderWrapper>
+                  {/* Footer - Hidden on mobile */}
+                  <Footer />
+                </EngagementProviderWrapper>
+              </SidebarProvider>
             </CartProvider>
           </SocketProvider>
         </AuthProvider>

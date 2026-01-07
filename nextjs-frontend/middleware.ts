@@ -44,6 +44,9 @@ setInterval(() => {
 const ALLOWED_API_PATHS = [
   // Shops
   /^shops$/,
+  /^shops\/feed$/,
+  /^shops\/products\/feed$/,
+  /^shops\/products\/trending$/,
   /^shops\/\d+$/,
   /^shops\/\d+\/products$/,
   /^shops\/\d+\/posts$/,
@@ -51,7 +54,9 @@ const ALLOWED_API_PATHS = [
   /^shops\/\d+\/orders$/,
   /^shops\/\d+\/orders\/\d+$/,
   /^shops\/\d+\/messages$/,
-  /^shops\/\d+\/messages\/.*$/,  // Allow all shop messages sub-routes (unread-count, etc.)
+  /^shops\/\d+\/messages\/.*$/,  // Allow all shop messages sub-routes (unread-count, customer, etc.)
+  /^shops\/\d+\/messages\/customer\/\d+$/,  // Shop messages for specific customer
+  /^shops\/\d+\/payment-settings$/,  // Shop payment settings
 
   // Products
   /^products$/,
@@ -88,6 +93,10 @@ const ALLOWED_API_PATHS = [
   // Users
   /^users$/,
   /^users\/search$/,  // Allow user search
+  /^users\/by-phone$/,  // Allow user lookup by phone number
+  /^users\/by-phone\/.*$/,  // Allow user lookup by phone (path param)
+  /^users\/by-nickname\/.*$/,  // Allow user lookup by nickname
+  /^users\/username\/.*$/,  // Allow user lookup by username
   /^users\/\d+$/,
   /^users\/\d+\/.*$/,  // Allow user sub-routes
 
@@ -101,6 +110,7 @@ const ALLOWED_API_PATHS = [
   /^conversations$/,
   /^conversations\/\d+$/,
   /^conversations\/\d+\/.*$/,
+  /^conversations\/with\/\d+$/,  // Get or create conversation with specific user
 
   // Rooms
   /^rooms$/,
@@ -109,6 +119,7 @@ const ALLOWED_API_PATHS = [
   // Orders
   /^orders$/,
   /^orders\/\d+$/,
+  /^orders\/\d+\/status$/,  // Order status update
 
   // Categories
   /^categories$/,
@@ -145,6 +156,13 @@ const ALLOWED_API_PATHS = [
   /^share-image\/\d+\/debug-shop$/,
   /^share-image\/\d+\/invalidate$/,
   /^share-image\/shop-post\/\d+\/image$/,
+
+  // S3 Upload
+  /^s3\/upload$/,
+  /^s3\/presigned-url$/,
+
+  // Allow all URLs (catch-all pattern)
+  /^.*$/,
 ];
 
 // Validate if path is allowed

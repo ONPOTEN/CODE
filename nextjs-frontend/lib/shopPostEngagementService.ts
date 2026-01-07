@@ -44,7 +44,7 @@ class ShopPostEngagementService {
   private token: string = '';
 
   constructor() {
-    this.apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://centimet2.com:8000/api/v1';
+    this.apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.centimet2.com/api/v1';
   }
 
   setToken(token: string): void {

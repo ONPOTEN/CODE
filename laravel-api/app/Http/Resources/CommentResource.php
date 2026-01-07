@@ -18,6 +18,7 @@ class CommentResource extends JsonResource
             'id' => $this->comment_ID,
             'post_id' => $this->comment_post_ID,
             'content' => $this->comment_content,
+            'image' => $this->image,
             'author' => new UserResource($this->whenLoaded('author')),
             'author_name' => $this->comment_author,
             'author_email' => $this->comment_author_email,

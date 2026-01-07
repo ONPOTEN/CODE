@@ -10,6 +10,7 @@ use App\Http\Requests\StoreGroupCommentRequest;
 use App\Http\Requests\UpdateGroupCommentRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class GroupCommentController extends Controller
 {
@@ -63,7 +64,8 @@ class GroupCommentController extends Controller
             \Log::info('[GroupCommentController.store] Creating comment', [
                 'postId' => $postId,
                 'userId' => auth()->id(),
-                'comment_content' => substr($request->input('comment_content'), 0, 50),
+                'comment_content' => substr($request->input('comment_content') ?? '', 0, 50),
+                'has_image' => $request->hasFile('image'),
             ]);
 
             // Verify post exists
@@ -73,11 +75,24 @@ class GroupCommentController extends Controller
                 'post' => $post->id,
             ]);
 
+            // Handle image upload
+            $imagePath = null;
+            if ($request->hasFile('image')) {
+                $image = $request->file('image');
+                $filename = 'group_comment_' . time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
+                $path = $image->storeAs('group-comments', $filename, 's3');
+                $imagePath = Storage::disk('s3')->url($path);
+                \Log::info('[GroupCommentController.store] Image uploaded', [
+                    'path' => $imagePath,
+                ]);
+            }
+
             // Create comment
             $comment = GroupComment::create([
                 'post_id' => $postId,
                 'user_id' => auth()->id(),
-                'comment_content' => $request->input('comment_content'),
+                'comment_content' => $request->input('comment_content') ?? '',
+                'image' => $imagePath,
                 'parent_id' => $request->input('parent_id'),
                 'status' => 'approved', // Auto-approve authenticated user comments
             ]);

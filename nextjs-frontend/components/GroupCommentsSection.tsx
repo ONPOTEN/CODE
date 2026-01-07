@@ -145,7 +145,22 @@ function GroupCommentItem({
             </div>
           </div>
         ) : (
-          <p className="mt-1 text-sm text-gray-700 break-words">{comment.comment_content}</p>
+          <>
+            {comment.comment_content && (
+              <p className="mt-1 text-sm text-gray-700 break-words">{comment.comment_content}</p>
+            )}
+            {/* Comment Image */}
+            {comment.image && (
+              <div className="mt-2">
+                <img
+                  src={comment.image}
+                  alt="Comment attachment"
+                  className="max-w-full max-h-64 rounded-lg border border-gray-200 cursor-pointer hover:opacity-90"
+                  onClick={() => window.open(comment.image, '_blank')}
+                />
+              </div>
+            )}
+          </>
         )}
 
         {/* Actions */}
@@ -192,6 +207,40 @@ export function GroupCommentsSection({ postId, currentUserId, className = '' }: 
   const [touchStart, setTouchStart] = useState(0);
   const [touchEnd, setTouchEnd] = useState(0);
   const commentsListRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file type
+      const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif', 'image/webp'];
+      if (!validTypes.includes(file.type)) {
+        setError('Chỉ chấp nhận file ảnh (JPEG, PNG, GIF, WebP)');
+        return;
+      }
+      // Validate file size (5MB max)
+      if (file.size > 5 * 1024 * 1024) {
+        setError('Kích thước ảnh không được vượt quá 5MB');
+        return;
+      }
+      setSelectedImage(file);
+      setImagePreview(URL.createObjectURL(file));
+      setError(null);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setSelectedImage(null);
+    if (imagePreview) {
+      URL.revokeObjectURL(imagePreview);
+      setImagePreview(null);
+    }
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
 
   // Fetch comments on mount
   useEffect(() => {
@@ -229,8 +278,8 @@ export function GroupCommentsSection({ postId, currentUserId, className = '' }: 
   const handleSubmitComment = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!newComment.trim()) {
-      setError('Bình luận không được để trống');
+    if (!newComment.trim() && !selectedImage) {
+      setError('Bình luận phải có nội dung hoặc hình ảnh');
       return;
     }
 
@@ -242,9 +291,10 @@ export function GroupCommentsSection({ postId, currentUserId, className = '' }: 
     try {
       setIsSubmitting(true);
       setError(null);
-      await addComment(postId, newComment, replyingTo || undefined);
+      await addComment(postId, newComment, replyingTo || undefined, selectedImage || undefined);
       setNewComment('');
       setReplyingTo(null);
+      handleRemoveImage();
     } catch (err) {
       console.error('Error adding comment:', err);
       setError(err instanceof Error ? err.message : 'Không thể đăng bình luận');
@@ -311,7 +361,46 @@ export function GroupCommentsSection({ postId, currentUserId, className = '' }: 
           )}
 
           <div className="max-w-7xl mx-auto">
+            {/* Image Preview */}
+            {imagePreview && (
+              <div className="mb-2 relative inline-block">
+                <img
+                  src={imagePreview}
+                  alt="Preview"
+                  className="max-h-24 rounded-lg border border-gray-300"
+                />
+                <button
+                  onClick={handleRemoveImage}
+                  className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600"
+                  title="Xóa ảnh"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            )}
             <div className="flex gap-2 items-center">
+              {/* Hidden file input */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/jpg,image/gif,image/webp"
+                onChange={handleImageSelect}
+                className="hidden"
+              />
+              {/* Camera/Image button */}
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isSubmitting}
+                className="p-2 text-gray-500 hover:text-blue-500 hover:bg-gray-100 rounded-lg disabled:opacity-50 flex-shrink-0"
+                title="Đính kèm ảnh"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </button>
               <textarea
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
@@ -323,7 +412,7 @@ export function GroupCommentsSection({ postId, currentUserId, className = '' }: 
               />
               <button
                 onClick={handleSubmitComment}
-                disabled={isSubmitting || !newComment.trim()}
+                disabled={isSubmitting || (!newComment.trim() && !selectedImage)}
                 className="px-3 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-600 disabled:opacity-50 font-medium text-sm flex items-center gap-2 flex-shrink-0"
                 title="Đăng bình luận"
               >

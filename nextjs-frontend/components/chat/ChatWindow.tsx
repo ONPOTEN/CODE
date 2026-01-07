@@ -635,14 +635,42 @@ export default function ChatWindow({ conversation, onNewMessage }: ChatWindowPro
     );
   }
 
+  // Check if this is a shop message room
+  const isShopRoom = conversation.room_name && conversation.room_name.includes('-shop');
+
   return (
     <div className="flex flex-col h-full">
       {/* Chat Header */}
-      <div className="p-4 border-b border-gray-300 bg-gray-50 flex items-center justify-between">
-        <div className="flex-1">
-          <h2 className="font-semibold text-lg">{conversation.other_user.name}</h2>
-          <p className="text-sm text-gray-500">{conversation.other_user.email}</p>
-          <p className="text-xs text-gray-600 mt-1">Phòng: {roomName || conversation.room_name}</p>
+      <div className="p-4 border-b border-gray-200 bg-white flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          {/* Avatar */}
+          {isShopRoom ? (
+            <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-xl flex-shrink-0">
+              🏪
+            </div>
+          ) : conversation.other_user.avatar ? (
+            <Image
+              src={conversation.other_user.avatar}
+              alt={conversation.other_user.name}
+              width={40}
+              height={40}
+              className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+            />
+          ) : (
+            <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 font-semibold flex-shrink-0">
+              {conversation.other_user.name.charAt(0).toUpperCase()}
+            </div>
+          )}
+          <div className="flex-1 min-w-0">
+            <h2 className="font-semibold text-lg text-gray-900 truncate">
+              {isShopRoom ? 'Tin nhắn cửa hàng' : conversation.other_user.name}
+            </h2>
+            {isShopRoom ? (
+              <p className="text-sm text-gray-500 truncate">{conversation.other_user.name}</p>
+            ) : (
+              <p className="text-sm text-gray-500 truncate">{conversation.other_user.email}</p>
+            )}
+          </div>
         </div>
         <VideoCallButton
           conversation={conversation}

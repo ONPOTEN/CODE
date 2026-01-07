@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
@@ -23,7 +23,7 @@ export default function DieuKhoanPage() {
   useEffect(() => {
     const fetchPageContent = async () => {
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://centimet2.com:8000/api/v1';
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.centimet2.com/api/v1';
         const response = await fetch(`${apiUrl}/pages/dieu-khoan`);
         const result = await response.json();
 
@@ -56,8 +56,7 @@ export default function DieuKhoanPage() {
       <div className="min-h-screen bg-white">
         <div className="max-w-4xl mx-auto px-4 py-8">
           <Link href="/" className="text-blue-600 hover:text-blue-700 font-medium">
-            ← Quay lại Trang chủ
-          </Link>
+            Quay Lai Trang Chu         </Link>
           <div className="mt-8 text-center">
             <p className="text-red-500">{error}</p>
           </div>
@@ -73,8 +72,7 @@ export default function DieuKhoanPage() {
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <Link href="/" className="text-blue-600 hover:text-blue-700 font-medium">
-              ← Quay lại Trang chủ
-            </Link>
+              Quay Lai Trang Chu            </Link>
             {isAdmin(user) && (
               <Link
                 href="/admin/pages/dieu-khoan/edit"
@@ -109,12 +107,12 @@ export default function DieuKhoanPage() {
           <ul className="space-y-2">
             <li>
               <Link href="/dieu-kien" className="text-blue-600 hover:text-blue-700">
-                → Điều khoản và Điều kiện
+                Điều khoản và Điều kiện
               </Link>
             </li>
             <li>
               <Link href="/chinh-sach-bao-mat" className="text-blue-600 hover:text-blue-700">
-                → Chính sách Bảo mật
+                Chính sách Bảo mật
               </Link>
             </li>
           </ul>
@@ -123,7 +121,7 @@ export default function DieuKhoanPage() {
         {/* Footer */}
         <div className="mt-12 pt-8 border-t border-gray-200">
           <p className="text-gray-500 text-sm text-center">
-            &copy; {new Date().getFullYear()} Centimet2. Tất cả các quyền được bảo lưu.
+            &copy; {new Date().getFullYear()} Centimet2. Tất c�?các quyền được bảo lưu.
           </p>
         </div>
       </div>

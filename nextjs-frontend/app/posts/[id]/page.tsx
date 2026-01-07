@@ -40,7 +40,7 @@ async function getPost(id: string): Promise<PostData | null> {
     console.log('[Metadata] Fetching post from:', endpoint);
 
     const response = await fetch(endpoint, {
-      next: { revalidate: 60 }, // Cache for 60 seconds
+      next: { revalidate: 10 }, // Cache for 10 seconds for fresher metadata
       headers: {
         'Accept': 'application/json',
         'User-Agent': 'NextJS-Server/1.0',
@@ -55,8 +55,15 @@ async function getPost(id: string): Promise<PostData | null> {
     }
 
     const data = await response.json();
-    console.log('[Metadata] Post data received:', { id: data.data?.id || data?.id, title: data.data?.title || data?.title });
-    return data.data || data;
+    const post = data.data || data;
+    console.log('[Metadata] Post data received:', {
+      id: post?.id,
+      title: post?.title,
+      hasContent: !!post?.content,
+      contentLength: post?.content?.length,
+      contentPreview: post?.content?.substring(0, 100)
+    });
+    return post;
   } catch (error) {
     console.error('[Metadata] Error fetching post:', error);
     return null;
@@ -112,8 +119,44 @@ export async function generateMetadata({
     return undefined;
   };
 
-  const title = post.title || 'Bài viết';
-  const description = post.excerpt || post.content?.substring(0, 160).replace(/<[^>]*>/g, '') || 'Xem bài viết trên Centimet2';
+  // Extract first N words from content (strip HTML tags)
+  const getFirstWords = (content: string | undefined, wordCount: number): string => {
+    if (!content) return '';
+    // Remove HTML tags and decode entities
+    const plainText = content
+      .replace(/<[^>]*>/g, ' ')  // Replace HTML tags with space
+      .replace(/&nbsp;/g, ' ')   // Replace &nbsp;
+      .replace(/&amp;/g, '&')    // Replace &amp;
+      .replace(/&lt;/g, '<')     // Replace &lt;
+      .replace(/&gt;/g, '>')     // Replace &gt;
+      .replace(/&quot;/g, '"')   // Replace &quot;
+      .replace(/&#39;/g, "'")    // Replace &#39;
+      .replace(/\s+/g, ' ')      // Normalize whitespace
+      .trim();
+
+    const words = plainText.split(' ').filter(word => word.length > 0);
+    const firstWords = words.slice(0, wordCount).join(' ');
+
+    // Add ellipsis if content was truncated
+    if (words.length > wordCount) {
+      return firstWords + '...';
+    }
+    return firstWords;
+  };
+
+  // Use title if available, otherwise get first 36 words from content
+  const contentText = getFirstWords(post.content, 36);
+  const postTitle = post.title?.trim();
+  // Use title if it exists and is not empty, otherwise use content preview (36 words)
+  const title = contentText;
+  const description = post.excerpt?.trim() || getFirstWords(post.content, 50) || 'Xem bài viết trên Centimet2';
+
+  console.log('[Metadata] Generated OG metadata:', {
+    postTitle: post.title,
+    contentPreview: contentText?.substring(0, 100),
+    finalTitle: title?.substring(0, 100),
+    finalDescription: description?.substring(0, 100)
+  });
   const authorName = post.author?.display_name || post.author?.name || post.author?.username || 'Centimet2 User';
   const featuredImage = getFeaturedImage();
   // Use featured image directly, or fallback to share-image endpoint (returns actual image)

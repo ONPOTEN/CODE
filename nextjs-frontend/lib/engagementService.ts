@@ -26,6 +26,7 @@ export interface Comment {
   id: number;
   post_id: number;
   content: string;
+  image?: string;
   author: {
     id: number;
     name: string;
@@ -55,7 +56,7 @@ class EngagementService {
   private token: string | null = null;
   private listeners: Map<string, Set<Function>> = new Map();
 
-  constructor(apiBaseUrl: string = process.env.NEXT_PUBLIC_API_URL || 'https://centimet2.com:8000/api/v1') {
+  constructor(apiBaseUrl: string = process.env.NEXT_PUBLIC_API_URL || 'https://api.centimet2.com/api/v1') {
     this.apiBaseUrl = apiBaseUrl;
   }
 
@@ -344,22 +345,47 @@ class EngagementService {
    * @param content - The comment content
    * @param parentId - Optional parent comment ID for nested replies
    * @param type - 'post' for WpPost or 'group-post' for GroupPost (default: 'post')
+   * @param image - Optional image file to attach
    */
-  async createComment(postId: number, content: string, parentId?: number, type: 'post' | 'group-post' = 'post'): Promise<any> {
+  async createComment(postId: number, content: string, parentId?: number, type: 'post' | 'group-post' = 'post', image?: File): Promise<any> {
     const endpoint = type === 'group-post' ? `group-posts` : `posts`;
     const fieldName = type === 'group-post' ? 'comment_content' : 'content';
 
-    const response = await fetch(`${this.apiBaseUrl}/${endpoint}/${postId}/comments`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${this.token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        [fieldName]: content,
-        parent_id: parentId || null,
-      }),
-    });
+    let response: Response;
+
+    if (image) {
+      // Use FormData for image upload - route through Next.js API proxy
+      const formData = new FormData();
+      formData.append(fieldName, content || '');
+      if (parentId) {
+        formData.append('parent_id', parentId.toString());
+      }
+      formData.append('image', image);
+
+      // Use the Next.js API proxy for file uploads
+      const proxyUrl = `/api/proxy/${endpoint}/${postId}/comments`;
+
+      response = await fetch(proxyUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.token}`,
+        },
+        body: formData,
+      });
+    } else {
+      // Use JSON for text-only comments
+      response = await fetch(`${this.apiBaseUrl}/${endpoint}/${postId}/comments`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          [fieldName]: content,
+          parent_id: parentId || null,
+        }),
+      });
+    }
 
     if (!response.ok) {
       const error = await response.json();

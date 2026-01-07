@@ -2,6 +2,7 @@
 
 import { Conversation } from '@/lib/api';
 import { formatDistanceToNow } from '@/lib/utils';
+import Image from 'next/image';
 
 interface ConversationListProps {
   conversations: Conversation[];
@@ -47,48 +48,74 @@ export default function ConversationList({
             selectedConversationId === conversation.id ? 'bg-gray-100 border-l-4 border-blue-600' : ''
           }`}
         >
-          <div className="flex items-start justify-between mb-1">
-            <h3 className="font-semibold text-gray-900">
+          <div className="flex items-start gap-3">
+            {/* Avatar */}
+            <div className="flex-shrink-0">
               {conversation.room_name && conversation.room_name.includes('-shop') ? (
-                <div>
-                  <span>🏪 Tin nhắn cửa hàng</span>
-                  <div className="text-sm font-normal text-gray-600 mt-1">
-                    {conversation.other_user.name}
-                  </div>
+                <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-2xl">
+                  🏪
                 </div>
+              ) : conversation.other_user.avatar ? (
+                <Image
+                  src={conversation.other_user.avatar}
+                  alt={conversation.other_user.name}
+                  width={48}
+                  height={48}
+                  className="w-12 h-12 rounded-full object-cover"
+                />
               ) : (
-                conversation.other_user.name
+                <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 font-semibold text-lg">
+                  {conversation.other_user.name.charAt(0).toUpperCase()}
+                </div>
               )}
-            </h3>
-            {conversation.last_message && (
-              <span className="text-xs text-gray-500 flex-shrink-0 ml-2">
-                {formatDistanceToNow(conversation.last_message.created_at)}
-              </span>
-            )}
-          </div>
-
-          {conversation.last_message ? (
-            <p className="text-sm text-gray-600 truncate">
-              {conversation.last_message.is_mine && 'Bạn: '}
-              {conversation.last_message.message}
-            </p>
-          ) : (
-            <p className="text-sm text-gray-600 italic">
-              {conversation.room_name && conversation.room_name.includes('-shop') ? (
-                'Chưa có tin nhắn'
-              ) : (
-                'Không có tin nhắn gần đây'
-              )}
-            </p>
-          )}
-
-          {conversation.unread_count > 0 && (
-            <div className="mt-2">
-              <span className="inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-500 rounded-full">
-                {conversation.unread_count}
-              </span>
             </div>
-          )}
+
+            {/* Content */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-start justify-between mb-1">
+                <h3 className="font-semibold text-gray-900">
+                  {conversation.room_name && conversation.room_name.includes('-shop') ? (
+                    <div>
+                      <span>Tin nhắn cửa hàng</span>
+                      <div className="text-sm font-normal text-gray-600 mt-1">
+                        {conversation.other_user.name}
+                      </div>
+                    </div>
+                  ) : (
+                    conversation.other_user.name
+                  )}
+                </h3>
+                {conversation.last_message && (
+                  <span className="text-xs text-gray-500 flex-shrink-0 ml-2">
+                    {formatDistanceToNow(conversation.last_message.created_at)}
+                  </span>
+                )}
+              </div>
+
+              {conversation.last_message ? (
+                <p className="text-sm text-gray-600 truncate">
+                  {conversation.last_message.is_mine && 'Bạn: '}
+                  {conversation.last_message.message}
+                </p>
+              ) : (
+                <p className="text-sm text-gray-600 italic">
+                  {conversation.room_name && conversation.room_name.includes('-shop') ? (
+                    'Chưa có tin nhắn'
+                  ) : (
+                    'Không có tin nhắn gần đây'
+                  )}
+                </p>
+              )}
+
+              {conversation.unread_count > 0 && (
+                <div className="mt-2">
+                  <span className="inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-500 rounded-full">
+                    {conversation.unread_count}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
         </button>
       ))}
     </div>

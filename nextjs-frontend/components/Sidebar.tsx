@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSidebar } from '@/contexts/SidebarContext';
 import { isAdmin } from '@/lib/roles';
 
 interface NavItem {
@@ -14,6 +15,7 @@ interface NavItem {
 
 const Sidebar: React.FC = () => {
   const { user, logout, isAuthenticated } = useAuth();
+  const { isSidebarVisible, toggleSidebar } = useSidebar();
   const pathname = usePathname();
   const router = useRouter();
 
@@ -116,9 +118,25 @@ const Sidebar: React.FC = () => {
   };
 
   return (
-    <aside className="fixed left-0 top-0 h-screen w-sidebar bg-white border-r border-gray-300 flex flex-col hidden lg:flex z-40">
-      {/* Logo/Branding */}
-      <div className="p-6 border-b border-gray-200">
+    <>
+      <aside
+        className={`fixed left-0 top-0 h-screen w-sidebar bg-white border-r border-gray-300 flex-col hidden lg:flex z-40 transition-transform duration-300 ease-in-out ${
+          isSidebarVisible ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+        {/* Toggle button inside sidebar */}
+        <button
+          onClick={toggleSidebar}
+          className="absolute -right-3 top-6 z-50 flex items-center justify-center w-6 h-6 bg-white border border-gray-300 rounded-full shadow-md hover:bg-gray-100 transition-colors"
+          aria-label="Hide sidebar"
+        >
+          <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+
+        {/* Logo/Branding */}
+        <div className="p-6 border-b border-gray-200">
         <Link href="/" className="flex items-center gap-2 text-2xl font-bold text-gray-900 hover:text-blue-500 transition-colors">
           <svg className="w-8 h-8 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" />
@@ -193,6 +211,20 @@ const Sidebar: React.FC = () => {
         </div>
       )}
     </aside>
+
+      {/* Toggle button - visible when sidebar is hidden */}
+      <button
+        onClick={toggleSidebar}
+        className={`fixed left-0 top-6 z-50 hidden lg:flex items-center justify-center w-6 h-6 bg-white border border-gray-300 rounded-r-full shadow-md hover:bg-gray-100 transition-all duration-300 ease-in-out ${
+          isSidebarVisible ? 'opacity-0 pointer-events-none' : 'opacity-100'
+        }`}
+        aria-label="Show sidebar"
+      >
+        <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+        </svg>
+      </button>
+    </>
   );
 };
 

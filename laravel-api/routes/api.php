@@ -19,6 +19,7 @@ use App\Http\Controllers\Api\S3Controller;
 use App\Http\Controllers\Api\ShopController;
 use App\Http\Controllers\Api\StaticPageController;
 use App\Http\Controllers\Api\ShopPaymentSettingController;
+use App\Http\Controllers\Api\SettingController;
 use App\Http\Controllers\Api\ShopPostController;
 use App\Http\Controllers\Api\ShopPostEngagementController;
 use App\Http\Controllers\Api\ShopMessageController;
@@ -350,6 +351,10 @@ Route::prefix('v1')->group(function () {
     // Static Pages (public)
     Route::get('/pages/{slug}', [StaticPageController::class, 'show']);
 
+    // Settings (public - image and video settings)
+    Route::get('/settings/image', [SettingController::class, 'getImageSettings']);
+    Route::get('/settings/video', [SettingController::class, 'getVideoSettings']);
+
     // Group Posts (public)
     Route::get('/group-posts', [GroupPostController::class, 'index']);
     Route::get('/group-posts/popular', [GroupPostController::class, 'popular']);
@@ -616,6 +621,16 @@ Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
         Route::get('/admin/pages', [StaticPageController::class, 'index']);
         Route::get('/admin/pages/{slug}', [StaticPageController::class, 'show']);
         Route::put('/admin/pages/{slug}', [StaticPageController::class, 'update']);
+
+        // Settings management (CRUD)
+        Route::get('/admin/settings', [SettingController::class, 'index']);
+        Route::get('/admin/settings/group/{group}', [SettingController::class, 'getByGroup']);
+        Route::get('/admin/settings/{key}', [SettingController::class, 'show']);
+        Route::post('/admin/settings', [SettingController::class, 'store']);
+        Route::post('/admin/settings/batch', [SettingController::class, 'updateBatch']);
+        Route::put('/admin/settings/image', [SettingController::class, 'updateImageSettings']);
+        Route::put('/admin/settings/video', [SettingController::class, 'updateVideoSettings']);
+        Route::delete('/admin/settings/{key}', [SettingController::class, 'destroy']);
     });
 
     // Group Post moderation - group owner/admin/moderator approve or reject posts

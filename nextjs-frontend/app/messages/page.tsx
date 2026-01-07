@@ -7,15 +7,24 @@ import { chat, Conversation } from '@/lib/api';
 import ConversationList from '@/components/chat/ConversationList';
 import ChatWindow from '@/components/chat/ChatWindow';
 import { useSocket } from '@/contexts/SocketContext';
+import { useSidebar } from '@/contexts/SidebarContext';
 
 export default function MessagesPage() {
   const { user, isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { socket, onNewMessage, offNewMessage } = useSocket();
+  const { onNewMessage, offNewMessage } = useSocket();
+  const { isSidebarVisible, toggleSidebar } = useSidebar();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversationId, setSelectedConversationId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const [hasProcessedUrlParams, setHasProcessedUrlParams] = useState(false);
+
+  // Check if URL has room or conversation params
+  const roomParam = searchParams.get('room');
+  const conversationParam = searchParams.get('conversation');
+  const withParam = searchParams.get('with');
+  const hasUrlParams = !!(roomParam || conversationParam || withParam);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -29,130 +38,128 @@ export default function MessagesPage() {
     }
   }, [isAuthenticated]);
 
-  // Log whenever conversations state changes
-  useEffect(() => {
-    console.log('[MessagesPage] 🔔 Conversations state updated:', {
-      count: conversations.length,
-      conversations: conversations.map(c => ({
-        id: c.id,
-        name: c.other_user.name,
-        room_name: c.room_name,
-        is_shop: c.room_name?.includes('-shop') ? '🏪' : '👤'
-      }))
-    });
-  }, [conversations]);
-
-  useEffect(() => {
-    // Check for conversation ID in URL params
-    const conversationId = searchParams.get('conversation');
-    if (conversationId) {
-      setSelectedConversationId(parseInt(conversationId, 10));
-    }
-  }, [searchParams]);
-
-  // Handle room parameter - find conversation by room name and redirect
-  useEffect(() => {
-    const roomName = searchParams.get('room');
-    const withUserId = searchParams.get('with');
-
-    if (roomName && conversations.length > 0) {
-      // Find conversation by room name
-      const conversation = conversations.find(c => c.room_name === roomName);
-      if (conversation) {
-        // Redirect to conversation page
-        router.push(`/messages/${conversation.id}`);
+  // Helper function to navigate to conversation (handles mobile redirect)
+  const navigateToConversation = useCallback((conversationId: number) => {
+    setSelectedConversationId(conversationId);
+    // On mobile, redirect to the conversation detail page for better UX
+    if (typeof window !== 'undefined') {
+      const isMobile = window.innerWidth < 1024; // lg breakpoint
+      if (isMobile) {
+        router.push(`/messages/${conversationId}`);
       }
-    } else if (withUserId && isAuthenticated && !loading) {
-      // Create or get conversation with user and redirect
-      const createAndRedirect = async () => {
+    }
+  }, [router]);
+
+  // Auto-select first conversation on desktop when loaded (only if no URL params)
+  useEffect(() => {
+    if (conversations.length > 0 && selectedConversationId === null && !hasUrlParams) {
+      // Auto-select first conversation for desktop view (only when no URL params)
+      setSelectedConversationId(conversations[0].id);
+    }
+  }, [conversations, selectedConversationId, hasUrlParams]);
+
+  // Handle URL parameters (room, conversation, with) - runs after conversations load
+  useEffect(() => {
+    // Don't process if still loading or no conversations
+    if (loading || conversations.length === 0) return;
+    // Don't process again if already handled
+    if (hasProcessedUrlParams) return;
+
+    const processUrlParams = async () => {
+      // Handle conversation ID parameter
+      if (conversationParam) {
+        const convId = parseInt(conversationParam, 10);
+        if (!isNaN(convId)) {
+          navigateToConversation(convId);
+          setHasProcessedUrlParams(true);
+          return;
+        }
+      }
+
+      // Handle room parameter
+      if (roomParam) {
+        const conversation = conversations.find(c => c.room_name === roomParam);
+        if (conversation) {
+          navigateToConversation(conversation.id);
+          setHasProcessedUrlParams(true);
+          return;
+        } else {
+          // Room not found, try to create conversation from room name
+          // Room name format: "userId1-userId2" e.g., "273-625"
+          const roomParts = roomParam.split('-');
+          if (roomParts.length === 2 && user?.id) {
+            const otherUserId = roomParts.find(id => parseInt(id, 10) !== user.id);
+            if (otherUserId) {
+              try {
+                const newConversation = await chat.getOrCreateConversation(parseInt(otherUserId, 10));
+                if (newConversation) {
+                  // Reload conversations and let the effect run again
+                  await loadConversations();
+                  // Mark as processed - the new conversation should be selected on next render
+                }
+              } catch (err) {
+                console.error('Error creating conversation from room:', err);
+              }
+            }
+          }
+          setHasProcessedUrlParams(true);
+          return;
+        }
+      }
+
+      // Handle "with" parameter (create conversation with user)
+      if (withParam && isAuthenticated) {
         try {
-          const conversation = await chat.getOrCreateConversation(parseInt(withUserId, 10));
-          // Find the conversation in our list or use the ID from response
+          const conversation = await chat.getOrCreateConversation(parseInt(withParam, 10));
           const existingConv = conversations.find(c => c.room_name === conversation.room_name);
           if (existingConv) {
-            router.push(`/messages/${existingConv.id}`);
+            navigateToConversation(existingConv.id);
           } else {
-            // Reload conversations and then redirect
             await loadConversations();
-            router.push(`/messages?room=${conversation.room_name}`);
           }
         } catch (err) {
           console.error('Error creating conversation:', err);
         }
-      };
-      createAndRedirect();
-    }
-  }, [searchParams, conversations, isAuthenticated, loading, router]);
+        setHasProcessedUrlParams(true);
+        return;
+      }
+    };
+
+    processUrlParams();
+  }, [loading, conversations, conversationParam, roomParam, withParam, user, isAuthenticated, hasProcessedUrlParams, navigateToConversation]);
 
   // Listen for incoming messages and update conversation list
   useEffect(() => {
     const handleNewMessage = (message: any) => {
-      console.log('📨 MessagesPage received new:message event:', message);
-      console.log('📨 Message details:', {
-        id: message.id,
-        conversation_id: message.conversation_id,
-        message: message.message,
-        sender_id: message.sender?.id,
-        current_user_id: user?.id,
-        is_mine: message.is_mine,
-        created_at: message.created_at
-      });
+      const messageConversationId = typeof message.conversation_id === 'string'
+        ? parseInt(message.conversation_id, 10)
+        : message.conversation_id;
 
-      // Update conversations list with latest message
       setConversations(prevConversations => {
-        console.log('📊 Current conversations:', prevConversations.map(c => ({ id: c.id, name: c.other_user.name })));
-        console.log('📍 Looking for conversation_id:', message.conversation_id, 'Type:', typeof message.conversation_id);
-
-        // Convert conversation_id to number if it's a string
-        const messageConversationId = typeof message.conversation_id === 'string'
-          ? parseInt(message.conversation_id, 10)
-          : message.conversation_id;
-
-        // Find if conversation exists
         const conversationIndex = prevConversations.findIndex(c => c.id === messageConversationId);
-        console.log('✅ Conversation found at index:', conversationIndex);
+        if (conversationIndex === -1) return prevConversations;
 
-        if (conversationIndex === -1) {
-          console.log('❌ Conversation not found in list');
-          return prevConversations;
-        }
-
-        // Create updated conversations array
         const updatedConversations = [...prevConversations];
         const conversationToUpdate = { ...updatedConversations[conversationIndex] };
 
-        // Determine if message is mine based on sender ID
         const senderId = message.sender?.id;
         const isMine = senderId === user?.id;
 
-        console.log(`🔍 Determining is_mine: sender_id=${senderId}, user_id=${user?.id}, is_mine=${isMine}`);
-
-        // Update the last_message
         conversationToUpdate.last_message = {
           message: message.message,
           created_at: message.created_at,
           is_mine: isMine
         };
 
-        console.log('🔄 Updated conversation:', conversationToUpdate);
-
-        // Remove from current position and add to front
         updatedConversations.splice(conversationIndex, 1);
         updatedConversations.unshift(conversationToUpdate);
-
-        console.log('⬆️ Moved conversation to top');
-        console.log('📝 New order:', updatedConversations.map(c => c.other_user.name));
 
         return updatedConversations;
       });
     };
 
-    console.log('🎧 Attaching socket listener for new:message in MessagesPage');
-    console.log('👤 Current user:', user);
     onNewMessage(handleNewMessage);
-
     return () => {
-      console.log('🔌 Removing socket listener for new:message in MessagesPage');
       offNewMessage(handleNewMessage);
     };
   }, [onNewMessage, offNewMessage, user]);
@@ -161,33 +168,13 @@ export default function MessagesPage() {
     try {
       setLoading(true);
       const data = await chat.getConversations();
-      console.log('[MessagesPage] ✅ Loaded conversations from API:', {
-        count: data.length,
-        conversations: data.map(c => ({ id: c.id, name: c.other_user.name, room_name: c.room_name }))
-      });
 
       // Fetch last message for shop room "656-shop1"
       let lastMessage: any = undefined;
       try {
-        console.log('[MessagesPage] 🔄 About to fetch shop messages for room: 656-shop1');
         const shopMessagesData = await chat.getShopMessagesByRoomName('656-shop1');
-
-        console.log('[MessagesPage] 📨 Fetched shop messages - FULL RESPONSE:', {
-          room_name: shopMessagesData.room_name,
-          messageCount: shopMessagesData.messages?.length,
-          messages: shopMessagesData.messages,
-          type_of_messages: typeof shopMessagesData.messages,
-          is_array: Array.isArray(shopMessagesData.messages)
-        });
-
         if (shopMessagesData.messages && Array.isArray(shopMessagesData.messages) && shopMessagesData.messages.length > 0) {
           const lastMsg = shopMessagesData.messages[shopMessagesData.messages.length - 1];
-          console.log('[MessagesPage] 📬 Got last message:', {
-            message: lastMsg.message,
-            sender_id: lastMsg.sender?.id,
-            created_at: lastMsg.created_at
-          });
-
           lastMessage = {
             message: lastMsg.message,
             created_at: lastMsg.created_at,
@@ -199,16 +186,9 @@ export default function MessagesPage() {
         lastMessage = undefined;
       }
 
-      // Create shop message room for "656-shop1"
-      // Note: For test/hardcoded shop room, we need to know the shop owner ID
-      // In production, this would come from the backend's actual shop data
-      // Shop ID 1 is owned by user 625; customer is 656
       const SHOP_OWNER_ID = 625;
       const CUSTOMER_ID = 656;
-      const SHOP_ID = 1;
 
-      // Determine other_user based on current user
-      // If current user is shop owner, other_user is customer; vice versa
       const isCurrentUserShopOwner = user?.id === SHOP_OWNER_ID;
       const otherUserId = isCurrentUserShopOwner ? CUSTOMER_ID : SHOP_OWNER_ID;
       const otherUserName = isCurrentUserShopOwner ? `Customer #${CUSTOMER_ID}` : `Shop Owner #${SHOP_OWNER_ID}`;
@@ -225,43 +205,11 @@ export default function MessagesPage() {
         last_message: lastMessage,
         unread_count: 0,
         updated_at: new Date().toISOString(),
-        shop_owner_id: SHOP_OWNER_ID, // Hardcoded for test: Shop 1 is owned by user 625
+        shop_owner_id: SHOP_OWNER_ID,
       };
 
-      console.log('[MessagesPage] 🏪 Shop room other_user determined by current user:', {
-        currentUserId: user?.id,
-        isShopOwner: isCurrentUserShopOwner,
-        otherUserId: otherUserId,
-        otherUserName: otherUserName,
-      });
-
-      console.log('[MessagesPage] 🏪 Created shop message room:', {
-        id: shopRoom.id,
-        name: shopRoom.other_user.name,
-        room_name: shopRoom.room_name,
-        last_message: lastMessage ? {
-          message: lastMessage.message.substring(0, 50),
-          is_mine: lastMessage.is_mine
-        } : 'No messages'
-      });
-
-      // Combine shop room with API conversations
       const combined = [shopRoom, ...data];
-
-      console.log('[MessagesPage] 🎯 FINAL CONVERSATIONS (Shop Room + API):', {
-        total: combined.length,
-        conversations: combined.map(c => ({
-          id: c.id,
-          name: c.other_user.name,
-          room_name: c.room_name,
-          is_shop: c.room_name?.includes('-shop') ? '🏪' : '👤',
-          has_message: c.last_message ? '✓' : '✗'
-        }))
-      });
-
-      console.log('[MessagesPage] 📤 About to call setConversations with', combined.length, 'items');
       setConversations(combined);
-      console.log('[MessagesPage] ✅ setConversations called');
     } catch (error) {
       console.error('Failed to load conversations:', error);
     } finally {
@@ -270,26 +218,16 @@ export default function MessagesPage() {
   };
 
   const handleSelectConversation = (conversationId: number) => {
-    console.log('[MessagesPage] handleSelectConversation called with ID:', conversationId);
-    router.push(`/messages/${conversationId}`);
+    navigateToConversation(conversationId);
   };
 
-  const handleNewMessage = useCallback(() => {
-    // Update the selected conversation locally to show it at the top with latest message
-    // This avoids fetching fresh data which would cause ChatWindow to re-mount
+  const handleNewMessageCallback = useCallback(() => {
     if (selectedConversationId === null) return;
-
-    console.log('handleNewMessage called for conversation:', selectedConversationId);
 
     setConversations(prevConversations => {
       const selectedConv = prevConversations.find(c => c.id === selectedConversationId);
-      if (!selectedConv) {
-        console.log('Selected conversation not found');
-        return prevConversations;
-      }
+      if (!selectedConv) return prevConversations;
 
-      console.log('Moving conversation to top:', selectedConversationId);
-      // Move selected conversation to the top
       const otherConversations = prevConversations.filter(c => c.id !== selectedConversationId);
       return [selectedConv, ...otherConversations];
     });
@@ -299,27 +237,64 @@ export default function MessagesPage() {
     return null;
   }
 
-  // Select the appropriate conversation based on the selected ID
   const selectedConversation = conversations.find(c => c.id === selectedConversationId);
 
-  // Check if selected conversation is a shop message room
-  const isSelectedShopRoom = selectedConversation?.room_name && selectedConversation.room_name.includes('-shop');
-
   return (
-    <div className="container mx-auto px-4 py-8 bg-white">
-      {/* Header */}
-      <div className="px-6 py-4 border-b border-gray-200 bg-white">
-        <h1 className="text-2xl font-bold text-gray-900">Tin nhắn</h1>
-      </div>
+    <div className={`flex flex-col h-screen bg-white transition-[margin-left] duration-300 ease-in-out ${isSidebarVisible ? 'lg:ml-sidebar' : ''}`}>
+      {/* Main Content - Split view on desktop */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Conversation List - Left Panel */}
+        <div className="w-full lg:w-80 xl:w-96 flex flex-col border-r border-gray-200 bg-white">
+          {/* List Header */}
+          <div className="px-4 py-4 border-b border-gray-200 flex items-center justify-between">
+            <h2 className="text-xl font-bold text-gray-900">Tin nhắn</h2>
+            {/* Toggle sidebar button - Desktop only */}
+            <button
+              onClick={toggleSidebar}
+              className="hidden lg:flex items-center justify-center w-8 h-8 rounded-lg hover:bg-gray-100 transition-colors"
+              aria-label={isSidebarVisible ? "Hide sidebar" : "Show sidebar"}
+            >
+              {isSidebarVisible ? (
+                <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+                </svg>
+              ) : (
+                <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                </svg>
+              )}
+            </button>
+          </div>
+          {/* Conversation List */}
+          <div className="flex-1 overflow-y-auto">
+            <ConversationList
+              conversations={conversations}
+              selectedConversationId={selectedConversationId}
+              onSelectConversation={handleSelectConversation}
+              isLoading={loading}
+            />
+          </div>
+        </div>
 
-      {/* Conversations List */}
-      <div className="flex-1 overflow-y-auto">
-        <ConversationList
-          conversations={conversations}
-          selectedConversationId={selectedConversationId}
-          onSelectConversation={handleSelectConversation}
-          isLoading={loading}
-        />
+        {/* Chat Window - Right Panel (Desktop only) */}
+        <div className="hidden lg:flex lg:flex-1 flex-col overflow-hidden">
+          {selectedConversation ? (
+            <ChatWindow
+              conversation={selectedConversation}
+              onNewMessage={handleNewMessageCallback}
+            />
+          ) : (
+            <div className="flex-1 flex items-center justify-center bg-gray-50">
+              <div className="text-center text-gray-500">
+                <svg className="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+                <p className="text-lg font-medium">Chọn một cuộc trò chuyện</p>
+                <p className="text-sm mt-1">Chọn từ danh sách bên trái để bắt đầu nhắn tin</p>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

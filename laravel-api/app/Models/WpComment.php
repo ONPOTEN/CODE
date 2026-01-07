@@ -20,6 +20,7 @@ class WpComment extends Model
         'comment_date',
         'comment_date_gmt',
         'comment_content',
+        'image',
         'comment_karma',
         'comment_approved',
         'comment_agent',

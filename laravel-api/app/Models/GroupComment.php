@@ -16,6 +16,7 @@ class GroupComment extends Model
         'post_id',
         'user_id',
         'comment_content',
+        'image',
         'status',
         'parent_id',
     ];

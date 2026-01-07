@@ -56,6 +56,38 @@
 }
 
 @layer components {
+  /* Video embed container - ensure iframes display properly */
+  .video-container {
+    display: block !important;
+    position: relative !important;
+    width: 100% !important;
+    margin: 16px 0 !important;
+    border-radius: 8px !important;
+    overflow: hidden !important;
+    background-color: #000 !important;
+  }
+
+  .video-container iframe {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    border: none !important;
+  }
+
+  .prose iframe,
+  .post-content iframe {
+    max-width: 100% !important;
+    display: block !important;
+    border: none !important;
+  }
+
+  .prose .video-container,
+  .post-content .video-container {
+    display: block !important;
+  }
+
   /* Container for centered content */
   .feed-container {
     max-width: 600px;

@@ -3,7 +3,7 @@
  * Handles uploads to S3 bucket via Laravel proxy (to bypass CORS issues)
  */
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://centimet2.com:8000/api/v1';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.centimet2.com/api/v1';
 
 export interface UploadResponse {
   success: boolean;

@@ -7,7 +7,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useEngagement } from '@/contexts/EngagementContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Comment } from '@/lib/engagementService';
@@ -144,7 +144,22 @@ function CommentItem({
             </div>
           </div>
         ) : (
-          <p className="mt-1 text-sm text-gray-700 break-words">{comment.content}</p>
+          <>
+            {comment.content && (
+              <p className="mt-1 text-sm text-gray-700 break-words">{comment.content}</p>
+            )}
+            {/* Comment Image */}
+            {(comment.image || (comment as any).image_url || (comment as any).attachment || (comment as any).media_url) && (
+              <div className="relative mt-2 inline-block">
+                <img
+                  src={comment.image || (comment as any).image_url || (comment as any).attachment || (comment as any).media_url}
+                  alt="Comment attachment"
+                  className="max-h-32 max-w-full rounded-lg border border-gray-300 cursor-pointer hover:opacity-90 transition-opacity"
+                  onClick={() => window.open(comment.image || (comment as any).image_url || (comment as any).attachment || (comment as any).media_url, '_blank')}
+                />
+              </div>
+            )}
+          </>
         )}
 
         {/* Actions */}
@@ -186,7 +201,11 @@ export function CommentsSection({
   className = '',
 }: CommentsSectionProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const { isAuthenticated } = useAuth();
+
+  // Check if we're on a post detail page (bottom nav is hidden there)
+  const isPostDetailPage = pathname?.startsWith('/posts/') && pathname !== '/posts/create';
   const { comments, commentLoading, addComment, fetchComments } = useEngagement();
   const [commentText, setCommentText] = useState('');
   const [replyingTo, setReplyingTo] = useState<number | null>(null);
@@ -195,6 +214,9 @@ export function CommentsSection({
   const [touchStart, setTouchStart] = useState(0);
   const [touchEnd, setTouchEnd] = useState(0);
   const commentsListRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   const postComments = comments.get(postId) || [];
   const isLoadingComments = commentLoading.has(postId);
@@ -232,22 +254,54 @@ export function CommentsSection({
     }
   };
 
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        alert('Vui lòng chọn file ảnh');
+        return;
+      }
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('Kích thước ảnh tối đa là 5MB');
+        return;
+      }
+      setSelectedImage(file);
+      // Create preview URL
+      const previewUrl = URL.createObjectURL(file);
+      setImagePreview(previewUrl);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setSelectedImage(null);
+    if (imagePreview) {
+      URL.revokeObjectURL(imagePreview);
+      setImagePreview(null);
+    }
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const handlePostComment = async () => {
     if (!isAuthenticated) {
       router.push('/login');
       return;
     }
 
-    if (!commentText.trim()) {
-      alert('Vui lòng nhập bình luận');
+    if (!commentText.trim() && !selectedImage) {
+      alert('Vui lòng nhập bình luận hoặc đính kèm ảnh');
       return;
     }
 
     try {
       setIsPosting(true);
-      await addComment(postId, commentText.trim(), replyingTo || undefined);
+      await addComment(postId, commentText.trim(), replyingTo || undefined, selectedImage || undefined);
       setCommentText('');
       setReplyingTo(null);
+      handleRemoveImage();
     } catch (error) {
       console.error('Failed to post comment:', error);
       alert(error instanceof Error ? error.message : 'Không thể đăng bình luận');
@@ -316,7 +370,7 @@ export function CommentsSection({
 
       {/* Comment Input - Fixed at Bottom of Viewport */}
       {isAuthenticated ? (
-        <div className="fixed bottom-[50px] left-0 right-0 bg-white border-t border-gray-300 shadow-lg z-50 p-4 space-y-2">
+        <div className={`fixed left-0 right-0 bg-white border-t border-gray-300 shadow-lg z-50 p-4 space-y-2 ${isPostDetailPage ? 'bottom-0' : 'bottom-[50px]'}`}>
           {replyingTo !== null && (
             <div className="flex items-center gap-2 p-2 bg-blue-50 rounded border border-blue-200">
               <span className="text-sm text-blue-700">
@@ -344,7 +398,7 @@ export function CommentsSection({
 
               <button
                 onClick={handlePostComment}
-                disabled={isPosting || !commentText.trim()}
+                disabled={isPosting || (!commentText.trim() && !selectedImage)}
                 className="px-3 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-600 disabled:opacity-50 font-medium text-sm flex items-center gap-2 flex-shrink-0"
                 title="Đăng bình luận"
               >
@@ -355,12 +409,43 @@ export function CommentsSection({
               </button>
             </div>
 
+            {/* Image Preview */}
+            {imagePreview && (
+              <div className="relative mt-2 inline-block">
+                <img
+                  src={imagePreview}
+                  alt="Preview"
+                  className="max-h-32 max-w-full rounded-lg border border-gray-300"
+                />
+                <button
+                  type="button"
+                  onClick={handleRemoveImage}
+                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 transition-colors"
+                  title="Xóa ảnh"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            )}
+
             {/* Facebook-like action icons */}
             <div className="flex items-center gap-1 mt-2 px-2">
+              {/* Hidden file input */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleImageSelect}
+                className="hidden"
+              />
+
               {/* Camera/Photo icon */}
               <button
                 type="button"
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                onClick={() => fileInputRef.current?.click()}
+                className={`p-2 hover:bg-gray-100 rounded-full transition-colors ${selectedImage ? 'bg-green-100' : ''}`}
                 title="Thêm ảnh"
               >
                 <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -416,7 +501,7 @@ export function CommentsSection({
           </div>
         </div>
       ) : (
-        <div className="fixed bottom-[50px] left-0 right-0 bg-blue-50 border-t border-blue-200 shadow-lg z-50 p-4">
+        <div className={`fixed left-0 right-0 bg-blue-50 border-t border-blue-200 shadow-lg z-50 p-4 ${isPostDetailPage ? 'bottom-0' : 'bottom-[50px]'}`}>
           <div className="max-w-7xl mx-auto">
             <p className="text-blue-700 text-sm mb-3">Đăng nhập để bình luận bài viết này</p>
             <button

@@ -23,7 +23,7 @@ interface GroupEngagementContextType {
   toggleLike: (postId: number) => Promise<void>;
   toggleDislike: (postId: number) => Promise<void>;
   sharePost: (postId: number, platform: string) => Promise<void>;
-  addComment: (postId: number, content: string, parentId?: number) => Promise<void>;
+  addComment: (postId: number, content: string, parentId?: number, image?: File) => Promise<void>;
   updateComment: (postId: number, commentId: number, content: string) => Promise<void>;
   deleteComment: (postId: number, commentId: number) => Promise<void>;
   fetchEngagementStats: (postId: number) => Promise<void>;
@@ -149,9 +149,9 @@ export function GroupEngagementProvider({ children, token }: { children: React.R
 
   // Add comment
   const addComment = useCallback(
-    async (postId: number, content: string, parentId?: number) => {
+    async (postId: number, content: string, parentId?: number, image?: File) => {
       try {
-        await groupEngagementService.addGroupPostComment(postId, content, parentId);
+        await groupEngagementService.addGroupPostComment(postId, content, parentId, image);
         // Refresh comments
         await fetchComments(postId);
         // Refresh engagement stats to update comment count

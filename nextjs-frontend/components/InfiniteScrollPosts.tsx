@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { posts, Post, ApiException } from '@/lib/api';
+import { posts, Post, ApiException, settings, ImageSettings, VideoSettings } from '@/lib/api';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
@@ -18,18 +18,190 @@ export default function InfiniteScrollPosts() {
   const [error, setError] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<number | null>(null);
   const [savedPosts, setSavedPosts] = useState<Set<number>>(new Set());
+  const [imageSettings, setImageSettings] = useState<ImageSettings>({
+    image_width: 1200,
+    image_height: 1200,
+    image_quality: 80,
+    max_file_size: 10,
+  });
+  const [videoSettings, setVideoSettings] = useState<VideoSettings>({
+    video_width: 1920,
+    video_height: 1080,
+    video_max_file_size: 100,
+  });
   const observerTarget = useRef<HTMLDivElement>(null);
   const menuRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
   const router = useRouter();
   const { user } = useAuth();
 
+  // Fetch image and video settings on mount
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const [imageResponse, videoResponse] = await Promise.all([
+          settings.getImageSettings(),
+          settings.getVideoSettings(),
+        ]);
+        if (imageResponse.success && imageResponse.data) {
+          setImageSettings(imageResponse.data);
+        }
+        if (videoResponse.success && videoResponse.data) {
+          setVideoSettings(videoResponse.data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch settings:', err);
+      }
+    };
+    fetchSettings();
+  }, []);
+
+  // Process video URLs and iframes to embed videos with settings dimensions
+  const processVideoContent = (content: string): string => {
+    if (!content) return '';
+
+    const aspectRatio = (videoSettings.video_height / videoSettings.video_width) * 100;
+    const wrapperStyle = `position: relative; width: 100%; max-width: ${videoSettings.video_width}px; padding-bottom: ${aspectRatio}%; height: 0; overflow: hidden; margin: 10px 0; background: #000;`;
+    const iframeStyle = `position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;`;
+
+    const createResponsiveContainer = (iframeSrc: string, allow: string) => {
+      return `<div class="video-container" style="${wrapperStyle}"><iframe src="${iframeSrc}" style="${iframeStyle}" frameborder="0" allow="${allow}" allowfullscreen></iframe></div>`;
+    };
+
+    let processedContent = content;
+
+    // First, process existing iframes that contain video URLs
+    processedContent = processedContent.replace(
+      /<iframe[^>]*src=["']([^"']*(?:youtube|vimeo|facebook|tiktok)[^"']*)["'][^>]*>[\s\S]*?<\/iframe>/gi,
+      (match, src) => {
+        if (match.includes('video-container')) return match;
+
+        let allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+        if (src.includes('vimeo')) {
+          allow = 'autoplay; fullscreen; picture-in-picture';
+        } else if (src.includes('facebook')) {
+          allow = 'autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share';
+        }
+        return createResponsiveContainer(src, allow);
+      }
+    );
+
+    // Process standalone YouTube URLs (not inside iframe src or href attributes)
+    processedContent = processedContent.replace(
+      /(?<!src=["']|href=["'])(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})(?:[^\s<"']*)?/gi,
+      (_match, videoId) => {
+        return createResponsiveContainer(
+          `https://www.youtube.com/embed/${videoId}`,
+          'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture'
+        );
+      }
+    );
+
+    // Process standalone Vimeo URLs
+    processedContent = processedContent.replace(
+      /(?<!src=["']|href=["'])(?:https?:\/\/)?(?:www\.)?vimeo\.com\/(\d+)(?:[^\s<"']*)?/gi,
+      (_match, videoId) => {
+        return createResponsiveContainer(
+          `https://player.vimeo.com/video/${videoId}`,
+          'autoplay; fullscreen; picture-in-picture'
+        );
+      }
+    );
+
+    // Process standalone Facebook video URLs
+    processedContent = processedContent.replace(
+      /(?<!src=["']|href=["'])(?:https?:\/\/)?(?:www\.)?(?:facebook\.com|fb\.watch)\/(?:watch\/?\?v=|video\.php\?v=|[^\/]+\/videos\/)(\d+)(?:[^\s<"']*)?/gi,
+      (_match, videoId) => {
+        const fbUrl = encodeURIComponent(`https://www.facebook.com/video.php?v=${videoId}`);
+        return createResponsiveContainer(
+          `https://www.facebook.com/plugins/video.php?href=${fbUrl}&show_text=false`,
+          'autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share'
+        );
+      }
+    );
+
+    // Process standalone TikTok URLs
+    processedContent = processedContent.replace(
+      /(?<!src=["']|href=["'])(?:https?:\/\/)?(?:www\.)?(?:tiktok\.com\/@[^\/]+\/video\/|vm\.tiktok\.com\/)(\d+)(?:[^\s<"']*)?/gi,
+      (_match, videoId) => {
+        return createResponsiveContainer(
+          `https://www.tiktok.com/embed/v2/${videoId}`,
+          'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture'
+        );
+      }
+    );
+
+    return processedContent;
+  };
+
+  // Process img tags to add width/height from settings
+  const processImgTags = (content: string): string => {
+    if (!content) return '';
+
+    // Match img tags and add width/height attributes
+    return content.replace(/<img\s+([^>]*)>/gi, (match, attributes) => {
+      // Check if width/height already exist
+      const hasWidth = /width\s*=/i.test(attributes);
+      const hasHeight = /height\s*=/i.test(attributes);
+
+      let newAttributes = attributes;
+
+      // Add style for max-width and max-height based on settings
+      const styleMatch = attributes.match(/style\s*=\s*["']([^"']*)["']/i);
+      let existingStyle = styleMatch ? styleMatch[1] : '';
+
+      // Build new style with max dimensions
+      const maxWidthStyle = `max-width: ${imageSettings.image_width}px`;
+      const maxHeightStyle = `max-height: ${imageSettings.image_height}px`;
+      const additionalStyles = `${maxWidthStyle}; ${maxHeightStyle}; width: 100%; height: auto; object-fit: contain;`;
+
+      if (styleMatch) {
+        // Append to existing style
+        newAttributes = newAttributes.replace(
+          /style\s*=\s*["']([^"']*)["']/i,
+          `style="${existingStyle}; ${additionalStyles}"`
+        );
+      } else {
+        // Add new style attribute
+        newAttributes = `${newAttributes} style="${additionalStyles}"`;
+      }
+
+      return `<img ${newAttributes}>`;
+    });
+  };
+
   const getTruncatedContent = (content: string | undefined, wordLimit: number = 50): string => {
     if (!content) return '';
-    const words = content.trim().split(/\s+/);
+
+    // Normalize line breaks: convert \n to <br>, preserve <br> and <div> tags
+    let normalizedContent = content
+      .replace(/\n/g, '<br>')  // Convert newlines to <br>
+      .replace(/<\/div>\s*<div>/gi, '<br>')  // Convert consecutive divs to line breaks
+      .replace(/<div>/gi, '')  // Remove opening div tags
+      .replace(/<\/div>/gi, '<br>');  // Convert closing div to <br>
+
+    // Process img tags to add width/height from settings
+    normalizedContent = processImgTags(normalizedContent);
+
+    // Process video URLs and iframes (YouTube, Vimeo, Facebook, TikTok)
+    normalizedContent = processVideoContent(normalizedContent);
+
+    // Strip HTML tags for word counting
+    const textOnly = normalizedContent.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    const words = textOnly.split(/\s+/).filter(w => w.length > 0);
+
     if (words.length > wordLimit) {
-      return words.slice(0, wordLimit).join(' ') + '...';
+      // Truncate and add ellipsis
+      const truncatedText = words.slice(0, wordLimit).join(' ') + '...';
+      return truncatedText;
     }
-    return content;
+
+    // Clean up multiple consecutive <br> tags
+    normalizedContent = normalizedContent
+      .replace(/(<br\s*\/?>\s*){3,}/gi, '<br><br>')  // Max 2 line breaks
+      .replace(/^(<br\s*\/?>\s*)+/gi, '')  // Remove leading <br>
+      .replace(/(<br\s*\/?>\s*)+$/gi, '');  // Remove trailing <br>
+
+    return normalizedContent;
   };
 
   const getRelativeTime = (dateString: string): string => {
@@ -303,9 +475,10 @@ export default function InfiniteScrollPosts() {
     {/* Content */}
     {post.content && (
       <Link href={`/posts/${post.id}`}>
-        <p className="mt-2 text-base md:text-lg text-gray-800 whitespace-pre-line break-words hover:text-blue-600 cursor-pointer transition-colors">
-          {getTruncatedContent(post.content, 50)}
-        </p>
+        <div
+          className="mt-2 text-base md:text-lg text-gray-800 break-words hover:text-blue-600 cursor-pointer transition-colors prose prose-sm prose-video max-w-none post-content"
+          dangerouslySetInnerHTML={{ __html: getTruncatedContent(post.content, 50) }}
+        />
       </Link>
     )}
 

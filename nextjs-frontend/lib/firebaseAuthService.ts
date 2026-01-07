@@ -432,6 +432,24 @@ export const firebaseAuthService = {
       return await firebaseAuth.signInWithPhone(phoneNumber, recaptchaVerifier);
     } catch (error: any) {
       console.error('[FirebaseAuthService] Phone verification error:', error);
+      console.error('[FirebaseAuthService] Error details:', {
+        code: error.code,
+        message: error.message,
+        name: error.name,
+      });
+
+      // Handle error -39 specifically (reCAPTCHA backend verification failed)
+      if (error.message?.includes('-39') || error.code?.includes('-39')) {
+        const customError = new Error(
+          'Firebase phone authentication is not properly configured. ' +
+          'Please check: 1) Phone auth is enabled in Firebase Console, ' +
+          '2) Your domain is added to Authorized Domains, ' +
+          '3) You are on the Blaze plan for production SMS.'
+        );
+        (customError as any).code = 'auth/configuration-error';
+        throw customError;
+      }
+
       throw error;
     }
   },
@@ -562,6 +580,12 @@ export const firebaseAuthService = {
     if (typeof error === 'string') return error;
 
     const errorCode = error?.code || error?.message || '';
+    const errorMessage = error?.message || '';
+
+    // Check for error -39 (Firebase backend reCAPTCHA verification failed)
+    if (errorMessage.includes('-39') || errorCode.includes('-39')) {
+      return 'Firebase phone authentication configuration error. Please check Firebase Console settings.';
+    }
 
     switch (errorCode) {
       case 'auth/user-not-found':
@@ -577,7 +601,7 @@ export const firebaseAuthService = {
       case 'auth/weak-password':
         return 'Password is too weak (minimum 6 characters)';
       case 'auth/operation-not-allowed':
-        return 'Operation not allowed';
+        return 'Phone authentication is not enabled. Please enable it in Firebase Console.';
       case 'auth/too-many-requests':
         return 'Too many attempts. Please try again later.';
       case 'auth/popup-closed-by-user':
@@ -592,6 +616,14 @@ export const firebaseAuthService = {
         return 'Invalid phone number';
       case 'auth/missing-phone-number':
         return 'Phone number is required';
+      case 'auth/captcha-check-failed':
+        return 'reCAPTCHA verification failed. Please ensure your domain is authorized in Firebase Console.';
+      case 'auth/quota-exceeded':
+        return 'SMS quota exceeded. Please upgrade to Blaze plan or try again later.';
+      case 'auth/configuration-error':
+        return 'Firebase phone authentication is not properly configured.';
+      case 'auth/code-expired':
+        return 'Verification code has expired. Please request a new code.';
       default:
         return error?.message || 'Authentication failed. Please try again.';
     }

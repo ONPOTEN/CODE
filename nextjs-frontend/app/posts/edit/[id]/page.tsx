@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, FormEvent, useEffect } from 'react';
+import { useState, FormEvent, useEffect, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { posts, UpdatePostData, ApiException, Post } from '@/lib/api';
@@ -30,9 +30,41 @@ export default function EditPostPage() {
   const [isFetching, setIsFetching] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<Record<string, string[]> | null>(null);
+  const [isHtmlMode, setIsHtmlMode] = useState(true);
+  const contentEditableRef = useRef<HTMLDivElement>(null);
 
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const router = useRouter();
+
+  // Handle paste event for HTML content
+  const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const html = e.clipboardData.getData('text/html');
+    const text = e.clipboardData.getData('text/plain');
+
+    if (html && isHtmlMode) {
+      document.execCommand('insertHTML', false, html);
+    } else {
+      document.execCommand('insertText', false, text);
+    }
+
+    if (contentEditableRef.current) {
+      setFormData({
+        ...formData,
+        content: contentEditableRef.current.innerHTML,
+      });
+    }
+  };
+
+  // Handle content change in contentEditable
+  const handleContentChange = () => {
+    if (contentEditableRef.current) {
+      setFormData({
+        ...formData,
+        content: contentEditableRef.current.innerHTML,
+      });
+    }
+  };
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -73,6 +105,13 @@ export default function EditPostPage() {
       fetchPost();
     }
   }, [postId, authLoading, isAuthenticated]);
+
+  // Sync content to contentEditable when post is loaded
+  useEffect(() => {
+    if (contentEditableRef.current && formData.content && !isFetching) {
+      contentEditableRef.current.innerHTML = formData.content;
+    }
+  }, [isFetching]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -266,18 +305,27 @@ export default function EditPostPage() {
             <label htmlFor="content" className="block text-sm font-medium text-gray-700 mb-2">
               Nội dung
             </label>
-            <textarea
-              id="content"
-              name="content"
-              rows={12}
-              value={formData.content}
-              onChange={handleChange}
-              disabled={isLoading}
-              className={`w-full px-3 py-2 border ${
+            <div
+              ref={contentEditableRef}
+              contentEditable={!isLoading}
+              onInput={handleContentChange}
+              onPaste={handlePaste}
+              data-placeholder="Viết nội dung bài viết của bạn tại đây..."
+              className={`w-full min-h-[300px] px-3 py-2 border ${
                 getFieldError('content') ? 'border-red-500' : 'border-gray-300'
-              } rounded-md focus:outline-none focus:ring-2 focus:ring-red-500`}
-              placeholder="Viết nội dung bài viết của bạn tại đây..."
+              } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 prose prose-sm max-w-none empty:before:content-[attr(data-placeholder)] empty:before:text-gray-400`}
+              style={{ whiteSpace: 'pre-wrap' }}
             />
+            {isHtmlMode && formData.content && (
+              <details className="mt-2">
+                <summary className="text-xs text-gray-500 cursor-pointer hover:text-gray-700">
+                  Xem HTML source
+                </summary>
+                <pre className="mt-1 p-2 bg-gray-100 rounded text-xs overflow-x-auto max-h-40">
+                  {formData.content}
+                </pre>
+              </details>
+            )}
             {getFieldError('content') && (
               <p className="mt-1 text-sm text-red-600">{getFieldError('content')}</p>
             )}

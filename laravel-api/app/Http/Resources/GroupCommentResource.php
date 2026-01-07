@@ -19,6 +19,7 @@ class GroupCommentResource extends JsonResource
             'post_id' => $this->post_id,
             'parent_id' => $this->parent_id,
             'comment_content' => $this->comment_content,
+            'image' => $this->image,
             'status' => $this->status,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
