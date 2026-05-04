@@ -1,10 +1,15 @@
 'use client';
 
-import { useEffect, useState, useRef, useCallback } from 'react';
-import { posts, Post, ApiException } from '@/lib/api';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
+import { posts, Post, ApiException, settings, ImageSettings, VideoSettings } from '@/lib/api';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { EngagementButtons } from '@/components/EngagementButtons';
+import { AuthorCard } from '@/components/AuthorCard';
+import { ImageCarousel } from '@/components/ImageCarousel';
+import VideoPlayer from '@/components/VideoPlayer';
+import FriendSuggestions from '@/components/FriendSuggestions';
 
 export default function InfiniteScrollPosts() {
   const [postsList, setPostsList] = useState<Post[]>([]);
@@ -14,10 +19,205 @@ export default function InfiniteScrollPosts() {
   const [error, setError] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<number | null>(null);
   const [savedPosts, setSavedPosts] = useState<Set<number>>(new Set());
+  const [imageSettings, setImageSettings] = useState<ImageSettings>({
+    image_width: 1200,
+    image_height: 1200,
+    image_quality: 80,
+    max_file_size: 10,
+  });
+  const [videoSettings, setVideoSettings] = useState<VideoSettings>({
+    video_width: 1920,
+    video_height: 1080,
+    video_max_file_size: 100,
+  });
+  const [activeVideoId, setActiveVideoId] = useState<number | string | null>(null);
   const observerTarget = useRef<HTMLDivElement>(null);
   const menuRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
   const router = useRouter();
   const { user } = useAuth();
+
+  // Fetch image and video settings on mount
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const [imageResponse, videoResponse] = await Promise.all([
+          settings.getImageSettings(),
+          settings.getVideoSettings(),
+        ]);
+        if (imageResponse.success && imageResponse.data) {
+          setImageSettings(imageResponse.data);
+        }
+        if (videoResponse.success && videoResponse.data) {
+          setVideoSettings(videoResponse.data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch settings:', err);
+      }
+    };
+    fetchSettings();
+  }, []);
+
+  // Process video URLs and iframes to embed videos with settings dimensions
+  const processVideoContent = (content: string): string => {
+    if (!content) return '';
+
+    const aspectRatio = (videoSettings.video_height / videoSettings.video_width) * 100;
+    const wrapperStyle = `position: relative; width: 100%; max-width: ${videoSettings.video_width}px; padding-bottom: ${aspectRatio}%; height: 0; overflow: hidden; margin: 10px 0; background: #000;`;
+    const iframeStyle = `position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;`;
+
+    const createResponsiveContainer = (iframeSrc: string, allow: string) => {
+      return `<div class="video-container" style="${wrapperStyle}"><iframe src="${iframeSrc}" style="${iframeStyle}" frameborder="0" allow="${allow}" allowfullscreen></iframe></div>`;
+    };
+
+    let processedContent = content;
+
+    // First, process existing iframes that contain video URLs
+    processedContent = processedContent.replace(
+      /<iframe[^>]*src=["']([^"']*(?:youtube|vimeo|facebook|tiktok)[^"']*)["'][^>]*>[\s\S]*?<\/iframe>/gi,
+      (match, src) => {
+        if (match.includes('video-container')) return match;
+
+        let allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+        if (src.includes('vimeo')) {
+          allow = 'autoplay; fullscreen; picture-in-picture';
+        } else if (src.includes('facebook')) {
+          allow = 'autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share';
+        }
+        return createResponsiveContainer(src, allow);
+      }
+    );
+
+    // Process standalone YouTube URLs (not inside iframe src or href attributes)
+    processedContent = processedContent.replace(
+      /(?<!src=["']|href=["'])(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})(?:[^\s<"']*)?/gi,
+      (_match, videoId) => {
+        return createResponsiveContainer(
+          `https://www.youtube.com/embed/${videoId}`,
+          'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture'
+        );
+      }
+    );
+
+    // Process standalone Vimeo URLs
+    processedContent = processedContent.replace(
+      /(?<!src=["']|href=["'])(?:https?:\/\/)?(?:www\.)?vimeo\.com\/(\d+)(?:[^\s<"']*)?/gi,
+      (_match, videoId) => {
+        return createResponsiveContainer(
+          `https://player.vimeo.com/video/${videoId}`,
+          'autoplay; fullscreen; picture-in-picture'
+        );
+      }
+    );
+
+    // Process standalone Facebook video URLs
+    processedContent = processedContent.replace(
+      /(?<!src=["']|href=["'])(?:https?:\/\/)?(?:www\.)?(?:facebook\.com|fb\.watch)\/(?:watch\/?\?v=|video\.php\?v=|[^\/]+\/videos\/)(\d+)(?:[^\s<"']*)?/gi,
+      (_match, videoId) => {
+        const fbUrl = encodeURIComponent(`https://www.facebook.com/video.php?v=${videoId}`);
+        return createResponsiveContainer(
+          `https://www.facebook.com/plugins/video.php?href=${fbUrl}&show_text=false`,
+          'autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share'
+        );
+      }
+    );
+
+    // Process standalone TikTok URLs
+    processedContent = processedContent.replace(
+      /(?<!src=["']|href=["'])(?:https?:\/\/)?(?:www\.)?(?:tiktok\.com\/@[^\/]+\/video\/|vm\.tiktok\.com\/)(\d+)(?:[^\s<"']*)?/gi,
+      (_match, videoId) => {
+        return createResponsiveContainer(
+          `https://www.tiktok.com/embed/v2/${videoId}`,
+          'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture'
+        );
+      }
+    );
+
+    return processedContent;
+  };
+
+  // Process img tags to add width/height from settings
+  const processImgTags = (content: string): string => {
+    if (!content) return '';
+
+    // Match img tags and add width/height attributes
+    return content.replace(/<img\s+([^>]*)>/gi, (match, attributes) => {
+      // Check if width/height already exist
+      const hasWidth = /width\s*=/i.test(attributes);
+      const hasHeight = /height\s*=/i.test(attributes);
+
+      let newAttributes = attributes;
+
+      // Add style for max-width and max-height based on settings
+      const styleMatch = attributes.match(/style\s*=\s*["']([^"']*)["']/i);
+      let existingStyle = styleMatch ? styleMatch[1] : '';
+
+      // Build new style with max dimensions
+      const maxWidthStyle = `max-width: ${imageSettings.image_width}px`;
+      const maxHeightStyle = `max-height: ${imageSettings.image_height}px`;
+      const additionalStyles = `${maxWidthStyle}; ${maxHeightStyle}; width: 100%; height: auto; object-fit: contain;`;
+
+      if (styleMatch) {
+        // Append to existing style
+        newAttributes = newAttributes.replace(
+          /style\s*=\s*["']([^"']*)["']/i,
+          `style="${existingStyle}; ${additionalStyles}"`
+        );
+      } else {
+        // Add new style attribute
+        newAttributes = `${newAttributes} style="${additionalStyles}"`;
+      }
+
+      return `<img ${newAttributes}>`;
+    });
+  };
+
+  const getTruncatedContent = (content: string | undefined, wordLimit: number = 50): string => {
+    if (!content) return '';
+
+    // Normalize line breaks: convert \n to <br>, preserve <br> and <div> tags
+    let normalizedContent = content
+      .replace(/\n/g, '<br>')  // Convert newlines to <br>
+      .replace(/<\/div>\s*<div>/gi, '<br>')  // Convert consecutive divs to line breaks
+      .replace(/<div>/gi, '')  // Remove opening div tags
+      .replace(/<\/div>/gi, '<br>');  // Convert closing div to <br>
+
+    // Process img tags to add width/height from settings
+    normalizedContent = processImgTags(normalizedContent);
+
+    // Process video URLs and iframes (YouTube, Vimeo, Facebook, TikTok)
+    normalizedContent = processVideoContent(normalizedContent);
+
+    // Strip HTML tags for word counting
+    const textOnly = normalizedContent.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    const words = textOnly.split(/\s+/).filter(w => w.length > 0);
+
+    if (words.length > wordLimit) {
+      // Truncate and add ellipsis
+      const truncatedText = words.slice(0, wordLimit).join(' ') + '...';
+      return truncatedText;
+    }
+
+    // Clean up multiple consecutive <br> tags
+    normalizedContent = normalizedContent
+      .replace(/(<br\s*\/?>\s*){3,}/gi, '<br><br>')  // Max 2 line breaks
+      .replace(/^(<br\s*\/?>\s*)+/gi, '')  // Remove leading <br>
+      .replace(/(<br\s*\/?>\s*)+$/gi, '');  // Remove trailing <br>
+
+    return normalizedContent;
+  };
+
+  const getRelativeTime = (dateString: string): string => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const secondsAgo = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+    if (secondsAgo < 60) return 'vừa xong';
+    if (secondsAgo < 3600) return `${Math.floor(secondsAgo / 60)}p`;
+    if (secondsAgo < 86400) return `${Math.floor(secondsAgo / 3600)}g`;
+    if (secondsAgo < 604800) return `${Math.floor(secondsAgo / 86400)}n`;
+    if (secondsAgo < 2592000) return `${Math.floor(secondsAgo / 604800)}tu`;
+    return `${Math.floor(secondsAgo / 2592000)}th`;
+  };
 
   const fetchPosts = useCallback(async (pageNum: number) => {
     if (loading) return;
@@ -50,9 +250,9 @@ export default function InfiniteScrollPosts() {
       }
     } catch (err) {
       if (err instanceof ApiException) {
-        setError(`API Error: ${err.message}`);
+        setError(`Lỗi API: ${err.message}`);
       } else {
-        setError('Failed to fetch posts');
+        setError('Không thể tải bài viết');
       }
       console.error('API Error:', err);
     } finally {
@@ -90,16 +290,16 @@ export default function InfiniteScrollPosts() {
       return newSet;
     });
     setOpenMenuId(null);
-    alert(savedPosts.has(postId) ? 'Post unsaved!' : 'Post saved!');
+    alert(savedPosts.has(postId) ? 'Đã bỏ lưu!' : 'Đã lưu!');
   };
 
   const handleEditPost = (postId: number) => {
     setOpenMenuId(null);
-    router.push(`/posts/${postId}/edit`);
+    router.push(`/posts/edit/${postId}`);
   };
 
   const handleDeletePost = async (postId: number) => {
-    if (!confirm('Are you sure you want to delete this post?')) {
+    if (!confirm('Bạn có chắc muốn xóa bài viết này?')) {
       return;
     }
 
@@ -107,12 +307,12 @@ export default function InfiniteScrollPosts() {
       await posts.delete(postId);
       setPostsList((prev) => prev.filter((post) => post.id !== postId));
       setOpenMenuId(null);
-      alert('Post deleted successfully!');
+      alert('Đã xóa bài viết thành công!');
     } catch (err) {
       if (err instanceof ApiException) {
-        alert(`Failed to delete post: ${err.message}`);
+        alert(`Không thể xóa bài viết: ${err.message}`);
       } else {
-        alert('Failed to delete post');
+        alert('Không thể xóa bài viết');
       }
       console.error('Delete error:', err);
     }
@@ -130,12 +330,12 @@ export default function InfiniteScrollPosts() {
       );
 
       setOpenMenuId(null);
-      alert(`Post visibility changed to ${newVisibility}!`);
+      alert(`Đã thay đổi quyền riêng tư thành ${newVisibility === 'public' ? 'công khai' : 'riêng tư'}!`);
     } catch (err) {
       if (err instanceof ApiException) {
-        alert(`Failed to update visibility: ${err.message}`);
+        alert(`Không thể cập nhật quyền riêng tư: ${err.message}`);
       } else {
-        alert('Failed to update visibility');
+        alert('Không thể cập nhật quyền riêng tư');
       }
       console.error('Visibility update error:', err);
     }
@@ -173,12 +373,12 @@ export default function InfiniteScrollPosts() {
 
   if (error && postsList.length === 0) {
     return (
-      <section className="container py-12">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-4xl mx-auto">
-          <h3 className="text-lg font-semibold text-red-900 mb-2">Error Loading Posts</h3>
-          <p className="text-red-700">{error}</p>
-          <p className="text-sm text-red-600 mt-2">
-            Make sure your Laravel API is running on http://localhost:8000
+      <section className="w-full px-2 md:px-4 py-6 md:py-12">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 md:p-6 max-w-4xl mx-auto">
+          <h3 className="text-base md:text-lg font-semibold text-red-900 mb-2">Lỗi tải bài viết</h3>
+          <p className="text-sm md:text-base text-red-700">{error}</p>
+          <p className="text-xs md:text-sm text-red-600 mt-2">
+            Đảm bảo Laravel API đang chạy trên http://localhost:8000
           </p>
         </div>
       </section>
@@ -186,196 +386,142 @@ export default function InfiniteScrollPosts() {
   }
 
   return (
-    <section className="container py-12 bg-gray-50">
-      <div className="max-w-4xl mx-auto">
-        <h2 className="text-3xl font-bold mb-8 text-center">Posts API</h2>
+    <section className="w-full px-2 md:px-4 py-6 md:py-12 bg-white">
+      <div className="w-full max-w-4xl mx-auto">
 
         {postsList.length === 0 && !loading ? (
           <div className="text-center text-gray-600 py-12">
-            <p className="text-lg">No posts available yet.</p>
-            <p className="text-sm mt-2">Be the first to create a post!</p>
+            <p className="text-lg">Chưa có bài viết nào.</p>
+            <p className="text-sm mt-2">Hãy là người đầu tiên tạo bài viết!</p>
           </div>
         ) : (
           <div className="grid gap-6">
-            {postsList.map((post) => {
+            {postsList.map((post, index) => {
               // Prioritize featured_image, fallback to first image in images array
               const featuredImageUrl = post.featured_image ||
                 (post.images && post.images.length > 0 ? post.images[0].url : null);
 
               return (
-                <article
-                  key={post.id}
-                  className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden border border-gray-200"
-                >
-                  <div className="flex flex-col md:flex-row">
-                    {/* Featured Image or Placeholder */}
-                    <div className="md:w-1/3 h-48 md:h-auto relative bg-gray-200">
-                      <Link href={`/posts/${post.id}`}>
-                        {featuredImageUrl ? (
-                          <img
-                            src={featuredImageUrl}
-                            alt={post.title}
-                            className="w-full h-full object-cover hover:opacity-90 transition-opacity"
-                            onError={(e) => {
-                              // Fallback if image fails to load
-                              e.currentTarget.style.display = 'none';
-                              if (e.currentTarget.parentElement) {
-                                const placeholder = document.createElement('div');
-                                placeholder.className = 'w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-300 to-gray-400';
-                                placeholder.innerHTML = `
-                                  <svg class="w-16 h-16 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                  </svg>
-                                `;
-                                e.currentTarget.parentElement.appendChild(placeholder);
-                              }
-                            }}
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-300 to-gray-400 hover:opacity-90 transition-opacity">
-                            <svg className="w-16 h-16 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
+                <React.Fragment key={post.id}>
+                  {index % 10 === 1 && (
+                    <FriendSuggestions page={Math.floor(index / 10) + 1} />
+                  )}
+                  <article
+                    className="w-full border-b border-gray-200 pb-4 pt-6 flex gap-2 md:gap-3 overflow-hidden"
+                  >
+                  {/* Avatar */}
+                  <div className="flex-shrink-0">
+                    <Link href={`/users/${post.author?.id}`}>
+                      <img
+                        src={post.author?.avatar || post.author?.avatar_url || "/default-avatar.png"}
+                        alt={post.author?.name}
+                        className="w-10 h-10 rounded-full object-cover"
+                      />
+                    </Link>
+                  </div>
+
+                  {/* Right Area */}
+                  <div className="flex-1 min-w-0 w-full">
+                    {/* Top row: Name + menu */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <Link href={`/users/${post.author?.id}`} className="font-semibold text-gray-900 text-sm md:text-base line-clamp-1">
+                          {post.author?.name || post.author?.username}
+                        </Link>
+                        <span className="text-xs md:text-sm text-gray-500">
+                          {getRelativeTime(post.created_at)}
+                        </span>
+                      </div>
+
+                      {/* Menu Button */}
+                      <div className="relative flex-shrink-0" ref={(el) => { menuRefs.current[post.id] = el; }}>
+                        <button
+                          onClick={() => toggleMenu(post.id)}
+                          className="p-1 hover:bg-gray-100 rounded-full"
+                        >
+                          <svg className="w-4 h-4 md:w-5 md:h-5 text-gray-600" fill="currentColor" viewBox="0 0 24 24">
+                            <circle cx="12" cy="6" r="1.5" />
+                            <circle cx="12" cy="12" r="1.5" />
+                            <circle cx="12" cy="18" r="1.5" />
+                          </svg>
+                        </button>
+
+                        {openMenuId === post.id && (
+                          <div className="absolute right-0 mt-2 w-32 md:w-36 bg-white border border-gray-200 rounded-lg shadow-lg z-10 py-1">
+                            <button
+                              onClick={() => handleSavePost(post.id)}
+                              className="w-full px-3 md:px-4 py-2 text-left text-xs md:text-sm text-gray-700 hover:bg-gray-100"
+                            >
+                              {savedPosts.has(post.id) ? "Bỏ lưu" : "Lưu"}
+                            </button>
+                            <button
+                              onClick={() => handleToggleVisibility(post.id, post.visibility === "private" ? "public" : "private")}
+                              className="w-full px-3 md:px-4 py-2 text-left text-xs md:text-sm text-gray-700 hover:bg-gray-100"
+                            >
+                              {post.visibility === "private" ? "Ch Công khai" : "Ch Riêng tư"}
+                            </button>
+                            <button
+                              onClick={() => handleEditPost(post.id)}
+                              className="w-full px-3 md:px-4 py-2 text-left text-xs md:text-sm text-gray-700 hover:bg-gray-100"
+                            >
+                              Sửa
+                            </button>
+                            <button
+                              onClick={() => handleDeletePost(post.id)}
+                              className="w-full px-3 md:px-4 py-2 text-left text-xs md:text-sm text-red-600 hover:bg-red-50"
+                            >
+                              Xóa
+                            </button>
                           </div>
                         )}
-                      </Link>
+                      </div>
                     </div>
 
                     {/* Content */}
-                    <div className={`p-6 flex-1 ${!featuredImageUrl ? 'w-full' : ''}`}>
-                      <div className="flex items-start justify-between mb-3">
-                        <h3 className="text-2xl font-semibold text-gray-900 hover:text-blue-600 transition-colors flex-1">
-                          <Link href={`/posts/${post.id}`}>{post.title}</Link>
-                        </h3>
-                        <div className="flex items-center gap-2 ml-2">
-                          <span className={`px-3 py-1 text-xs font-medium rounded-full whitespace-nowrap ${
-                            post.status === 'publish'
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-yellow-100 text-yellow-800'
-                          }`}>
-                            {post.status}
-                          </span>
+                    {post.content && (
+                      <Link href={`/posts/${post.id}`}>
+                        <div
+                          className="mt-2 text-base md:text-lg text-gray-800 break-words hover:text-blue-600 cursor-pointer transition-colors prose prose-sm prose-video max-w-none post-content"
+                          dangerouslySetInnerHTML={{ __html: getTruncatedContent(post.content, 50) }}
+                        />
+                      </Link>
+                    )}
 
-                          {/* Privacy indicator */}
-                          {post.visibility === 'private' && (
-                            <span className="px-3 py-1 text-xs font-medium rounded-full whitespace-nowrap bg-gray-100 text-gray-800 flex items-center gap-1">
-                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                              </svg>
-                              Private
-                            </span>
-                          )}
-
-                          {/* 3-dot menu button */}
-                          <div className="relative" ref={(el) => { menuRefs.current[post.id] = el; }}>
-                            <button
-                              onClick={() => toggleMenu(post.id)}
-                              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                              aria-label="Post options"
-                            >
-                              <svg className="w-5 h-5 text-gray-600" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" />
-                              </svg>
-                            </button>
-
-                            {/* Dropdown menu */}
-                            {openMenuId === post.id && (
-                              <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10">
-                                <button
-                                  onClick={() => handleSavePost(post.id)}
-                                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
-                                >
-                                  <svg className="w-4 h-4" fill={savedPosts.has(post.id) ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-                                  </svg>
-                                  {savedPosts.has(post.id) ? 'Unsave' : 'Save'}
-                                </button>
-
-                                {/* Privacy toggle */}
-                                <div className="border-t border-gray-200 my-1"></div>
-                                <button
-                                  onClick={() => handleToggleVisibility(post.id, post.visibility === 'private' ? 'public' : 'private')}
-                                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
-                                >
-                                  {post.visibility === 'private' ? (
-                                    <>
-                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                      </svg>
-                                      Make Public
-                                    </>
-                                  ) : (
-                                    <>
-                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                                      </svg>
-                                      Make Private
-                                    </>
-                                  )}
-                                </button>
-                                <div className="border-t border-gray-200 my-1"></div>
-
-                                <button
-                                  onClick={() => handleEditPost(post.id)}
-                                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
-                                >
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                  </svg>
-                                  Edit
-                                </button>
-                                <button
-                                  onClick={() => handleDeletePost(post.id)}
-                                  className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
-                                >
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                  </svg>
-                                  Delete
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        </div>
+                    {/* Images Carousel Slide */}
+                    {post.images && post.images.length > 0 && (
+                      <div className="w-full overflow-hidden">
+                        <ImageCarousel images={post.images} postId={post.id} />
                       </div>
+                    )}
 
-                      {post.excerpt && (
-                        <p className="text-gray-700 mb-4 line-clamp-3">{post.excerpt}</p>
-                      )}
-
-                      <div className="flex items-center justify-between text-sm text-gray-500 pt-4 border-t border-gray-100">
-                        <div className="flex gap-4">
-                          <span className="flex items-center gap-1">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                            </svg>
-                            {post.type}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            {new Date(post.created_at).toLocaleDateString()}
-                          </span>
-                          {post.images && post.images.length > 1 && (
-                            <span className="flex items-center gap-1 text-blue-600">
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                              </svg>
-                              +{post.images.length - 1}
-                            </span>
-                          )}
-                        </div>
-                        <Link
-                          href={`/posts/${post.id}`}
-                          className="text-blue-600 hover:text-blue-700 font-medium hover:underline"
-                        >
-                          Read more →
-                        </Link>
+                    {/* Video Player */}
+                    {post.video && (
+                      <div className="mt-3 w-full rounded-lg overflow-hidden">
+                        <VideoPlayer
+                          src={post.video}
+                          poster={post.featured_image || (post.images && post.images.length > 0 ? post.images[0].url : undefined)}
+                          className="w-full"
+                          id={post.id}
+                          activeVideoId={activeVideoId}
+                          onPlay={setActiveVideoId}
+                        />
                       </div>
+                    )}
+
+                    {/* Engagement buttons Threads style */}
+                    <div className="flex gap-6 mt-3 text-gray-600">
+                      <EngagementButtons
+                        postId={post.id}
+                        postTitle={post.title}
+                        postSlug={post.slug}
+                        postText={post.excerpt}
+                        compact={true}
+                        showLabels={false}
+                      />
                     </div>
                   </div>
                 </article>
+                </React.Fragment>
               );
             })}
           </div>
@@ -394,7 +540,7 @@ export default function InfiniteScrollPosts() {
         {/* No more posts message */}
         {!hasMore && postsList.length > 0 && (
           <div className="text-center py-8 text-gray-500">
-            <p className="text-sm">You've reached the end of the posts</p>
+            <p className="text-sm">Đã xem hết bài viết</p>
           </div>
         )}
 

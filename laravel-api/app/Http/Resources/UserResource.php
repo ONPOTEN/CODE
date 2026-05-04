@@ -14,13 +14,17 @@ class UserResource extends JsonResource
         $friendshipData = $this->getFriendshipStatus($currentUser);
         $isOwnProfile = $currentUser && $currentUser->ID == $this->ID;
         $isFriend = $friendshipData['is_friend'];
+        $isAdmin = $currentUser && $currentUser->role === 'admin';
 
         // Determine what fields should be visible based on privacy settings
-        $shouldShowEmail = $isOwnProfile || $this->email_public || $isFriend;
-        $shouldShowHobby = $isOwnProfile || $this->hobby_public || $isFriend;
-        $shouldShowCompany = $isOwnProfile || $this->company_public || $isFriend;
-        $shouldShowLocation = $isOwnProfile || $this->location_public || $isFriend;
-        $shouldShowPhone = $isOwnProfile || $this->phone_public || $isFriend;
+        // Admins can always see all fields
+        $shouldShowEmail = $isAdmin || $isOwnProfile || $this->email_public || $isFriend;
+        $shouldShowHobby = $isAdmin || $isOwnProfile || $this->hobby_public || $isFriend;
+        $shouldShowCompany = $isAdmin || $isOwnProfile || $this->company_public || $isFriend;
+        $shouldShowOccupation = $isAdmin || $isOwnProfile || $this->occupation_public || $isFriend;
+        $shouldShowMainOccupation = $isAdmin || $isOwnProfile || $this->main_occupation_public || $isFriend;
+        $shouldShowLocation = $isAdmin || $isOwnProfile || $this->location_public || $isFriend;
+        $shouldShowPhone = $isAdmin || $isOwnProfile || $this->phone_public || $isFriend;
 
         return [
             'id' => $this->ID,
@@ -32,15 +36,19 @@ class UserResource extends JsonResource
             'url' => $this->user_url,
             'hobby' => $shouldShowHobby ? $this->hobby : null,
             'company' => $shouldShowCompany ? $this->company : null,
+            'occupation' => $shouldShowOccupation ? $this->occupation : null,
+            'main_occupation' => $shouldShowMainOccupation ? $this->main_occupation : null,
             'location' => $shouldShowLocation ? $this->location : null,
             'role' => $this->role,
             'avatar' => $this->avatar,
-            'avatar_url' => $this->avatar ? url('storage/avatars/' . $this->avatar) : null,
+            'avatar_url' => $this->avatar,  // Avatar field now stores full S3 URL directly
             'profile_visibility' => $this->profile_visibility,
             'phone' => $shouldShowPhone ? $this->phone : null,
             'email_public' => $isOwnProfile ? $this->email_public : null,
             'hobby_public' => $isOwnProfile ? $this->hobby_public : null,
             'company_public' => $isOwnProfile ? $this->company_public : null,
+            'occupation_public' => $isOwnProfile ? $this->occupation_public : null,
+            'main_occupation_public' => $isOwnProfile ? $this->main_occupation_public : null,
             'location_public' => $isOwnProfile ? $this->location_public : null,
             'phone_public' => $isOwnProfile ? $this->phone_public : null,
             'created_at' => $this->user_registered?->toIso8601String(),
@@ -76,6 +84,13 @@ class UserResource extends JsonResource
             $query->where('user_id', $this->ID)
                   ->where('friend_id', $currentUser->ID);
         })->first();
+
+        \Log::info('Friendship check', [
+            'current_user_id' => $currentUser->ID,
+            'target_user_id' => $this->ID,
+            'friendship_found' => $friendship ? true : false,
+            'friendship_status' => $friendship?->status,
+        ]);
 
         if (!$friendship) {
             return [

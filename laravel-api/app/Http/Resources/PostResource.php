@@ -9,6 +9,14 @@ class PostResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
+        $userLiked = false;
+        $userDisliked = false;
+
+        if ($request->user()) {
+            $userLiked = $this->likes()->where('user_id', $request->user()->ID)->exists();
+            $userDisliked = $this->dislikes()->where('user_id', $request->user()->ID)->exists();
+        }
+
         return [
             'id' => $this->ID,
             'title' => $this->post_title,
@@ -23,9 +31,26 @@ class PostResource extends JsonResource
             'updated_at' => $this->post_modified?->toIso8601String(),
             'featured_image' => $this->getFeaturedImage(),
             'images' => $this->getPostImages(),
+            'video' => $this->getPostVideo(),
             'meta' => $this->when($request->input('include_meta'), function () {
                 return $this->meta->pluck('meta_value', 'meta_key');
             }),
+            'engagement' => [
+                'likes' => [
+                    'count' => $this->likes()->count(),
+                    'user_liked' => $userLiked,
+                ],
+                'dislikes' => [
+                    'count' => $this->dislikes()->count(),
+                    'user_disliked' => $userDisliked,
+                ],
+                'comments' => [
+                    'count' => $this->comment_count,
+                ],
+                'shares' => [
+                    'count' => $this->shares()->count(),
+                ],
+            ],
             'comment_count' => $this->comment_count,
             'author_id' => $this->post_author,
         ];
@@ -36,7 +61,13 @@ class PostResource extends JsonResource
         // Check for new storage path
         $thumbnailPath = $this->meta->where('meta_key', '_thumbnail_path')->first()?->meta_value;
         if ($thumbnailPath) {
-            return asset('storage/' . $thumbnailPath);
+            // Generate S3 URL for the file
+            try {
+                return \Storage::disk('s3')->url($thumbnailPath);
+            } catch (\Exception $e) {
+                // Fallback to local storage if S3 fails
+                return asset('storage/' . $thumbnailPath);
+            }
         }
 
         // Fallback to WordPress attachment
@@ -56,9 +87,29 @@ class PostResource extends JsonResource
         });
 
         foreach ($imageMeta as $meta) {
-            $images[] = asset('storage/' . $meta->meta_value);
+            try {
+                // Generate S3 URL for the file
+                $images[] = \Storage::disk('s3')->url($meta->meta_value);
+            } catch (\Exception $e) {
+                // Fallback to local storage if S3 fails
+                $images[] = asset('storage/' . $meta->meta_value);
+            }
         }
 
         return $images;
+    }
+
+    protected function getPostVideo()
+    {
+        $videoPath = $this->meta->where('meta_key', '_post_video')->first()?->meta_value;
+        if ($videoPath) {
+            try {
+                return \Storage::disk('s3')->url($videoPath);
+            } catch (\Exception $e) {
+                // Fallback to local storage if S3 fails
+                return asset('storage/' . $videoPath);
+            }
+        }
+        return null;
     }
 }

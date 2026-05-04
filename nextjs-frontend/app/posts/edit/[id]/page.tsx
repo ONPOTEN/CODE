@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, FormEvent, useEffect } from 'react';
+import { useState, FormEvent, useEffect, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { useVideoUpload } from '@/contexts/VideoUploadContext';
 import { posts, UpdatePostData, ApiException, Post } from '@/lib/api';
 
 export default function EditPostPage() {
@@ -21,13 +22,51 @@ export default function EditPostPage() {
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [existingImages, setExistingImages] = useState<string[]>([]);
   const [imagesToRemove, setImagesToRemove] = useState<number[]>([]);
+  const [selectedVideo, setSelectedVideo] = useState<File | null>(null);
+  const [videoPreview, setVideoPreview] = useState<string | null>(null);
+  const [existingVideo, setExistingVideo] = useState<string | null>(null);
+  const [removeExistingVideo, setRemoveExistingVideo] = useState(false);
+  const [videoError, setVideoError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<Record<string, string[]> | null>(null);
+  const [isHtmlMode, setIsHtmlMode] = useState(true);
+  const contentEditableRef = useRef<HTMLDivElement>(null);
 
   const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { uploadVideo } = useVideoUpload();
   const router = useRouter();
+
+  // Handle paste event for HTML content
+  const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const html = e.clipboardData.getData('text/html');
+    const text = e.clipboardData.getData('text/plain');
+
+    if (html && isHtmlMode) {
+      document.execCommand('insertHTML', false, html);
+    } else {
+      document.execCommand('insertText', false, text);
+    }
+
+    if (contentEditableRef.current) {
+      setFormData({
+        ...formData,
+        content: contentEditableRef.current.innerHTML,
+      });
+    }
+  };
+
+  // Handle content change in contentEditable
+  const handleContentChange = () => {
+    if (contentEditableRef.current) {
+      setFormData({
+        ...formData,
+        content: contentEditableRef.current.innerHTML,
+      });
+    }
+  };
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -49,10 +88,15 @@ export default function EditPostPage() {
           status: postData.status as any,
         });
         if (postData.images) {
-          setExistingImages(postData.images);
+          // Convert PostImage objects to URLs
+          const imageUrls = postData.images.map(img => typeof img === 'string' ? img : (img.url || ''));
+          setExistingImages(imageUrls);
+        }
+        if (postData.video) {
+          setExistingVideo(postData.video);
         }
       } catch (err) {
-        setError('Failed to load post');
+        setError('Không thể tải bài viết');
         console.error('Fetch post error:', err);
       } finally {
         setIsFetching(false);
@@ -63,6 +107,13 @@ export default function EditPostPage() {
       fetchPost();
     }
   }, [postId, authLoading, isAuthenticated]);
+
+  // Sync content to contentEditable when post is loaded
+  useEffect(() => {
+    if (contentEditableRef.current && formData.content && !isFetching) {
+      contentEditableRef.current.innerHTML = formData.content;
+    }
+  }, [isFetching]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -99,6 +150,50 @@ export default function EditPostPage() {
     setExistingImages(existingImages.filter((_, i) => i !== index));
   };
 
+  const handleVideoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('video/') && !file.name.endsWith('.mp4')) {
+      setVideoError('Chỉ hỗ trợ file video MP4');
+      return;
+    }
+
+    // Validate file size (max 100MB)
+    const maxSize = 100 * 1024 * 1024;
+    if (file.size > maxSize) {
+      setVideoError('Video không được vượt quá 100MB');
+      return;
+    }
+
+    // Clear previous video preview
+    if (videoPreview) {
+      URL.revokeObjectURL(videoPreview);
+    }
+
+    setSelectedVideo(file);
+    setVideoPreview(URL.createObjectURL(file));
+    setVideoError(null);
+    // If we're adding a new video, we want to remove the existing one
+    if (existingVideo) {
+      setRemoveExistingVideo(true);
+    }
+  };
+
+  const removeNewVideo = () => {
+    if (videoPreview) {
+      URL.revokeObjectURL(videoPreview);
+    }
+    setSelectedVideo(null);
+    setVideoPreview(null);
+  };
+
+  const handleRemoveExistingVideo = () => {
+    setExistingVideo(null);
+    setRemoveExistingVideo(true);
+  };
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -110,11 +205,20 @@ export default function EditPostPage() {
         ...formData,
         images: selectedImages.length > 0 ? selectedImages : undefined,
         remove_images: imagesToRemove.length > 0 ? imagesToRemove : undefined,
+        remove_video: removeExistingVideo && !selectedVideo ? true : undefined,
       };
 
       await posts.update(postId, updateData);
 
       imagePreviews.forEach((preview) => URL.revokeObjectURL(preview));
+      if (videoPreview) {
+        URL.revokeObjectURL(videoPreview);
+      }
+
+      if (selectedVideo) {
+        uploadVideo(postId, selectedVideo);
+        alert('Cập nhật bài viết thành công! Video đang được tải lên ngầm.');
+      }
 
       router.push('/profile');
     } catch (err) {
@@ -124,7 +228,7 @@ export default function EditPostPage() {
           setValidationErrors(err.errors);
         }
       } else {
-        setError('Failed to update post. Please try again.');
+        setError('Không thể cập nhật bài viết. Vui lòng thử lại.');
       }
       console.error('Update post error:', err);
     } finally {
@@ -142,7 +246,7 @@ export default function EditPostPage() {
   if (authLoading || isFetching) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <p>Loading...</p>
+        <p>Đang tải...</p>
       </div>
     );
   }
@@ -154,11 +258,11 @@ export default function EditPostPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-3xl mx-auto">
-        <h1 className="text-3xl font-bold mb-8">Edit Post</h1>
+        <h1 className="text-3xl font-bold mb-8">Sửa bài viết</h1>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {error && !validationErrors && (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+            <div className="bg-blue-500 border border-red-400 text-red-700 px-4 py-3 rounded">
               {error}
             </div>
           )}
@@ -166,7 +270,7 @@ export default function EditPostPage() {
           {/* Title */}
           <div>
             <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
-              Title
+              Tiêu đề
             </label>
             <input
               type="text"
@@ -178,7 +282,7 @@ export default function EditPostPage() {
               className={`w-full px-3 py-2 border ${
                 getFieldError('title') ? 'border-red-500' : 'border-gray-300'
               } rounded-md focus:outline-none focus:ring-2 focus:ring-red-500`}
-              placeholder="Enter post title"
+              placeholder="Nhập tiêu đề bài viết"
             />
             {getFieldError('title') && (
               <p className="mt-1 text-sm text-red-600">{getFieldError('title')}</p>
@@ -188,7 +292,7 @@ export default function EditPostPage() {
           {/* Excerpt */}
           <div>
             <label htmlFor="excerpt" className="block text-sm font-medium text-gray-700 mb-2">
-              Excerpt
+              Tóm tắt
             </label>
             <textarea
               id="excerpt"
@@ -198,27 +302,36 @@ export default function EditPostPage() {
               onChange={handleChange}
               disabled={isLoading}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
-              placeholder="Short description (optional)"
+              placeholder="Mô tả ngắn (tùy chọn)"
             />
           </div>
 
           {/* Content */}
           <div>
             <label htmlFor="content" className="block text-sm font-medium text-gray-700 mb-2">
-              Content
+              Nội dung
             </label>
-            <textarea
-              id="content"
-              name="content"
-              rows={12}
-              value={formData.content}
-              onChange={handleChange}
-              disabled={isLoading}
-              className={`w-full px-3 py-2 border ${
+            <div
+              ref={contentEditableRef}
+              contentEditable={!isLoading}
+              onInput={handleContentChange}
+              onPaste={handlePaste}
+              data-placeholder="Viết nội dung bài viết của bạn tại đây..."
+              className={`w-full min-h-[300px] px-3 py-2 border ${
                 getFieldError('content') ? 'border-red-500' : 'border-gray-300'
-              } rounded-md focus:outline-none focus:ring-2 focus:ring-red-500`}
-              placeholder="Write your post content here..."
+              } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 prose prose-sm max-w-none empty:before:content-[attr(data-placeholder)] empty:before:text-gray-400`}
+              style={{ whiteSpace: 'pre-wrap' }}
             />
+            {isHtmlMode && formData.content && (
+              <details className="mt-2">
+                <summary className="text-xs text-gray-500 cursor-pointer hover:text-gray-700">
+                  Xem HTML source
+                </summary>
+                <pre className="mt-1 p-2 bg-gray-100 rounded text-xs overflow-x-auto max-h-40">
+                  {formData.content}
+                </pre>
+              </details>
+            )}
             {getFieldError('content') && (
               <p className="mt-1 text-sm text-red-600">{getFieldError('content')}</p>
             )}
@@ -228,21 +341,21 @@ export default function EditPostPage() {
           {existingImages.length > 0 && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Current Images
+                Hình ảnh hiện tại
               </label>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                 {existingImages.map((imageUrl, index) => (
                   <div key={index} className="relative">
                     <img
                       src={imageUrl}
-                      alt={`Existing ${index + 1}`}
+                      alt={`Hiện tại ${index + 1}`}
                       className="w-full h-32 object-cover rounded-md border border-gray-300"
                     />
                     <button
                       type="button"
                       onClick={() => removeExistingImage(index)}
                       disabled={isLoading}
-                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 disabled:opacity-50"
+                      className="absolute -top-2 -right-2 bg-grey-2000 text-gray-900 rounded-full w-6 h-6 flex items-center justify-center hover:bg-blue-500 disabled:opacity-50"
                     >
                       ×
                     </button>
@@ -255,7 +368,7 @@ export default function EditPostPage() {
           {/* New Image Upload */}
           <div>
             <label htmlFor="images" className="block text-sm font-medium text-gray-700 mb-2">
-              Add New Images (up to 10)
+              Thêm hình ảnh mới (tối đa 10)
             </label>
             <input
               type="file"
@@ -281,7 +394,7 @@ export default function EditPostPage() {
                       type="button"
                       onClick={() => removeNewImage(index)}
                       disabled={isLoading}
-                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 disabled:opacity-50"
+                      className="absolute -top-2 -right-2 bg-grey-2000 text-gray-900 rounded-full w-6 h-6 flex items-center justify-center hover:bg-blue-500 disabled:opacity-50"
                     >
                       ×
                     </button>
@@ -291,11 +404,91 @@ export default function EditPostPage() {
             )}
           </div>
 
+          {/* Video Upload */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Video (MP4, tối đa 100MB)
+            </label>
+
+            {videoError && (
+              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-3">
+                {videoError}
+              </div>
+            )}
+
+            {/* Existing Video */}
+            {existingVideo && !removeExistingVideo && (
+              <div className="mb-4">
+                <p className="text-sm text-gray-600 mb-2">Video hiện tại:</p>
+                <div className="relative">
+                  <video
+                    src={existingVideo}
+                    className="w-full max-h-60 object-contain rounded-lg bg-black"
+                    controls
+                  />
+                  <button
+                    type="button"
+                    className="absolute top-2 right-2 bg-black bg-opacity-70 text-white rounded-full w-8 h-8 text-lg flex items-center justify-center hover:bg-opacity-90"
+                    onClick={handleRemoveExistingVideo}
+                    disabled={isLoading}
+                  >
+                    ×
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* New Video Preview */}
+            {videoPreview && (
+              <div className="mb-4">
+                <p className="text-sm text-gray-600 mb-2">Video mới:</p>
+                <div className="relative">
+                  <video
+                    src={videoPreview}
+                    className="w-full max-h-60 object-contain rounded-lg bg-black"
+                    controls
+                  />
+                  <button
+                    type="button"
+                    className="absolute top-2 right-2 bg-black bg-opacity-70 text-white rounded-full w-8 h-8 text-lg flex items-center justify-center hover:bg-opacity-90"
+                    onClick={removeNewVideo}
+                    disabled={isLoading}
+                  >
+                    ×
+                  </button>
+                  <div className="absolute bottom-2 left-2 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded">
+                    {selectedVideo?.name} ({((selectedVideo?.size || 0) / 1024 / 1024).toFixed(1)} MB)
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Video Upload Input */}
+            {!videoPreview && (
+              <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
+                <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                  <span className="text-3xl mb-2">🎬</span>
+                  <p className="text-sm text-gray-500">
+                    <span className="font-semibold">Nhấn để tải video</span>
+                  </p>
+                  <p className="text-xs text-gray-500">MP4 (tối đa 100MB)</p>
+                </div>
+                <input
+                  type="file"
+                  className="hidden"
+                  onChange={handleVideoChange}
+                  accept="video/mp4,.mp4"
+                  disabled={isLoading}
+                />
+              </label>
+            )}
+          </div>
+
           {/* Type and Status */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label htmlFor="type" className="block text-sm font-medium text-gray-700 mb-2">
-                Type
+                Loại
               </label>
               <select
                 id="type"
@@ -305,15 +498,15 @@ export default function EditPostPage() {
                 disabled={isLoading}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
               >
-                <option value="post">Post</option>
-                <option value="page">Page</option>
-                <option value="product">Product</option>
+                <option value="post">Bài viết</option>
+                <option value="page">Trang</option>
+                <option value="product">Sản phẩm</option>
               </select>
             </div>
 
             <div>
               <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
-                Status
+                Trạng thái
               </label>
               <select
                 id="status"
@@ -323,9 +516,9 @@ export default function EditPostPage() {
                 disabled={isLoading}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
               >
-                <option value="draft">Draft</option>
-                <option value="pending">Pending</option>
-                <option value="publish">Publish</option>
+                <option value="draft">Bản nháp</option>
+                <option value="pending">Đang chờ</option>
+                <option value="publish">Xuất bản</option>
               </select>
             </div>
           </div>
@@ -335,17 +528,17 @@ export default function EditPostPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-6 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="bg-blue-500 hover:bg-blue-700 text-gray-900 font-medium py-2 px-6 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoading ? 'Updating...' : 'Update Post'}
+              {isLoading ? 'Đang cập nhật...' : 'Cập nhật bài viết'}
             </button>
             <button
               type="button"
               onClick={() => router.back()}
               disabled={isLoading}
-              className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium py-2 px-6 rounded transition-colors disabled:opacity-50"
+              className="bg-blue-300 hover:bg-blue-400 text-gray-800 font-medium py-2 px-6 rounded transition-colors disabled:opacity-50"
             >
-              Cancel
+              Hủy
             </button>
           </div>
         </form>

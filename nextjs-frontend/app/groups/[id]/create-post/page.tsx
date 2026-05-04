@@ -1,0 +1,607 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { groups, groupPosts, Group, ApiException, auth } from '@/lib/api';
+
+export default function CreateGroupPostPage() {
+  const router = useRouter();
+  const params = useParams();
+  const groupId = parseInt(params.id as string);
+
+  const [group, setGroup] = useState<Group | null>(null);
+  const [isMember, setIsMember] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [title, setTitle] = useState('');
+  const [content, setContent] = useState('');
+  const [excerpt, setExcerpt] = useState('');
+  const [visibility, setVisibility] = useState<'public' | 'private'>('public');
+  const [images, setImages] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [featuredImageFile, setFeaturedImageFile] = useState<File | null>(null);
+  const [featuredImagePreview, setFeaturedImagePreview] = useState<string>('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [groupLoading, setGroupLoading] = useState(true);
+  const [showApprovalModal, setShowApprovalModal] = useState(false);
+  const [approvalMessage, setApprovalMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Check authentication first
+    const token = auth.getToken();
+    const isAuth = auth.isAuthenticated();
+
+    console.log('[CreatePost] Auth check:', {
+      isAuth,
+      token: token ? token.substring(0, 20) + '...' : null,
+      tokenLength: token?.length
+    });
+
+    setIsAuthenticated(isAuth);
+
+    // If not authenticated, redirect to login
+    if (!isAuth) {
+      console.log('[CreatePost] Not authenticated, redirecting to /login');
+      router.push('/login');
+      return;
+    }
+
+    // If authenticated, validate token by fetching user profile
+    console.log('[CreatePost] Authenticated, validating token and fetching group');
+    validateAndFetch();
+  }, [groupId, router]);
+
+  const validateAndFetch = async () => {
+    try {
+      // First, validate the token is actually valid
+      // Try to fetch current user or use the membership check as validation
+      await fetchGroupAndCheckMembership();
+    } catch (err) {
+      console.error('[CreatePost] Validation failed:', err);
+      // If validation fails, clear token and redirect to login
+      auth.logout();
+      router.push('/login');
+    }
+  };
+
+  const fetchGroupAndCheckMembership = async () => {
+    try {
+      setGroupLoading(true);
+      const response = await groups.getById(groupId);
+      setGroup(response.data);
+
+      // Check if user is a member of the group
+      try {
+        console.log('[CreatePost] Checking membership for group:', groupId);
+        const membershipResponse = await groups.checkMembership(groupId);
+        console.log('[CreatePost] Membership check response:', membershipResponse);
+        setIsMember(membershipResponse.is_member);
+
+        if (!membershipResponse.is_member) {
+          console.log('[CreatePost] User is NOT a member of the group');
+        } else {
+          console.log('[CreatePost] User IS a member of the group');
+        }
+      } catch (membershipErr) {
+        // If membership check fails, assume user is not a member
+        console.error('Error checking membership:', membershipErr);
+        console.error('Error details:', (membershipErr as any)?.message || membershipErr);
+        setIsMember(false);
+      }
+    } catch (err) {
+      console.error('Error fetching group:', err);
+      setError('Failed to load group');
+      setIsMember(false);
+    } finally {
+      setGroupLoading(false);
+    }
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const filesArray = Array.from(e.target.files);
+      setImages(filesArray);
+
+      // Create preview URLs using URL.createObjectURL (more efficient than FileReader)
+      const previews = filesArray.map((file) => URL.createObjectURL(file));
+      setImagePreviews(previews);
+    }
+  };
+
+  const handleFeaturedImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setFeaturedImageFile(file);
+
+      // Create preview URL
+      const preview = URL.createObjectURL(file);
+      setFeaturedImagePreview(preview);
+    }
+  };
+
+  const removeImage = (index: number) => {
+    const newImages = images.filter((_, i) => i !== index);
+    const newPreviews = imagePreviews.filter((_, i) => i !== index);
+
+    // Revoke the URL to free memory
+    URL.revokeObjectURL(imagePreviews[index]);
+
+    setImages(newImages);
+    setImagePreviews(newPreviews);
+  };
+
+  const removeFeaturedImage = () => {
+    if (featuredImagePreview) {
+      URL.revokeObjectURL(featuredImagePreview);
+    }
+    setFeaturedImageFile(null);
+    setFeaturedImagePreview('');
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!title.trim() || !content.trim()) {
+      setError('Tiêu đề và nội dung là bắt buộc');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const formData = new FormData();
+      formData.append('group_id', groupId.toString());
+      formData.append('title', title);
+      formData.append('content', content);
+      formData.append('excerpt', excerpt);
+      // If group requires approval for posts, set status to 'pending', otherwise 'publish'
+      const postStatus = group && group.requires_approval_posts ? 'pending' : 'publish';
+      formData.append('status', postStatus);
+      formData.append('visibility', visibility);
+
+      console.log('[CreatePost] Submitting post:', {
+        groupId,
+        requires_approval_posts: group?.requires_approval_posts,
+        postStatus,
+        title: title.substring(0, 50),
+      });
+
+      // Add featured image if provided
+      if (featuredImageFile) {
+        formData.append('featured_image', featuredImageFile);
+      }
+
+      // Add gallery images if provided
+      images.forEach((image) => {
+        formData.append('images[]', image);
+      });
+
+      const response = await groupPosts.create(formData);
+
+      // Clean up preview URLs
+      imagePreviews.forEach((preview) => URL.revokeObjectURL(preview));
+      if (featuredImagePreview) {
+        URL.revokeObjectURL(featuredImagePreview);
+      }
+
+      // Check if post is pending approval
+      const isPending = response.data?.post_status === 'pending';
+
+      if (isPending) {
+        // Show approval modal and then redirect after a delay
+        setApprovalMessage('Bài viết của bạn đang chờ quản trị viên phê duyệt');
+        setShowApprovalModal(true);
+
+        // Auto-redirect after 3 seconds
+        setTimeout(() => {
+          router.push(`/groups/${groupId}`);
+        }, 3000);
+      } else {
+        // Redirect immediately if post is published
+        router.push(`/groups/${groupId}?message=${encodeURIComponent('Tạo bài viết thành công')}`);
+      }
+    } catch (err) {
+      if (err instanceof ApiException) {
+        setError(err.message);
+      } else {
+        setError('Không thể tạo bài viết. Vui lòng thử lại.');
+      }
+      console.error('Error creating post:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Show loading while checking authentication
+  if (!isAuthenticated && groupLoading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <div className="text-gray-600">Đang xác thực...</div>
+        </div>
+      </div>
+    );
+  }
+
+  // If not authenticated, show loading (will redirect shortly)
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <div className="text-gray-600">Đang chuyển đến trang đăng nhập...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (groupLoading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-gray-600">Đang tải...</div>
+      </div>
+    );
+  }
+
+  if (!group) {
+    return (
+      <div className="min-h-screen bg-white">
+        <div className="max-w-2xl mx-auto px-4 py-8">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-gray-900 mb-4">Không tìm thấy nhóm</h1>
+            <Link href="/groups" className="text-blue-600 hover:text-blue-700 font-medium">
+              ← Quay lại danh sách nhóm
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isMember) {
+    console.log('[CreatePost Render] Showing access denied screen. isMember:', isMember, 'group:', group?.group_name);
+    return (
+      <div className="min-h-screen bg-white">
+        <div className="max-w-2xl mx-auto px-4 py-8">
+          <Link href={`/groups/${groupId}`} className="text-blue-600 hover:text-blue-700 font-medium mb-8 inline-block">
+            ← Quay lại {group?.group_name || 'Nhóm'}
+          </Link>
+
+          <div className="bg-grey-200 rounded-lg shadow p-8 text-center border border-gray-300">
+            <div className="mb-6">
+              <svg className="w-16 h-16 mx-auto text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Không có quyền truy cập</h1>
+            <p className="text-gray-600 mb-6">Bạn phải là thành viên của nhóm này để tạo bài viết. Hãy tham gia nhóm để bắt đầu!</p>
+
+            <div className="flex gap-4 justify-center">
+              <Link
+                href={`/groups/${groupId}`}
+                className="px-6 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-700 font-medium transition-colors"
+              >
+                Tham gia nhóm
+              </Link>
+              <Link
+                href="/groups"
+                className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-white font-medium transition-colors"
+              >
+                Xem danh sách nhóm
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-white">
+      <div className="max-w-2xl mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <Link href={`/groups/${groupId}`} className="text-blue-600 hover:text-blue-700 font-medium">
+            ← Quay lại {group.group_name}
+          </Link>
+          <h1 className="text-3xl font-bold text-gray-900 mt-4">Tạo bài viết mới</h1>
+          <p className="text-gray-600 mt-2">Chia sẻ suy nghĩ của bạn với nhóm</p>
+        </div>
+
+        {/* Approval Notice */}
+        {group.requires_approval_posts && (
+          <div className="mb-6 p-4 bg-blue-500 border border-amber-200 rounded-lg">
+            <div className="flex gap-3">
+              <svg className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+              <div>
+                <p className="text-sm font-medium text-amber-900">Bài viết cần được phê duyệt</p>
+                <p className="text-sm text-amber-700 mt-1">Bài viết của bạn sẽ được người kiểm duyệt nhóm xem xét trước khi xuất bản.</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Form */}
+        <div className="bg-grey-200 rounded-lg shadow p-6">
+          {error && (
+            <div className="mb-6 p-4 bg-grey-200 border border-red-200 rounded-lg text-red-700">
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Post Title */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Tiêu đề bài viết *
+              </label>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Nhập tiêu đề cho bài viết của bạn..."
+                disabled={loading}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-blue-500"
+              />
+            </div>
+
+            {/* Content */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Nội dung *
+              </label>
+              <textarea
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                placeholder="Chia sẻ suy nghĩ, cập nhật hoặc ý tưởng của bạn..."
+                rows={6}
+                disabled={loading}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-blue-500 resize-vertical"
+              />
+              <p className="text-xs text-gray-500 mt-1">{content.length} ký tự</p>
+            </div>
+
+            {/* Excerpt */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Tóm tắt (Tùy chọn)
+              </label>
+              <input
+                type="text"
+                value={excerpt}
+                onChange={(e) => setExcerpt(e.target.value)}
+                placeholder="Tóm tắt ngắn về bài viết của bạn..."
+                disabled={loading}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-blue-500"
+              />
+            </div>
+
+            {/* Visibility */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Chế độ hiển thị
+              </label>
+              <select
+                value={visibility}
+                onChange={(e) => setVisibility(e.target.value as 'public' | 'private')}
+                disabled={loading}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-blue-500"
+              >
+                <option value="public">Công khai - Hiển thị với tất cả thành viên</option>
+                <option value="private">Riêng tư - Chỉ hiển thị với bạn</option>
+              </select>
+            </div>
+
+            {/* Featured Image Upload */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Ảnh nổi bật (Tùy chọn)
+              </label>
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFeaturedImageChange}
+                  disabled={loading}
+                  className="hidden"
+                  id="featured-image-input"
+                />
+                <label
+                  htmlFor="featured-image-input"
+                  className={`cursor-pointer block ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  <svg
+                    className="w-12 h-12 mx-auto mb-2 text-gray-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                    />
+                  </svg>
+                  <p className="text-sm text-gray-600">Nhấn để tải lên ảnh nổi bật</p>
+                </label>
+              </div>
+            </div>
+
+            {/* Featured Image Preview */}
+            {featuredImagePreview && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Xem trước ảnh nổi bật
+                </label>
+                <div className="relative inline-block">
+                  <img
+                    src={featuredImagePreview}
+                    alt="Featured preview"
+                    className="h-48 object-cover rounded-md border border-gray-300"
+                  />
+                  <button
+                    type="button"
+                    onClick={removeFeaturedImage}
+                    disabled={loading}
+                    className="absolute -top-2 -right-2 bg-grey-2000 text-gray-900 rounded-full w-6 h-6 flex items-center justify-center hover:bg-blue-500 disabled:opacity-50"
+                    title="Xóa ảnh nổi bật"
+                  >
+                    ×
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Images Upload */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Hình ảnh (Tùy chọn)
+              </label>
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleImageChange}
+                  disabled={loading}
+                  className="hidden"
+                  id="images-input"
+                />
+                <label
+                  htmlFor="images-input"
+                  className={`cursor-pointer block ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  <svg
+                    className="w-12 h-12 mx-auto mb-2 text-gray-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                    />
+                  </svg>
+                  <p className="text-sm text-gray-600">Nhấn để tải lên hình ảnh</p>
+                </label>
+              </div>
+              {images.length > 0 && (
+                <p className="text-sm text-gray-600 mt-2">{images.length} hình ảnh đã chọn</p>
+              )}
+            </div>
+
+            {/* Image Previews */}
+            {imagePreviews.length > 0 && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Xem trước hình ảnh
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                  {imagePreviews.map((preview, index) => (
+                    <div key={index} className="relative">
+                      <img
+                        src={preview}
+                        alt={`Preview ${index + 1}`}
+                        className="w-full h-32 object-cover rounded-md border border-gray-300"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeImage(index)}
+                        disabled={loading}
+                        className="absolute -top-2 -right-2 bg-grey-2000 text-gray-900 rounded-full w-6 h-6 flex items-center justify-center hover:bg-blue-500 disabled:opacity-50"
+                        title="Xóa hình ảnh"
+                      >
+                        ×
+                      </button>
+                      {index === 0 && (
+                        <span className="absolute bottom-0 left-0 bg-grey-2000 text-gray-900 text-xs px-2 py-1 rounded-tr">
+                          Nổi bật
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex gap-3 pt-6 border-t border-gray-300">
+              <Link
+                href={`/groups/${groupId}`}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-white font-medium transition-colors"
+              >
+                Hủy
+              </Link>
+              <button
+                type="submit"
+                disabled={loading}
+                className="flex-1 px-4 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {loading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    Đang tạo...
+                  </>
+                ) : (
+                  'Tạo bài viết'
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
+
+        {/* Approval Modal */}
+        {showApprovalModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-grey-200 rounded-lg shadow-lg max-w-md w-full p-8 text-center animate-fade-in">
+              {/* Success Icon */}
+              <div className="mb-6 flex justify-center">
+                <div className="bg-blue-500 rounded-full p-4">
+                  <svg
+                    className="w-12 h-12 text-amber-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1.5}
+                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                </div>
+              </div>
+
+              {/* Message */}
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">Đã tạo bài viết!</h2>
+              <p className="text-gray-600 mb-6 text-lg font-medium">{approvalMessage}</p>
+              <p className="text-sm text-gray-500 mb-8">Đang chuyển đến nhóm trong 3 giây...</p>
+
+              {/* Progress bar */}
+              <div className="w-full bg-blue-500 rounded-full h-1 mb-6 overflow-hidden">
+                <div className="bg-blue-500 h-full animate-shrink"></div>
+              </div>
+
+              {/* Close Button */}
+              <button
+                onClick={() => router.push(`/groups/${groupId}`)}
+                className="w-full px-6 py-2 bg-blue-500 text-gray-900 rounded-lg hover:bg-blue-700 font-medium transition-colors"
+              >
+                Đi đến nhóm ngay
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

@@ -11,7 +11,7 @@ export default function CartPage() {
   useEffect(() => {
     loadCart();
 
-    // Listen for cart updates
+    // Lắng nghe các bản cập nhật giỏ hàng
     const handleCartUpdate = () => loadCart();
     window.addEventListener('cartUpdated', handleCartUpdate);
 
@@ -68,12 +68,12 @@ export default function CartPage() {
       <h1 className="text-2xl font-medium mb-6">Giỏ hàng của bạn</h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Cart Items */}
+        {/* Các mục trong giỏ hàng */}
         <div className="lg:col-span-2 space-y-4">
           {cart.map((item) => (
-            <div key={item.id} className="bg-white rounded-sm shadow-sm p-4">
+            <div key={item.id} className="bg-grey-200 rounded-sm shadow-sm p-4">
               <div className="flex gap-4">
-                {/* Product Image */}
+                {/* Hình ảnh sản phẩm */}
                 <div className="relative w-24 h-24 flex-shrink-0">
                   <Image
                     src={item.product.images[0]?.src || '/placeholder-product.jpg'}
@@ -83,7 +83,7 @@ export default function CartPage() {
                   />
                 </div>
 
-                {/* Product Info */}
+                {/* Thông tin sản phẩm */}
                 <div className="flex-1">
                   <Link
                     href={`/san-pham/${item.product.slug}`}
@@ -97,12 +97,12 @@ export default function CartPage() {
                       {parseInt(item.product.price).toLocaleString('vi-VN')}đ
                     </span>
 
-                    {/* Quantity Controls */}
+                    {/* Điều khiển số lượng */}
                     <div className="flex items-center gap-4">
                       <div className="flex items-center border border-gray-300 rounded-sm">
                         <button
                           onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                          className="w-8 h-8 flex items-center justify-center hover:bg-gray-100"
+                          className="w-8 h-8 flex items-center justify-center hover:bg-blue-500"
                         >
                           −
                         </button>
@@ -111,7 +111,7 @@ export default function CartPage() {
                         </span>
                         <button
                           onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                          className="w-8 h-8 flex items-center justify-center hover:bg-gray-100"
+                          className="w-8 h-8 flex items-center justify-center hover:bg-blue-500"
                         >
                           +
                         </button>
@@ -137,9 +137,9 @@ export default function CartPage() {
           ))}
         </div>
 
-        {/* Order Summary */}
+        {/* Tóm tắt đơn hàng */}
         <div className="lg:col-span-1">
-          <div className="bg-white rounded-sm shadow-sm p-6 sticky top-24">
+          <div className="bg-grey-200 rounded-sm shadow-sm p-6 sticky top-24">
             <h3 className="text-lg font-medium mb-4">Tổng đơn hàng</h3>
 
             <div className="space-y-3 mb-6">
@@ -153,7 +153,7 @@ export default function CartPage() {
                 <span className="text-gray-600">Phí vận chuyển:</span>
                 <span className="font-medium">Miễn phí</span>
               </div>
-              <div className="border-t border-gray-200 pt-3">
+              <div className="border-t border-gray-300 pt-3">
                 <div className="flex justify-between">
                   <span className="font-medium">Tổng cộng:</span>
                   <span className="text-xl font-medium text-primary">

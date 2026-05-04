@@ -36,6 +36,7 @@ class WpPost extends Model
         'post_mime_type',
         'comment_count',
         'visibility',
+        'wall_id',
     ];
 
     protected $casts = [
@@ -46,6 +47,7 @@ class WpPost extends Model
         'post_parent' => 'integer',
         'menu_order' => 'integer',
         'comment_count' => 'integer',
+        'wall_id' => 'integer',
     ];
 
     const CREATED_AT = 'post_date';
@@ -64,6 +66,31 @@ class WpPost extends Model
     public function comments(): HasMany
     {
         return $this->hasMany(WpComment::class, 'comment_post_ID', 'ID');
+    }
+
+    public function likes(): HasMany
+    {
+        return $this->hasMany(Like::class, 'post_id', 'ID');
+    }
+
+    public function dislikes(): HasMany
+    {
+        return $this->hasMany(Dislike::class, 'post_id', 'ID');
+    }
+
+    public function shares(): HasMany
+    {
+        return $this->hasMany(Share::class, 'post_id', 'ID');
+    }
+
+    public function shareWalls(): HasMany
+    {
+        return $this->hasMany(ShareWall::class, 'post_id', 'ID');
+    }
+
+    public function wall(): BelongsTo
+    {
+        return $this->belongsTo(WpUser::class, 'wall_id', 'ID');
     }
 
     public function scopePublished($query)

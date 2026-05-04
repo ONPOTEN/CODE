@@ -3,8 +3,20 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { shops, shopPosts, type Shop, type ShopPost, ApiException } from '@/lib/api';
+import { shops, shopPosts, type Shop, type ShopPost, ApiException, apiRequest } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
+import ShopMessageModal from '@/components/ShopMessageModal';
+import ShopMessagesSection from '@/components/ShopMessagesSection';
+import ShopMessageInbox from '@/components/ShopMessageInbox';
+import { SimpleProductsList } from '@/app/shops/[id]/posts/SimpleProductsList';
+import { VariantProductsList } from '@/app/shops/[id]/posts/VariantProductsList';
+import { DownloadProductsList } from '@/app/shops/[id]/posts/DownloadProductsList';
+import VideoPlayer from '@/components/VideoPlayer';
+import ShopActionButtons from '@/components/ShopActionButtons';
+import ShopHero from '@/components/ShopHero';
+import ShopContactCard from '@/components/ShopContactCard';
+import ShopImagesCarousel from '@/components/ShopImagesCarousel';
+import ShopProductsSection from '@/components/ShopProductsSection';
 
 export default function ShopDetailPage() {
   const params = useParams();
@@ -16,30 +28,59 @@ export default function ShopDetailPage() {
   const [allPosts, setAllPosts] = useState<ShopPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filterType, setFilterType] = useState<'all' | 'post' | 'page'>('all');
+  const [productTypeView, setProductTypeView] = useState<'all' | 'simple' | 'variant' | 'download'>('all');
+  const [isMessageModalOpen, setIsMessageModalOpen] = useState(false);
+  const [isPaymentSettingsOpen, setIsPaymentSettingsOpen] = useState(false);
+  const [paymentFormData, setPaymentFormData] = useState({
+    bank_name: '',
+    account_number: '',
+    account_holder: '',
+    upi_id: '',
+    phone: '',
+    qr_code: '',
+  });
+  const [generatedQR, setGeneratedQR] = useState<string | null>(null);
+  const [savingPaymentSettings, setSavingPaymentSettings] = useState(false);
+  const [allProductsSearch, setAllProductsSearch] = useState('');
 
-  const isOwner = user && shop && shop.user_id === user.id;
+  const isOwner = Boolean(user && shop && shop.user_id === user.id);
 
   useEffect(() => {
     fetchShopData();
-  }, [shopId, filterType]);
+  }, [shopId]);
 
   const fetchShopData = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const shopData = await shops.getById(shopId);
+      const response = await shops.getById(shopId);
+      console.log('[Shop Detail] Raw response:', response);
+
+      // Handle both direct ShopResource and wrapped response
+      const shopData = response && typeof response === 'object' && 'name' in response
+        ? response
+        : (response as any)?.data || response;
+
+      console.log('[Shop Detail] Processed shop data:', {
+        id: shopData?.id,
+        name: shopData?.name,
+        logo: shopData?.logo,
+        banner: shopData?.banner,
+        hasLogo: !!shopData?.logo,
+        hasBanner: !!shopData?.banner,
+        allKeys: shopData ? Object.keys(shopData) : [],
+      });
       setShop(shopData);
 
-      // Fetch all published posts (or all posts if owner)
+      // Fetch all posts - show all if owner, published only for visitors
       try {
+        const isShopOwner = user && shopData && shopData.user_id === user.id;
         const postsData = await shopPosts.getAll(shopId, {
           per_page: 100,
-          type: filterType !== 'all' ? filterType : undefined,
-          status: isOwner ? undefined : 'published',
+          status: isShopOwner ? undefined : 'published',
         });
-        console.log(postsData.data);
+        console.log('[Shop Detail] Posts fetched:', postsData.data);
         setAllPosts(postsData.data || []);
       } catch (err) {
         console.error('Error fetching posts:', err);
@@ -49,7 +90,7 @@ export default function ShopDetailPage() {
       if (err instanceof ApiException) {
         setError(err.message);
       } else {
-        setError('Failed to load shop');
+        setError('Không thể tải cửa hàng');
       }
       console.error('Error fetching shop:', err);
     } finally {
@@ -57,9 +98,127 @@ export default function ShopDetailPage() {
     }
   };
 
+  const openPaymentSettings = async () => {
+    setIsPaymentSettingsOpen(true);
+    try {
+      // Load existing payment settings from backend
+      const response = await apiRequest(`/shops/${shopId}/payment-settings`);
+      if (response?.data) {
+        setPaymentFormData({
+          bank_name: response.data.bank_name || '',
+          account_number: response.data.account_number || '',
+          account_holder: response.data.account_holder || '',
+          upi_id: response.data.upi_id || '',
+          phone: response.data.phone || '',
+          qr_code: response.data.qr_code || '',
+        });
+        if (response.data.qr_code) {
+          setGeneratedQR(response.data.qr_code);
+        }
+      }
+    } catch (err) {
+      // Settings don't exist yet, keep form empty
+      setPaymentFormData({
+        bank_name: '',
+        account_number: '',
+        account_holder: user?.display_name || user?.username || '',
+        upi_id: '',
+        phone: '',
+        qr_code: '',
+      });
+      setGeneratedQR(null);
+    }
+  };
+
+  const generateQRCode = async () => {
+    if (!paymentFormData.bank_name || !paymentFormData.account_number) {
+      alert('Vui lòng điền tên ngân hàng và số tài khoản');
+      return;
+    }
+
+    try {
+      // Map Vietnamese bank names to their BIN codes
+      const bankCodes: { [key: string]: string } = {
+        'vietcombank': '970436',
+        'techcombank': '970407',
+        'agribank': '970405',
+        'tpbank': '970423',
+        'mbbank': '970422',
+        'acb': '970416',
+        'bidv': '970418',
+        'vib': '970441',
+        'scb': '970429',
+        'sacombank': '970403',
+        'seabank': '970440',
+        'eximbank': '970431',
+        'vpbank': '970432',
+        'vietinbank': '970415',
+      };
+
+      // Match bank name to code
+      const bankName = paymentFormData.bank_name.toLowerCase().trim();
+      let bankCode = null;
+
+      for (const [key, code] of Object.entries(bankCodes)) {
+        if (bankName.includes(key)) {
+          bankCode = code;
+          break;
+        }
+      }
+
+      // If no match found, use as-is
+      if (!bankCode) {
+        bankCode = paymentFormData.bank_name;
+      }
+
+      // Build VietQR image URL
+      const qrImageUrl = `https://img.vietqr.io/image/${encodeURIComponent(bankCode)}-${encodeURIComponent(paymentFormData.account_number)}-qr_only.png?accountName=${encodeURIComponent(paymentFormData.account_holder)}`;
+
+      setGeneratedQR(qrImageUrl);
+      setPaymentFormData((prev) => ({
+        ...prev,
+        qr_code: qrImageUrl,
+      }));
+    } catch (err) {
+      console.error('Error generating QR code:', err);
+      alert('Không thể tạo mã QR. Vui lòng kiểm tra thông tin ngân hàng và thử lại.');
+    }
+  };
+
+  const savePaymentSettings = async () => {
+    if (!paymentFormData.bank_name || !paymentFormData.account_number || !paymentFormData.account_holder) {
+      alert('Vui lòng điền đầy đủ các trường bắt buộc');
+      return;
+    }
+
+    setSavingPaymentSettings(true);
+    try {
+      await apiRequest(`/shops/${shopId}/payment-settings`, {
+        method: 'POST',
+        body: JSON.stringify({
+          bank_name: paymentFormData.bank_name,
+          account_number: paymentFormData.account_number,
+          account_holder: paymentFormData.account_holder,
+          upi_id: paymentFormData.upi_id || null,
+          phone: paymentFormData.phone || null,
+          qr_code: paymentFormData.qr_code || null,
+        }),
+      });
+
+      alert('Đã lưu cài đặt thanh toán thành công!');
+      setIsPaymentSettingsOpen(false);
+    } catch (err) {
+      console.error('Error saving payment settings:', err);
+      const errorMsg = err instanceof Error ? err.message : 'Không thể lưu cài đặt thanh toán';
+      alert(`${errorMsg}`);
+    } finally {
+      setSavingPaymentSettings(false);
+    }
+  };
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
@@ -67,21 +226,21 @@ export default function ShopDetailPage() {
 
   if (error || !shop) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
           <svg className="w-16 h-16 mx-auto mb-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
           </svg>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Shop Not Found</h2>
-          <p className="text-gray-600 mb-6">{error || 'The shop you are looking for does not exist.'}</p>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Không tìm thấy cửa hàng</h2>
+          <p className="text-gray-600 mb-6">{error || 'Cửa hàng bạn đang tìm kiếm không tồn tại.'}</p>
           <Link
             href="/shops"
-            className="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+            className="inline-flex items-center px-6 py-3 bg-blue-500 hover:bg-blue-700 text-gray-900 rounded-lg font-medium transition-colors"
           >
             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            Back to Shops
+            Quay lại danh sách
           </Link>
         </div>
       </div>
@@ -89,364 +248,295 @@ export default function ShopDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
       {/* Hero Section */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white">
-        <div className="max-w-6xl mx-auto px-4 py-12">
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-4">
-                <h1 className="text-4xl font-bold">{shop.name}</h1>
-                {shop.status && (
-                  <span
-                    className={`inline-block px-3 py-1 text-sm font-medium rounded-full ${
-                      shop.status === 'active'
-                        ? 'bg-green-100 text-green-800'
-                        : shop.status === 'inactive'
-                        ? 'bg-gray-100 text-gray-800'
-                        : 'bg-yellow-100 text-yellow-800'
-                    }`}
-                  >
-                    {shop.status.toUpperCase()}
-                  </span>
-                )}
-              </div>
-              {shop.description && (
-                <p className="text-blue-100 text-lg max-w-3xl">{shop.description}</p>
-              )}
-            </div>
+      <ShopHero
+        name={shop.name}
+        description={shop.description}
+        logo={shop.logo}
+        banner={shop.banner}
+        status={shop.status}
+        isOwner={isOwner}
+        shopId={shop.id}
+      />
 
-            {isOwner && (
-              <div className="flex gap-2 ml-4">
-                <Link
-                  href={`/shops/${shop.id}/edit`}
-                  className="inline-flex items-center px-4 py-2 bg-white text-blue-600 rounded-lg font-medium hover:bg-blue-50 transition-colors"
-                >
-                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                  </svg>
-                  Edit Shop
-                </Link>
-              </div>
+      {/* Main Content */}
+      <div className="max-w-6xl mx-auto px-3 md:px-4 py-4 md:py-8 space-y-4 md:space-y-6">
+        {/* Action Buttons */}
+        <div className="bg-gradient-to-r from-white via-gray-50 to-white rounded-2xl shadow-lg p-4 md:p-6">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <svg className="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 014.899-4.899l-4.899-4.899A4 4 0 004.899 4.899L8 8.5m0 0l4 4m-4-4l4 4" />
+                </svg>
+                Thao tác nhanh
+              </h3>
+              <ShopActionButtons
+                shopName={shop.name}
+                shopPhone={shop.phone}
+                shopAddress={shop.address}
+                onMessageClick={() => setIsMessageModalOpen(true)}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Images Carousel */}
+        <ShopImagesCarousel
+          image1={shop.image_1}
+          image2={shop.image_2}
+          image3={shop.image_3}
+          image4={shop.image_4}
+          image5={shop.image_5}
+        />
+
+        <div className="grid md:grid-cols-3 gap-4 md:gap-6">
+          {/* Left Column - Contact & Messages */}
+          <div className="space-y-4 md:space-y-6">
+            <ShopContactCard
+              address={shop.address}
+              phone={shop.phone}
+              email={shop.email}
+              website={shop.website}
+              city={shop.city}
+              state={shop.state}
+              postalCode={shop.postal_code}
+              country={shop.country}
+              owner={shop.owner}
+            />
+
+            {/* Shop Messages Section - Only for Owner */}
+            {isOwner && shop && (
+              <ShopMessagesSection shopId={shop.id} isOwner={isOwner} />
             )}
+
+            {/* Customer Message Inbox - Only for Non-Owner Logged-in Users */}
+            {!isOwner && user && shop && (
+              <ShopMessageInbox
+                shopId={shop.id}
+                shopName={shop.name}
+                shopOwnerId={shop.user_id}
+                isOwner={false}
+              />
+            )}
+          </div>
+
+          {/* Right Column - Products */}
+          <div className="md:col-span-2">
+            <ShopProductsSection
+              activeView={productTypeView}
+              onViewChange={setProductTypeView}
+              shopId={shopId}
+              isOwner={isOwner}
+              onPaymentSettingsClick={openPaymentSettings}
+            >
+              {productTypeView === 'all' && (
+                <>
+                  {/* Unified Search Box for All Products */}
+                  <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6">
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                      </div>
+                      <input
+                        type="text"
+                        placeholder="Tìm kiếm tất cả sản phẩm..."
+                        value={allProductsSearch}
+                        onChange={(e) => setAllProductsSearch(e.target.value)}
+                        className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+                      />
+                      {allProductsSearch && (
+                        <button
+                          onClick={() => setAllProductsSearch('')}
+                          className="absolute inset-y-0 right-0 pr-4 flex items-center"
+                        >
+                          <svg className="w-5 h-5 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <SimpleProductsList shopId={shopId} externalSearch={allProductsSearch} hideSearch={true} />
+                  <VariantProductsList shopId={shopId} externalSearch={allProductsSearch} hideSearch={true} />
+                  <DownloadProductsList shopId={shopId} externalSearch={allProductsSearch} hideSearch={true} />
+                </>
+              )}
+              {productTypeView === 'simple' && <SimpleProductsList shopId={shopId} />}
+              {productTypeView === 'variant' && <VariantProductsList shopId={shopId} />}
+              {productTypeView === 'download' && <DownloadProductsList shopId={shopId} />}
+            </ShopProductsSection>
           </div>
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 py-8">
-        <div className="grid md:grid-cols-3 gap-8">
-          {/* Main Content */}
-          <div className="md:col-span-2 space-y-6">
-            {/* Quick Actions for Owner */}
-            {isOwner && (
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">Quick Actions</h2>
-                <div className="grid grid-cols-2 gap-3">
-                  <Link
-                    href={`/shops/${shop.id}/posts/create`}
-                    className="flex items-center justify-center gap-2 px-4 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-colors"
+      {/* Shop Message Modal - For Initial Message */}
+      {shop && (
+        <ShopMessageModal
+          shopId={shop.id}
+          shopName={shop.name}
+          shopOwnerId={shop.user_id}
+          isOpen={isMessageModalOpen}
+          onClose={() => setIsMessageModalOpen(false)}
+        />
+      )}
+
+      {/* Payment Settings Modal */}
+      {isPaymentSettingsOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-3 md:p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-indigo-500 to-purple-600 px-6 py-4 flex items-center justify-between">
+              <h2 className="text-xl md:text-2xl font-bold text-white">Cài đặt thanh toán</h2>
+              <button
+                onClick={() => setIsPaymentSettingsOpen(false)}
+                className="p-2 hover:bg-white/20 rounded-xl transition-colors"
+              >
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="p-4 md:p-6 space-y-4 md:space-y-6 overflow-y-auto max-h-[calc(90vh-80px)]">
+              {/* Bank Details Section */}
+              <div className="space-y-4">
+                <h3 className="text-base md:text-lg font-bold text-gray-900 flex items-center gap-2">
+                  <svg className="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                  </svg>
+                  Thông tin tài khoản ngân hàng
+                </h3>
+
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Tên ngân hàng</label>
+                    <input
+                      type="text"
+                      value={paymentFormData.bank_name}
+                      onChange={(e) => setPaymentFormData(prev => ({ ...prev, bank_name: e.target.value }))}
+                      placeholder="VD: Vietcombank, Techcombank"
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Số tài khoản</label>
+                    <input
+                      type="text"
+                      value={paymentFormData.account_number}
+                      onChange={(e) => setPaymentFormData(prev => ({ ...prev, account_number: e.target.value }))}
+                      placeholder="VD: 1234567890"
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Tên chủ tài khoản</label>
+                  <input
+                    type="text"
+                    value={paymentFormData.account_holder}
+                    onChange={(e) => setPaymentFormData(prev => ({ ...prev, account_holder: e.target.value }))}
+                    placeholder="Họ tên đầy đủ của bạn"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                  />
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">UPI ID (Tùy chọn)</label>
+                    <input
+                      type="text"
+                      value={paymentFormData.upi_id}
+                      onChange={(e) => setPaymentFormData(prev => ({ ...prev, upi_id: e.target.value }))}
+                      placeholder="your@upi"
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Số điện thoại (Tùy chọn)</label>
+                    <input
+                      type="tel"
+                      value={paymentFormData.phone}
+                      onChange={(e) => setPaymentFormData(prev => ({ ...prev, phone: e.target.value }))}
+                      placeholder="+84..."
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* QR Code Section */}
+              <div className="border-t-2 border-gray-100 pt-4 md:pt-6">
+                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                  <h3 className="text-base md:text-lg font-bold text-gray-900 flex items-center gap-2">
+                    <svg className="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2m0 0l-3 5m3-5l3 5m-3-5h6m-6 5h6" />
+                    </svg>
+                    Mã QR thanh toán
+                  </h3>
+                  <button
+                    onClick={generateQRCode}
+                    className="inline-flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white rounded-xl font-semibold text-sm transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105"
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                     </svg>
-                    Create Post
-                  </Link>
-                  <Link
-                    href={`/shops/${shop.id}/posts/create`}
-                    className="flex items-center justify-center gap-2 px-4 py-3 bg-teal-600 hover:bg-teal-700 text-white rounded-lg font-medium transition-colors"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    Create Page
-                  </Link>
-                  <Link
-                    href={`/shops/${shop.id}/posts`}
-                    className="flex items-center justify-center gap-2 px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    Manage Posts
-                  </Link>
-                  <Link
-                    href="/my-shops"
-                    className="flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                    </svg>
-                    My Shops
-                  </Link>
+                    Tạo mã QR
+                  </button>
                 </div>
-              </div>
-            )}
 
-            {/* Posts & Pages Section */}
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-gray-900">
-                  {filterType === 'post' ? 'Posts' : filterType === 'page' ? 'Pages' : 'Posts & Pages'}
-                </h2>
-                <div className="flex items-center gap-2">
-                  <select
-                    value={filterType}
-                    onChange={(e) => setFilterType(e.target.value as 'all' | 'post' | 'page')}
-                    className="text-sm border border-gray-300 rounded-md px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="all">All</option>
-                    <option value="post">Posts Only</option>
-                    <option value="page">Pages Only</option>
-                  </select>
-                  {isOwner && (
-                    <Link
-                      href={`/shops/${shop.id}/posts`}
-                      className="text-blue-600 hover:text-blue-700 font-medium text-sm whitespace-nowrap"
-                    >
-                      Manage →
-                    </Link>
-                  )}
-                </div>
+                {generatedQR && (
+                  <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-4 md:p-6 flex items-center justify-center mt-4">
+                    <img
+                      src={generatedQR}
+                      alt="Mã QR thanh toán"
+                      className="max-w-[180px] md:max-w-[280px] max-h-[180px] md:max-h-[280px] object-contain shadow-lg rounded-xl"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
+                    />
+                  </div>
+                )}
               </div>
 
-              {allPosts.length === 0 ? (
-                <div className="text-center py-12">
-                  <svg className="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-4 md:p-5">
+                <p className="text-sm text-blue-900 font-medium mb-2">
+                  <svg className="w-4 h-4 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <p className="text-gray-500 text-lg mb-2">No {filterType === 'all' ? 'content' : filterType + 's'} yet</p>
-                  {isOwner && (
-                    <Link
-                      href={`/shops/${shop.id}/posts/create`}
-                      className="mt-4 inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
-                    >
-                      <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                      </svg>
-                      Create your first {filterType === 'page' ? 'page' : 'post'}
-                    </Link>
-                  )}
-                </div>
-              ) : (
-                <div className="space-y-8">
-                  {allPosts.map((post) => (
-                    <article key={post.id} className="border-b border-gray-200 pb-8 last:border-0 last:pb-0">
-                      {/* Post Header */}
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <h2 className="text-2xl font-bold text-gray-900">{post.title}</h2>
-                            <span className={`px-2.5 py-1 text-xs font-semibold rounded-full ${
-                              post.type === 'post' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'
-                            }`}>
-                              {post.type.toUpperCase()}
-                            </span>
-                            {post.status && (
-                              <span className={`px-2.5 py-1 text-xs font-semibold rounded-full ${
-                                post.status === 'published'
-                                  ? 'bg-green-100 text-green-800'
-                                  : 'bg-yellow-100 text-yellow-800'
-                              }`}>
-                                {post.status.toUpperCase()}
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-4 text-sm text-gray-500">
-                            <span className="flex items-center gap-1">
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                              </svg>
-                              {post.view_count} views
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                              </svg>
-                              {new Date(post.created_at).toLocaleDateString('en-US', {
-                                year: 'numeric',
-                                month: 'long',
-                                day: 'numeric'
-                              })}
-                            </span>
-                            {post.author && (
-                              <span className="flex items-center gap-1">
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                </svg>
-                                {post.author.display_name || post.author.name}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        {isOwner && (
-                          <div className="flex gap-2 ml-4">
-                            <Link
-                              href={`/shops/${shopId}/posts/${post.id}/edit`}
-                              className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                              </svg>
-                              Edit
-                            </Link>
-                          </div>
-                        )}
-                      </div>
+                  VietQR cho phép khách hàng quét và chuyển tiền trực tiếp vào tài khoản ngân hàng của bạn.
+                </p>
+                <p className="text-xs md:text-sm text-blue-800">
+                  Ngân hàng hỗ trợ: Vietcombank, Techcombank, Agribank, TPBank, MB Bank, ACB, BIDV, VIB, SCB, Sacombank, SeABank, Eximbank, VPBank, VietinBank và nhiều hơn nữa.
+                </p>
+              </div>
 
-                      {/* Featured Images Gallery */}
-                      {post.featured_images && post.featured_images.length > 0 && (
-                        <div className="mb-6">
-                          {post.featured_images.length === 1 ? (
-                            // Single image - full width
-                            <img
-                              src={`${process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '')}/storage/shop_posts/${post.featured_images[0]}`}
-                              alt={post.title}
-                              className="w-full h-auto max-h-96 object-cover rounded-lg shadow-md"
-                            />
-                          ) : (
-                            // Multiple images - grid layout
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                              {post.featured_images.map((imagePath, imgIndex) => (
-                                <img
-                                  key={imgIndex}
-                                  src={`${process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '')}/storage/shop_posts/${imagePath}`}
-                                  alt={`${post.title} - Image ${imgIndex + 1}`}
-                                  className="w-full h-48 object-cover rounded-lg shadow-md hover:shadow-lg transition-shadow cursor-pointer"
-                                  onClick={() => {
-                                    // Open in new tab for full view
-                                    window.open(
-                                      `${process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '')}/storage/shop_posts/${imagePath}`,
-                                      '_blank'
-                                    );
-                                  }}
-                                />
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Price Range */}
-                      {post.price_range && (
-                        <div className="mb-6">
-                          <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-50 border border-green-200 rounded-lg">
-                            <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            <span className="text-green-800 font-semibold">
-                              {post.price_range}
-                            </span>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Post Content */}
-                      {post.content && (
-                        <div className="prose prose-lg max-w-none">
-                          <div className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-                            {post.content}
-                          </div>
-                        </div>
-                      )}
-                    </article>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Contact Information */}
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">Contact Information</h2>
-              <div className="space-y-3">
-                {shop.address && (
-                  <div className="flex items-start gap-3">
-                    <svg className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                    <div>
-                      <p className="text-gray-900 font-medium">Address</p>
-                      <p className="text-gray-600 text-sm">
-                        {shop.address}
-                        {shop.city && <><br />{shop.city}</>}
-                        {shop.state && `, ${shop.state}`}
-                        {shop.postal_code && ` ${shop.postal_code}`}
-                        {shop.country && <><br />{shop.country}</>}
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {shop.phone && (
-                  <div className="flex items-start gap-3">
-                    <svg className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                    </svg>
-                    <div>
-                      <p className="text-gray-900 font-medium">Phone</p>
-                      <a href={`tel:${shop.phone}`} className="text-blue-600 hover:underline text-sm">
-                        {shop.phone}
-                      </a>
-                    </div>
-                  </div>
-                )}
-
-                {shop.email && (
-                  <div className="flex items-start gap-3">
-                    <svg className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                    </svg>
-                    <div>
-                      <p className="text-gray-900 font-medium">Email</p>
-                      <a href={`mailto:${shop.email}`} className="text-blue-600 hover:underline text-sm">
-                        {shop.email}
-                      </a>
-                    </div>
-                  </div>
-                )}
-
-                {shop.website && (
-                  <div className="flex items-start gap-3">
-                    <svg className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
-                    </svg>
-                    <div>
-                      <p className="text-gray-900 font-medium">Website</p>
-                      <a href={shop.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm break-all">
-                        {shop.website}
-                      </a>
-                    </div>
-                  </div>
-                )}
-
-                {!shop.address && !shop.phone && !shop.email && !shop.website && (
-                  <p className="text-gray-500 text-sm text-center py-4">No contact information available</p>
-                )}
+              {/* Action Buttons */}
+              <div className="flex flex-col-reverse md:flex-row items-center justify-end gap-3 pt-4 border-t-2 border-gray-100">
+                <button
+                  onClick={() => setIsPaymentSettingsOpen(false)}
+                  className="w-full md:w-auto px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold text-sm hover:bg-gray-50 transition-all"
+                >
+                  Hủy
+                </button>
+                <button
+                  onClick={savePaymentSettings}
+                  disabled={savingPaymentSettings}
+                  className="w-full md:w-auto px-6 py-3 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 disabled:from-gray-400 disabled:to-gray-500 text-white rounded-xl font-semibold text-sm transition-all duration-300 shadow-lg hover:shadow-xl disabled:shadow-none"
+                >
+                  {savingPaymentSettings ? 'Đang lưu...' : 'Lưu cài đặt'}
+                </button>
               </div>
             </div>
-
-            {/* Shop Owner */}
-            {shop.owner && (
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">Shop Owner</h2>
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg">
-                    {shop.owner.display_name?.charAt(0).toUpperCase() || 'U'}
-                  </div>
-                  <div>
-                    <p className="font-medium text-gray-900">{shop.owner.display_name || shop.owner.name}</p>
-                    <p className="text-sm text-gray-600">@{shop.owner.username}</p>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

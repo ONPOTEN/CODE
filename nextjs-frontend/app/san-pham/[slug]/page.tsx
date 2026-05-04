@@ -10,7 +10,7 @@ interface ProductPageProps {
 export default async function ProductPage({ params }: ProductPageProps) {
   const { slug } = await params;
 
-  // Fetch all products and find by slug (WordPress API limitation)
+  // Lấy tất cả sản phẩm và tìm theo slug (hạn chế của API WordPress)
   const products = await getProducts({ per_page: 100 }) as Product[];
   const product = products.find(p => p.slug === slug);
 
@@ -29,9 +29,9 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
   return (
     <div className="container py-6">
-      <div className="bg-white rounded-sm shadow-sm p-6">
+      <div className="bg-grey-200 rounded-sm shadow-sm p-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* Product Images */}
+          {/* Hình ảnh sản phẩm */}
           <div>
             <div className="relative aspect-square mb-4">
               <Image
@@ -43,11 +43,11 @@ export default async function ProductPage({ params }: ProductPageProps) {
               />
             </div>
 
-            {/* Thumbnail Gallery */}
+            {/* Thư viện hình ảnh thu nhỏ */}
             {product.images.length > 1 && (
               <div className="grid grid-cols-5 gap-2">
                 {product.images.slice(0, 5).map((image, index) => (
-                  <div key={image.id} className="relative aspect-square border border-gray-200 rounded-sm overflow-hidden cursor-pointer hover:border-primary">
+                  <div key={image.id} className="relative aspect-square border border-gray-300 rounded-sm overflow-hidden cursor-pointer hover:border-primary">
                     <Image
                       src={image.src}
                       alt={`${product.name} ${index + 1}`}
@@ -60,11 +60,11 @@ export default async function ProductPage({ params }: ProductPageProps) {
             )}
           </div>
 
-          {/* Product Info */}
+          {/* Thông tin sản phẩm */}
           <div>
             <h1 className="text-2xl font-medium mb-4">{product.name}</h1>
 
-            {/* Rating */}
+            {/* Đánh giá */}
             {product.rating_count > 0 && (
               <div className="flex items-center gap-4 mb-4 text-sm">
                 <div className="flex items-center">
@@ -75,8 +75,8 @@ export default async function ProductPage({ params }: ProductPageProps) {
               </div>
             )}
 
-            {/* Price */}
-            <div className="bg-gray-50 p-5 mb-6 rounded-sm">
+            {/* Giá */}
+            <div className="bg-white p-5 mb-6 rounded-sm">
               <div className="flex items-baseline gap-3">
                 <span className="text-3xl text-primary font-medium">
                   {parseInt(product.price).toLocaleString('vi-VN')}đ
@@ -86,7 +86,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
                     <span className="text-lg text-gray-500 line-through">
                       {parseInt(product.regular_price).toLocaleString('vi-VN')}đ
                     </span>
-                    <span className="bg-primary text-white px-2 py-1 rounded-sm text-sm">
+                    <span className="bg-primary text-gray-900 px-2 py-1 rounded-sm text-sm">
                       -{discount}%
                     </span>
                   </>
@@ -94,7 +94,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
               </div>
             </div>
 
-            {/* Attributes/Variations */}
+            {/* Thuộc tính/Biến thể */}
             {product.attributes.length > 0 && (
               <div className="mb-6">
                 {product.attributes.map((attr) => (
@@ -117,19 +117,19 @@ export default async function ProductPage({ params }: ProductPageProps) {
               </div>
             )}
 
-            {/* Stock Status */}
+            {/* Trạng thái tồn kho */}
             <div className="mb-6">
               <span className={`text-sm ${product.stock_status === 'instock' ? 'text-green-600' : 'text-red-600'}`}>
                 {product.stock_status === 'instock' ? '✓ Còn hàng' : '✗ Hết hàng'}
               </span>
             </div>
 
-            {/* Add to Cart */}
+            {/* Thêm vào giỏ hàng */}
             <AddToCartButton product={product} />
 
-            {/* Description */}
-            <div className="mt-8 pt-8 border-t border-gray-200">
-              <h3 className="text-lg font-medium mb-4 uppercase text-gray-700 bg-gray-100 p-4">
+            {/* Mô tả */}
+            <div className="mt-8 pt-8 border-t border-gray-300">
+              <h3 className="text-lg font-medium mb-4 uppercase text-gray-700 bg-blue-500 p-4">
                 Chi tiết sản phẩm
               </h3>
               <div

@@ -1,0 +1,222 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { useAuth } from '@/contexts/AuthContext';
+import { orders, ApiException } from '@/lib/api';
+
+interface Order {
+  id: number;
+  order_number: string;
+  total_amount: number;
+  status: 'pending' | 'processing' | 'completed' | 'cancelled';
+  created_at: string;
+  updated_at: string;
+  items_count?: number;
+  subtotal?: number;
+  tax?: number;
+  shipping_fee?: number;
+  discount?: number;
+  items?: any[];
+}
+
+export default function MyOrdersPage() {
+  const [ordersList, setOrdersList] = useState<Order[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [filterStatus, setFilterStatus] = useState<string>('');
+
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      router.push('/login');
+    }
+  }, [isAuthenticated, authLoading, router]);
+
+  useEffect(() => {
+    async function fetchMyOrders() {
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        const response = await orders.myOrders({ status: filterStatus || undefined });
+        setOrdersList(response.data || response);
+      } catch (err) {
+        let errorMsg = 'Không thể tải đơn hàng';
+        if (err instanceof ApiException) {
+          errorMsg = err.message;
+        } else if (err instanceof Error) {
+          errorMsg = err.message;
+        }
+        setError(errorMsg);
+        console.error('Fetch orders error:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    if (!authLoading && isAuthenticated) {
+      fetchMyOrders();
+    }
+  }, [authLoading, isAuthenticated, filterStatus]);
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return 'bg-blue-500 text-green-800';
+      case 'processing':
+        return 'bg-blue-500 text-blue-800';
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'cancelled':
+        return 'bg-blue-500 text-red-800';
+      default:
+        return 'bg-blue-500 text-gray-800';
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return 'Hoàn thành';
+      case 'processing':
+        return 'Đang xử lý';
+      case 'pending':
+        return 'Chờ xử lý';
+      case 'cancelled':
+        return 'Đã hủy';
+      default:
+        return status;
+    }
+  };
+
+  if (authLoading || isLoading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <p>Đang tải...</p>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return null;
+  }
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <div className="max-w-6xl mx-auto">
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold">Đơn hàng của tôi</h1>
+        </div>
+
+        {/* Filter */}
+        <div className="bg-grey-200 rounded-lg shadow-sm p-4 mb-6">
+          <div>
+            <label htmlFor="filterStatus" className="block text-sm font-medium text-gray-700 mb-2">
+              Lọc theo trạng thái
+            </label>
+            <select
+              id="filterStatus"
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Tất cả trạng thái</option>
+              <option value="pending">Chờ xử lý</option>
+              <option value="processing">Đang xử lý</option>
+              <option value="completed">Hoàn thành</option>
+              <option value="cancelled">Đã hủy</option>
+            </select>
+          </div>
+        </div>
+
+        {error && (
+          <div className="bg-blue-500 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
+            {error}
+          </div>
+        )}
+
+        {ordersList.length === 0 ? (
+          <div className="bg-grey-200 rounded-lg shadow-sm p-8 text-center">
+            <p className="text-gray-600 mb-4">Bạn chưa có đơn hàng nào.</p>
+            <Link
+              href="/san-pham"
+              className="inline-block bg-blue-500 hover:bg-blue-700 text-gray-900 font-medium py-2 px-6 rounded transition-colors"
+            >
+              Bắt đầu mua sắm
+            </Link>
+          </div>
+        ) : (
+          <div className="bg-grey-200 rounded-lg shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-white">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Mã đơn hàng
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Sản phẩm
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Tổng tiền
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Trạng thái
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Ngày
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Thao tác
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-grey-200 divide-y divide-gray-200">
+                  {ordersList.map((order) => (
+                    <tr key={order.id} className="hover:bg-white">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">{order.order_number}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="text-sm text-gray-600">{order.items_count} sản phẩm</span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="text-sm font-medium text-gray-900">
+                          ₫{order.total_amount.toLocaleString('vi-VN')}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(order.status)}`}>
+                          {getStatusLabel(order.status)}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {new Date(order.created_at).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <Link
+                          href={`/my-orders/${order.id}`}
+                          className="text-blue-600 hover:text-blue-900"
+                        >
+                          Xem chi tiết
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        <div className="mt-6 text-center text-sm text-gray-600">
+          Tổng cộng: {ordersList.length} đơn hàng
+        </div>
+      </div>
+    </div>
+  );
+}

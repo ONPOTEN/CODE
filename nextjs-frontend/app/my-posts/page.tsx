@@ -37,9 +37,9 @@ export default function MyPostsPage() {
         setPostsList(response.data);
       } catch (err) {
         if (err instanceof ApiException) {
-          setError(`Error: ${err.message}`);
+          setError(`Lỗi: ${err.message}`);
         } else {
-          setError('Failed to fetch posts');
+          setError('Không thể tải bài viết');
         }
         console.error('Fetch posts error:', err);
       } finally {
@@ -53,7 +53,7 @@ export default function MyPostsPage() {
   }, [authLoading, isAuthenticated, filterStatus, filterType]);
 
   const handleDelete = async (postId: number) => {
-    if (!confirm('Are you sure you want to delete this post? This action cannot be undone.')) {
+    if (!confirm('Bạn có chắc chắn muốn xóa bài viết này? Hành động này không thể hoàn tác.')) {
       return;
     }
 
@@ -63,9 +63,9 @@ export default function MyPostsPage() {
       setPostsList(postsList.filter((post) => post.id !== postId));
     } catch (err) {
       if (err instanceof ApiException) {
-        alert(`Failed to delete: ${err.message}`);
+        alert(`Xóa thất bại: ${err.message}`);
       } else {
-        alert('Failed to delete post');
+        alert('Xóa bài viết thất bại');
       }
       console.error('Delete error:', err);
     } finally {
@@ -76,7 +76,7 @@ export default function MyPostsPage() {
   if (authLoading || isLoading) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <p>Loading...</p>
+        <p>Đang tải...</p>
       </div>
     );
   }
@@ -89,21 +89,21 @@ export default function MyPostsPage() {
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-6xl mx-auto">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold">My Posts</h1>
+          <h1 className="text-3xl font-bold">Bài viết của tôi</h1>
           <Link
             href="/posts/create"
-            className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded transition-colors"
+            className="bg-blue-500 hover:bg-blue-700 text-gray-900 font-medium py-2 px-6 rounded transition-colors"
           >
-            Create New Post
+            Tạo bài viết mới
           </Link>
         </div>
 
         {/* Filters */}
-        <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
+        <div className="bg-grey-200 rounded-lg shadow-sm p-4 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label htmlFor="filterStatus" className="block text-sm font-medium text-gray-700 mb-2">
-                Filter by Status
+                Lọc theo trạng thái
               </label>
               <select
                 id="filterStatus"
@@ -111,16 +111,16 @@ export default function MyPostsPage() {
                 onChange={(e) => setFilterStatus(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <option value="">All Statuses</option>
-                <option value="publish">Published</option>
-                <option value="draft">Draft</option>
-                <option value="pending">Pending</option>
+                <option value="">Tất cả trạng thái</option>
+                <option value="publish">Đã đăng</option>
+                <option value="draft">Bản nháp</option>
+                <option value="pending">Chờ duyệt</option>
               </select>
             </div>
 
             <div>
               <label htmlFor="filterType" className="block text-sm font-medium text-gray-700 mb-2">
-                Filter by Type
+                Lọc theo loại
               </label>
               <select
                 id="filterType"
@@ -128,57 +128,57 @@ export default function MyPostsPage() {
                 onChange={(e) => setFilterType(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <option value="">All Types</option>
-                <option value="post">Post</option>
-                <option value="page">Page</option>
-                <option value="product">Product</option>
+                <option value="">Tất cả loại</option>
+                <option value="post">Bài viết</option>
+                <option value="page">Trang</option>
+                <option value="product">Sản phẩm</option>
               </select>
             </div>
           </div>
         </div>
 
         {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
+          <div className="bg-blue-500 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
             {error}
           </div>
         )}
 
         {postsList.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-sm p-8 text-center">
-            <p className="text-gray-600 mb-4">You haven't created any posts yet.</p>
+          <div className="bg-grey-200 rounded-lg shadow-sm p-8 text-center">
+            <p className="text-gray-600 mb-4">Bạn chưa tạo bài viết nào.</p>
             <Link
               href="/posts/create"
-              className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded transition-colors"
+              className="inline-block bg-blue-500 hover:bg-blue-700 text-gray-900 font-medium py-2 px-6 rounded transition-colors"
             >
-              Create Your First Post
+              Tạo bài viết đầu tiên
             </Link>
           </div>
         ) : (
-          <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+          <div className="bg-grey-200 rounded-lg shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+                <thead className="bg-white">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Title
+                      Tiêu đề
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Type
+                      Loại
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
+                      Trạng thái
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Created
+                      Ngày tạo
                     </th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
+                      Thao tác
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-grey-200 divide-y divide-gray-200">
                   {postsList.map((post) => (
-                    <tr key={post.id} className="hover:bg-gray-50">
+                    <tr key={post.id} className="hover:bg-white">
                       <td className="px-6 py-4">
                         <div className="flex items-center">
                           {post.featured_image && (
@@ -199,7 +199,7 @@ export default function MyPostsPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-500 text-blue-800">
                           {post.type}
                         </span>
                       </td>
@@ -207,9 +207,9 @@ export default function MyPostsPage() {
                         <span
                           className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                             post.status === 'publish'
-                              ? 'bg-green-100 text-green-800'
+                              ? 'bg-blue-500 text-green-800'
                               : post.status === 'draft'
-                              ? 'bg-gray-100 text-gray-800'
+                              ? 'bg-blue-500 text-gray-800'
                               : 'bg-yellow-100 text-yellow-800'
                           }`}
                         >
@@ -224,14 +224,14 @@ export default function MyPostsPage() {
                           href={`/posts/edit/${post.id}`}
                           className="text-blue-600 hover:text-blue-900 mr-4"
                         >
-                          Edit
+                          Sửa
                         </Link>
                         <button
                           onClick={() => handleDelete(post.id)}
                           disabled={deleteLoading === post.id}
                           className="text-red-600 hover:text-red-900 disabled:opacity-50"
                         >
-                          {deleteLoading === post.id ? 'Deleting...' : 'Delete'}
+                          {deleteLoading === post.id ? 'Đang xóa...' : 'Xóa'}
                         </button>
                       </td>
                     </tr>
@@ -243,7 +243,7 @@ export default function MyPostsPage() {
         )}
 
         <div className="mt-6 text-center text-sm text-gray-600">
-          Total: {postsList.length} post{postsList.length !== 1 ? 's' : ''}
+          Tổng cộng: {postsList.length} bài viết
         </div>
       </div>
     </div>

@@ -51,7 +51,35 @@ class ShopController extends Controller
             'phone' => 'nullable|string|max:20',
             'email' => 'nullable|email|max:255',
             'website' => 'nullable|url|max:255',
+            'logo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'banner' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
+            'image_1' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
+            'image_2' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
+            'image_3' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
+            'image_4' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
+            'image_5' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
         ]);
+
+        // Handle logo upload - store relative path, ShopResource will convert to URL
+        if ($request->hasFile('logo')) {
+            $logoPath = $request->file('logo')->store('shops/logos', 's3');
+            $validated['logo'] = $logoPath;
+        }
+
+        // Handle banner upload - store relative path, ShopResource will convert to URL
+        if ($request->hasFile('banner')) {
+            $bannerPath = $request->file('banner')->store('shops/banners', 's3');
+            $validated['banner'] = $bannerPath;
+        }
+
+        // Handle 5 image uploads - store relative paths, ShopResource will convert to URLs
+        for ($i = 1; $i <= 5; $i++) {
+            $imageKey = 'image_' . $i;
+            if ($request->hasFile($imageKey)) {
+                $imagePath = $request->file($imageKey)->store('shops/images', 's3');
+                $validated[$imageKey] = $imagePath;
+            }
+        }
 
         $slug = Str::slug($validated['name']);
         $originalSlug = $slug;
@@ -103,7 +131,35 @@ class ShopController extends Controller
             'email' => 'nullable|email|max:255',
             'website' => 'nullable|url|max:255',
             'status' => 'sometimes|in:active,inactive,pending',
+            'logo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'banner' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
+            'image_1' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
+            'image_2' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
+            'image_3' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
+            'image_4' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
+            'image_5' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
         ]);
+
+        // Handle logo upload - store relative path, ShopResource will convert to URL
+        if ($request->hasFile('logo')) {
+            $logoPath = $request->file('logo')->store('shops/logos', 's3');
+            $validated['logo'] = $logoPath;
+        }
+
+        // Handle banner upload - store relative path, ShopResource will convert to URL
+        if ($request->hasFile('banner')) {
+            $bannerPath = $request->file('banner')->store('shops/banners', 's3');
+            $validated['banner'] = $bannerPath;
+        }
+
+        // Handle 5 image uploads - store relative paths, ShopResource will convert to URLs
+        for ($i = 1; $i <= 5; $i++) {
+            $imageKey = 'image_' . $i;
+            if ($request->hasFile($imageKey)) {
+                $imagePath = $request->file($imageKey)->store('shops/images', 's3');
+                $validated[$imageKey] = $imagePath;
+            }
+        }
 
         if (isset($validated['name']) && $validated['name'] !== $shop->name) {
             $slug = Str::slug($validated['name']);

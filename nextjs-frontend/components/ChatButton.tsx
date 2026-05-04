@@ -7,9 +7,10 @@ import { chat } from '@/lib/api';
 interface ChatButtonProps {
   userId: number;
   userName: string;
+  className?: string;
 }
 
-export default function ChatButton({ userId, userName }: ChatButtonProps) {
+export default function ChatButton({ userId, userName, className = '' }: ChatButtonProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
@@ -30,7 +31,7 @@ export default function ChatButton({ userId, userName }: ChatButtonProps) {
     <button
       onClick={handleStartChat}
       disabled={loading}
-      className="inline-flex items-center gap-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+      className={`inline-flex items-center gap-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-gray-900 rounded-lg font-medium transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed ${className}`}
     >
       {loading ? (
         <>

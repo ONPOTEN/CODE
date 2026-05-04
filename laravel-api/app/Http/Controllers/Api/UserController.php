@@ -49,6 +49,108 @@ class UserController extends Controller
     }
 
     /**
+     * Get user by nickname
+     */
+    public function byNickname(Request $request, $nickname)
+    {
+        $user = WpUser::where('user_nicename', $nickname)->firstOrFail();
+
+        return response()->json([
+            'user_id' => $user->ID,
+            'user_login' => $user->user_login,
+            'user_email' => $user->user_email,
+            'user_nicename' => $user->user_nicename,
+            'display_name' => $user->display_name,
+        ]);
+    }
+
+    /**
+     * Get user by phone number (query parameter version - PREFERRED)
+     * Uses query parameter instead of URL path to avoid encoding issues with '+'
+     * Example: /api/v1/users/by-phone?phone=%2B840867631313
+     */
+    public function byPhoneQuery(Request $request)
+    {
+        $phone = $request->query('phone');
+
+        if (!$phone) {
+            return response()->json([
+                'message' => 'Phone number is required. Use: /api/v1/users/by-phone?phone=+840867631313',
+            ], 400);
+        }
+
+        \Log::info('[UserController] byPhoneQuery lookup', [
+            'phone_from_query' => $phone,
+        ]);
+
+        // Use the model's findByPhone helper which handles normalization
+        $user = WpUser::findByPhone($phone);
+
+        if (!$user) {
+            \Log::warning('[UserController] User not found by phone', [
+                'phone' => $phone,
+            ]);
+
+            return response()->json([
+                'message' => 'User not found with phone: ' . $phone,
+            ], 404);
+        }
+
+        \Log::info('[UserController] User found by phone', [
+            'phone' => $phone,
+            'user_id' => $user->ID,
+        ]);
+
+        return response()->json([
+            'user_id' => $user->ID,
+            'user_login' => $user->user_login,
+            'user_email' => $user->user_email,
+            'user_nicename' => $user->user_nicename,
+            'display_name' => $user->display_name,
+            'phone' => $user->phone,
+            'firebase_uid' => $user->firebase_uid, // Required for phone+password login
+        ]);
+    }
+
+    /**
+     * Get user by phone number (path parameter version - LEGACY)
+     * Kept for backward compatibility but not recommended for '+' in phone numbers
+     * Example: /api/v1/users/by-phone/840867631313
+     */
+    public function byPhone(Request $request, $phone)
+    {
+        // Phone number comes URL-encoded from the route parameter
+        // Laravel automatically decodes %2B to +
+        // Use the model's findByPhone helper which handles normalization
+
+        \Log::info('[UserController] byPhone (legacy) lookup', [
+            'phone_from_path' => $phone,
+        ]);
+
+        $user = WpUser::findByPhone($phone);
+
+        if (!$user) {
+            \Log::warning('[UserController] User not found by phone (legacy)', [
+                'phone' => $phone,
+            ]);
+
+            return response()->json([
+                'message' => 'User not found with phone: ' . $phone,
+            ], 404);
+        }
+
+        return response()->json([
+            'user_id' => $user->ID,
+            'user_login' => $user->user_login,
+            'user_email' => $user->user_email,
+            'user_nicename' => $user->user_nicename,
+            'display_name' => $user->display_name,
+            'phone' => $user->phone,
+            'firebase_uid' => $user->firebase_uid, // Required for phone+password login
+        ]);
+    }
+
+    /**
      * Search users by name for autocomplete
      */
     public function search(Request $request)
@@ -74,21 +176,49 @@ class UserController extends Controller
     {
         $user = $request->user();
 
+        // Check if phone is being submitted - reject if it is
+        if ($request->has('phone')) {
+            return response()->json([
+                'message' => 'Phone number cannot be changed',
+                'error' => 'Phone number is locked for security. Contact support to change your phone number.',
+            ], 422);
+        }
+
         $validated = $request->validate([
+            'user_login' => 'sometimes|string|max:60|unique:wp_users,user_login,' . $user->ID . ',ID|regex:/^[a-zA-Z0-9_-]+$/',
             'display_name' => 'sometimes|string|max:250',
             'user_email' => 'sometimes|email|unique:wp_users,user_email,' . $user->ID . ',ID',
             'hobby' => 'sometimes|nullable|string|max:255',
             'company' => 'sometimes|nullable|string|max:255',
+            'occupation' => 'sometimes|nullable|string|max:255',
+            'main_occupation' => 'sometimes|nullable|string|max:255',
             'location' => 'sometimes|nullable|string|max:255',
             // REMOVED: 'role' - Users cannot change their own role
             'profile_visibility' => 'sometimes|nullable|string|in:public,private',
-            'phone' => 'sometimes|nullable|string|max:20',
+            // REMOVED: 'phone' - Users cannot change their phone number
             'email_public' => 'sometimes|boolean',
             'hobby_public' => 'sometimes|boolean',
             'company_public' => 'sometimes|boolean',
+            'occupation_public' => 'sometimes|boolean',
+            'main_occupation_public' => 'sometimes|boolean',
             'location_public' => 'sometimes|boolean',
             'phone_public' => 'sometimes|boolean',
         ]);
+
+        // Handle username change (user_login)
+        if (isset($validated['user_login'])) {
+            $oldUsername = $user->user_login;
+            $user->user_login = $validated['user_login'];
+
+            // Also update user_nicename for consistency (WordPress convention)
+            $user->user_nicename = $validated['user_login'];
+
+            \Log::info('[UserController::updateProfile] Username changed', [
+                'user_id' => $user->ID,
+                'old_username' => $oldUsername,
+                'new_username' => $validated['user_login'],
+            ]);
+        }
 
         if (isset($validated['display_name'])) {
             $user->display_name = $validated['display_name'];
@@ -106,6 +236,14 @@ class UserController extends Controller
             $user->company = $validated['company'];
         }
 
+        if (isset($validated['occupation'])) {
+            $user->occupation = $validated['occupation'];
+        }
+
+        if (isset($validated['main_occupation'])) {
+            $user->main_occupation = $validated['main_occupation'];
+        }
+
         if (isset($validated['location'])) {
             $user->location = $validated['location'];
         }
@@ -116,9 +254,7 @@ class UserController extends Controller
             $user->profile_visibility = $validated['profile_visibility'];
         }
 
-        if (isset($validated['phone'])) {
-            $user->phone = $validated['phone'];
-        }
+        // REMOVED: Phone update logic - Phone number is locked for security
 
         if (isset($validated['email_public'])) {
             $user->email_public = $validated['email_public'];
@@ -132,6 +268,14 @@ class UserController extends Controller
             $user->company_public = $validated['company_public'];
         }
 
+        if (isset($validated['occupation_public'])) {
+            $user->occupation_public = $validated['occupation_public'];
+        }
+
+        if (isset($validated['main_occupation_public'])) {
+            $user->main_occupation_public = $validated['main_occupation_public'];
+        }
+
         if (isset($validated['location_public'])) {
             $user->location_public = $validated['location_public'];
         }
@@ -142,6 +286,12 @@ class UserController extends Controller
 
         $user->save();
 
+        \Log::info('[UserController::updateProfile] Profile updated successfully', [
+            'user_id' => $user->ID,
+            'username' => $user->user_login,
+            'fields_updated' => array_keys($validated),
+        ]);
+
         return new UserResource($user);
     }
 
@@ -150,45 +300,83 @@ class UserController extends Controller
      */
     public function uploadAvatar(Request $request)
     {
-        $user = $request->user();
+        try {
+            $user = $request->user();
 
-        $validated = $request->validate([
-            'avatar' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048', // Max 2MB
-        ]);
+            // Debug: Log the request details
+            \Log::info('Avatar upload request', [
+                'has_file_avatar' => $request->hasFile('avatar'),
+                'all_files' => array_keys($request->allFiles()),
+                'content_type' => $request->header('Content-Type'),
+                'content_length' => $request->header('Content-Length'),
+            ]);
 
-        if ($request->hasFile('avatar')) {
+            // Check if file exists before validation
+            if (!$request->hasFile('avatar')) {
+                \Log::error('Avatar file not found in request');
+                return response()->json([
+                    'message' => 'The avatar field is required.',
+                    'errors' => ['avatar' => ['The avatar field is required.']],
+                ], 422);
+            }
+
+            // Validate the file
+            $validated = $request->validate([
+                'avatar' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048', // Max 2MB
+            ]);
+
             $file = $request->file('avatar');
 
             // Delete old avatar if exists
-            if ($user->avatar && file_exists(public_path('storage/avatars/' . $user->avatar))) {
-                unlink(public_path('storage/avatars/' . $user->avatar));
+            if ($user->avatar) {
+                // Extract filename from either full URL or just filename
+                $oldFilename = $user->avatar;
+                if (strpos($oldFilename, 'http') === 0) {
+                    // If it's a full URL, extract just the filename
+                    $oldFilename = basename($oldFilename);
+                }
+                \Storage::disk('s3')->delete('avatars/' . $oldFilename);
             }
 
-            // Create avatars directory if it doesn't exist
-            if (!file_exists(public_path('storage/avatars'))) {
-                mkdir(public_path('storage/avatars'), 0755, true);
-            }
-
-            // Generate unique filename
+            // Store file using Laravel Storage (handles directory creation)
             $filename = $user->ID . '_' . time() . '.' . $file->getClientOriginalExtension();
+            $path = $file->storeAs('avatars', $filename, 's3');
 
-            // Move file to storage/avatars
-            $file->move(public_path('storage/avatars'), $filename);
+            if (!$path) {
+                \Log::error('Failed to store avatar file');
+                return response()->json([
+                    'message' => 'Failed to save avatar file',
+                ], 500);
+            }
 
-            // Update user avatar
-            $user->avatar = $filename;
+            // Get the full S3 URL
+            $avatarUrl = \Storage::disk('s3')->url('avatars/' . $filename);
+
+            // Update user avatar with full S3 URL
+            $user->avatar = $avatarUrl;
             $user->save();
 
+            \Log::info('Avatar uploaded successfully', ['user_id' => $user->ID, 'filename' => $filename, 'avatar_url' => $avatarUrl]);
+
+            // Return complete user data with avatar_url
             return response()->json([
                 'message' => 'Avatar uploaded successfully',
+                'user' => new \App\Http\Resources\UserResource($user),
                 'avatar' => $filename,
-                'avatar_url' => url('storage/avatars/' . $filename),
+                'avatar_url' => $avatarUrl,
             ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            \Log::error('Avatar validation error', ['errors' => $e->errors()]);
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            \Log::error('Avatar upload error: ' . $e->getMessage(), ['exception' => $e]);
+            return response()->json([
+                'message' => 'Avatar upload failed: ' . $e->getMessage(),
+            ], 500);
         }
-
-        return response()->json([
-            'message' => 'No file uploaded',
-        ], 400);
     }
 
     /**
@@ -350,6 +538,259 @@ class UserController extends Controller
             'message' => count($updatedUsers) . ' user(s) updated successfully',
             'updated_users' => $updatedUsers,
             'errors' => $errors,
+        ]);
+    }
+
+    /**
+     * Reset password via SMS verification (forgot password flow)
+     * Does NOT require current password - SMS verification serves as proof
+     */
+    public function resetPasswordViaSMS(Request $request)
+    {
+        $user = $request->user();
+
+        $validated = $request->validate([
+            'password' => 'required|string|min:6',
+            'password_confirmation' => 'required|string|min:6|same:password',
+        ]);
+
+        // Update password without verifying current password
+        $user->user_pass = password_hash($validated['password'], PASSWORD_BCRYPT);
+        $user->save();
+
+        return response()->json([
+            'message' => 'Password reset successfully via SMS verification',
+            'success' => true,
+        ]);
+    }
+
+    /**
+     * ADMIN ONLY: Create a new user
+     * Only accessible by admin users through admin middleware
+     */
+    public function adminCreateUser(Request $request)
+    {
+        $validated = $request->validate([
+            'username' => 'required|string|max:60|unique:wp_users,user_login|regex:/^[a-zA-Z0-9_-]+$/',
+            'email' => 'required|email|unique:wp_users,user_email',
+            'password' => 'required|string|min:6',
+            'display_name' => 'sometimes|string|max:250',
+            'role' => 'sometimes|string|in:user,admin,moderator,editor',
+            'phone' => 'sometimes|nullable|string|max:20',
+            'hobby' => 'sometimes|nullable|string|max:255',
+            'company' => 'sometimes|nullable|string|max:255',
+            'occupation' => 'sometimes|nullable|string|max:255',
+            'main_occupation' => 'sometimes|nullable|string|max:255',
+            'location' => 'sometimes|nullable|string|max:255',
+            'profile_visibility' => 'sometimes|nullable|string|in:public,private',
+        ]);
+
+        // Create the user
+        $user = new WpUser();
+        $user->user_login = $validated['username'];
+        $user->user_email = $validated['email'];
+        $user->user_pass = password_hash($validated['password'], PASSWORD_BCRYPT);
+        $user->user_nicename = $validated['username'];
+        $user->display_name = $validated['display_name'] ?? $validated['username'];
+        $user->user_registered = now();
+        $user->role = $validated['role'] ?? 'user';
+        $user->profile_visibility = $validated['profile_visibility'] ?? 'public';
+
+        // Optional fields
+        if (isset($validated['phone'])) {
+            $user->phone = $validated['phone'];
+        }
+        if (isset($validated['hobby'])) {
+            $user->hobby = $validated['hobby'];
+        }
+        if (isset($validated['company'])) {
+            $user->company = $validated['company'];
+        }
+        if (isset($validated['occupation'])) {
+            $user->occupation = $validated['occupation'];
+        }
+        if (isset($validated['main_occupation'])) {
+            $user->main_occupation = $validated['main_occupation'];
+        }
+        if (isset($validated['location'])) {
+            $user->location = $validated['location'];
+        }
+
+        $user->save();
+
+        \Log::info('[UserController::adminCreateUser] User created by admin', [
+            'created_by' => $request->user()->ID,
+            'new_user_id' => $user->ID,
+            'username' => $user->user_login,
+        ]);
+
+        return response()->json([
+            'message' => 'User created successfully',
+            'user' => new UserResource($user),
+        ], 201);
+    }
+
+    /**
+     * ADMIN ONLY: Update a user's profile
+     * Only accessible by admin users through admin middleware
+     */
+    public function adminUpdateUser(Request $request, $userId)
+    {
+        $targetUser = WpUser::findOrFail($userId);
+
+        $validated = $request->validate([
+            'username' => 'sometimes|string|max:60|unique:wp_users,user_login,' . $userId . ',ID|regex:/^[a-zA-Z0-9_-]+$/',
+            'email' => 'sometimes|email|unique:wp_users,user_email,' . $userId . ',ID',
+            'password' => 'sometimes|string|min:6',
+            'display_name' => 'sometimes|string|max:250',
+            'role' => 'sometimes|string|in:user,admin,moderator,editor',
+            'phone' => 'sometimes|nullable|string|max:20',
+            'hobby' => 'sometimes|nullable|string|max:255',
+            'company' => 'sometimes|nullable|string|max:255',
+            'occupation' => 'sometimes|nullable|string|max:255',
+            'main_occupation' => 'sometimes|nullable|string|max:255',
+            'location' => 'sometimes|nullable|string|max:255',
+            'profile_visibility' => 'sometimes|nullable|string|in:public,private',
+            'email_public' => 'sometimes|boolean',
+            'hobby_public' => 'sometimes|boolean',
+            'company_public' => 'sometimes|boolean',
+            'occupation_public' => 'sometimes|boolean',
+            'main_occupation_public' => 'sometimes|boolean',
+            'location_public' => 'sometimes|boolean',
+            'phone_public' => 'sometimes|boolean',
+        ]);
+
+        // Prevent admin from changing their own role to non-admin
+        if ($request->user()->ID === $targetUser->ID && isset($validated['role']) && $validated['role'] !== 'admin') {
+            return response()->json([
+                'message' => 'You cannot demote yourself',
+                'errors' => ['role' => ['You cannot change your own role to a lower level']]
+            ], 403);
+        }
+
+        // Update fields
+        if (isset($validated['username'])) {
+            $targetUser->user_login = $validated['username'];
+            $targetUser->user_nicename = $validated['username'];
+        }
+        if (isset($validated['email'])) {
+            $targetUser->user_email = $validated['email'];
+        }
+        if (isset($validated['password'])) {
+            $targetUser->user_pass = password_hash($validated['password'], PASSWORD_BCRYPT);
+        }
+        if (isset($validated['display_name'])) {
+            $targetUser->display_name = $validated['display_name'];
+        }
+        if (isset($validated['role'])) {
+            $targetUser->role = $validated['role'];
+        }
+        if (isset($validated['phone'])) {
+            $targetUser->phone = $validated['phone'];
+        }
+        if (isset($validated['hobby'])) {
+            $targetUser->hobby = $validated['hobby'];
+        }
+        if (isset($validated['company'])) {
+            $targetUser->company = $validated['company'];
+        }
+        if (isset($validated['occupation'])) {
+            $targetUser->occupation = $validated['occupation'];
+        }
+        if (isset($validated['main_occupation'])) {
+            $targetUser->main_occupation = $validated['main_occupation'];
+        }
+        if (isset($validated['location'])) {
+            $targetUser->location = $validated['location'];
+        }
+        if (isset($validated['profile_visibility'])) {
+            $targetUser->profile_visibility = $validated['profile_visibility'];
+        }
+        if (isset($validated['email_public'])) {
+            $targetUser->email_public = $validated['email_public'];
+        }
+        if (isset($validated['hobby_public'])) {
+            $targetUser->hobby_public = $validated['hobby_public'];
+        }
+        if (isset($validated['company_public'])) {
+            $targetUser->company_public = $validated['company_public'];
+        }
+        if (isset($validated['occupation_public'])) {
+            $targetUser->occupation_public = $validated['occupation_public'];
+        }
+        if (isset($validated['main_occupation_public'])) {
+            $targetUser->main_occupation_public = $validated['main_occupation_public'];
+        }
+        if (isset($validated['location_public'])) {
+            $targetUser->location_public = $validated['location_public'];
+        }
+        if (isset($validated['phone_public'])) {
+            $targetUser->phone_public = $validated['phone_public'];
+        }
+
+        $targetUser->save();
+
+        \Log::info('[UserController::adminUpdateUser] User updated by admin', [
+            'updated_by' => $request->user()->ID,
+            'target_user_id' => $targetUser->ID,
+            'username' => $targetUser->user_login,
+            'fields_updated' => array_keys($validated),
+        ]);
+
+        return response()->json([
+            'message' => 'User updated successfully',
+            'user' => new UserResource($targetUser),
+        ]);
+    }
+
+    /**
+     * ADMIN ONLY: Delete a user
+     * Only accessible by admin users through admin middleware
+     */
+    public function adminDeleteUser(Request $request, $userId)
+    {
+        $targetUser = WpUser::findOrFail($userId);
+
+        // Prevent admin from deleting themselves
+        if ($request->user()->ID === $targetUser->ID) {
+            return response()->json([
+                'message' => 'You cannot delete your own account',
+            ], 403);
+        }
+
+        $username = $targetUser->user_login;
+        $email = $targetUser->user_email;
+
+        // Delete the user
+        $targetUser->delete();
+
+        \Log::info('[UserController::adminDeleteUser] User deleted by admin', [
+            'deleted_by' => $request->user()->ID,
+            'deleted_user_id' => $userId,
+            'deleted_username' => $username,
+            'deleted_email' => $email,
+        ]);
+
+        return response()->json([
+            'message' => 'User deleted successfully',
+            'deleted_user' => [
+                'id' => $userId,
+                'username' => $username,
+                'email' => $email,
+            ],
+        ]);
+    }
+
+    /**
+     * ADMIN ONLY: Get a single user by ID
+     * Only accessible by admin users through admin middleware
+     */
+    public function adminGetUser(Request $request, $userId)
+    {
+        $user = WpUser::with(['meta'])->findOrFail($userId);
+
+        return response()->json([
+            'user' => new UserResource($user),
         ]);
     }
 }

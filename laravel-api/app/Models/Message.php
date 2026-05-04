@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -42,6 +43,7 @@ class Message extends Model
         'edited_at',
         'delivered_at',
         'read_at',
+        'is_pinned',
     ];
 
     protected $casts = [
@@ -50,6 +52,7 @@ class Message extends Model
         'edited_at' => 'datetime',
         'delivered_at' => 'datetime',
         'read_at' => 'datetime',
+        'is_pinned' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
@@ -82,6 +85,14 @@ class Message extends Model
     public function replies()
     {
         return $this->hasMany(Message::class, 'reply_to_message_id');
+    }
+
+    /**
+     * Get all of the message's reactions.
+     */
+    public function reactions(): MorphMany
+    {
+        return $this->morphMany(MessageReaction::class, 'reactable');
     }
 
     /**
@@ -275,5 +286,48 @@ class Message extends Model
             'is_edited' => true,
             'edited_at' => now(),
         ]);
+    }
+
+    /**
+     * Check if message contains embedded images
+     */
+    public function hasEmbeddedImages(): bool
+    {
+        return preg_match('/\[IMAGE\].*?\[\/IMAGE\]/s', $this->message) === 1;
+    }
+
+    /**
+     * Get embedded image URLs from message
+     */
+    public function getEmbeddedImages(): array
+    {
+        $images = [];
+        preg_match_all('/\[IMAGE\](.*?)\[\/IMAGE\]/s', $this->message, $matches);
+
+        if (!empty($matches[1])) {
+            $images = $matches[1];
+        }
+
+        return $images;
+    }
+
+    /**
+     * Get message text without image markup
+     */
+    public function getTextContent(): string
+    {
+        return trim(preg_replace('/\[IMAGE\].*?\[\/IMAGE\]/s', '', $this->message));
+    }
+
+    /**
+     * Get parsed message content with text and images separated
+     */
+    public function getParsedContent(): array
+    {
+        return [
+            'text' => $this->getTextContent(),
+            'images' => $this->getEmbeddedImages(),
+            'has_images' => $this->hasEmbeddedImages(),
+        ];
     }
 }

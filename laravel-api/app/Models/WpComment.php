@@ -20,6 +20,7 @@ class WpComment extends Model
         'comment_date',
         'comment_date_gmt',
         'comment_content',
+        'image',
         'comment_karma',
         'comment_approved',
         'comment_agent',
@@ -42,6 +43,11 @@ class WpComment extends Model
     }
 
     public function user(): BelongsTo
+    {
+        return $this->belongsTo(WpUser::class, 'user_id', 'ID');
+    }
+
+    public function author(): BelongsTo
     {
         return $this->belongsTo(WpUser::class, 'user_id', 'ID');
     }

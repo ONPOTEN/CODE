@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Conversation;
 use App\Models\Message;
 use App\Models\Friend;
+use App\Models\Notify;
 use App\Repositories\MessageRepository;
 use Illuminate\Http\Request;
 
@@ -19,11 +20,13 @@ class ChatController extends Controller
     }
 
     /**
-     * Generate room name from user IDs (host-remote format)
+     * Generate room name from user IDs (ascending order for consistency)
      */
     private function generateRoomName($hostId, $remoteId)
     {
-        return "{$hostId}-{$remoteId}";
+        $ids = [$hostId, $remoteId];
+        sort($ids);
+        return "{$ids[0]}-{$ids[1]}";
     }
 
     /**
@@ -68,6 +71,7 @@ class ChatController extends Controller
                     'id' => $otherUser->ID,
                     'name' => $otherUser->display_name ?? $otherUser->user_login,
                     'email' => $otherUser->user_email,
+                    'avatar' => $otherUser->avatar,
                 ],
                 'last_message' => $lastMessage ? [
                     'message' => $lastMessage->message,
@@ -83,18 +87,14 @@ class ChatController extends Controller
     }
 
     /**
-     * Get or create a conversation with a specific user (only if friends)
+     * Get or create a conversation with a specific user (allows chat with any user)
      */
     public function getOrCreateConversation(Request $request, $otherUserId)
     {
         $userId = $request->user()->ID;
 
-        // Check if users are friends
-        if (!$this->areFriends($userId, $otherUserId)) {
-            return response()->json([
-                'message' => 'You can only chat with friends. Send a friend request first.'
-            ], 403);
-        }
+        // Allow chat with any user (no friendship check)
+        // Previously required friendship - now removed to allow messaging any user
 
         // Ensure consistent ordering for unique constraint
         $user1 = min($userId, $otherUserId);
@@ -119,6 +119,7 @@ class ChatController extends Controller
                 'id' => $otherUser->ID,
                 'name' => $otherUser->display_name ?? $otherUser->user_login,
                 'email' => $otherUser->user_email,
+                'avatar' => $otherUser->avatar,
             ],
         ]);
     }
@@ -146,7 +147,7 @@ class ChatController extends Controller
         $roomName = $this->generateRoomName($userId, $otherUserId);
 
         $messages = Message::where('conversation_id', $conversationId)
-            ->with('sender')
+            ->with(['sender', 'replyTo.sender'])
             ->orderBy('created_at', 'asc')
             ->get();
 
@@ -164,8 +165,17 @@ class ChatController extends Controller
                     'id' => $message->sender->ID,
                     'name' => $message->sender->display_name ?? $message->sender->user_login,
                 ],
+                'reply_to' => $message->replyTo ? [
+                    'id' => $message->replyTo->id,
+                    'message' => $message->replyTo->message,
+                    'sender_name' => $message->replyTo->sender->display_name ?? $message->replyTo->sender->user_login,
+                ] : null,
                 'is_mine' => $message->sender_id == $userId,
                 'is_read' => $message->is_read,
+                'is_pinned' => (bool)$message->is_pinned,
+                'reactions' => $message->reactions->pluck('emoji')->unique()->values(),
+                'reactions_count' => (int)$message->reactions->sum('count'),
+                'my_reaction' => $message->reactions->where('user_id', $userId)->first()?->emoji,
                 'created_at' => $message->created_at,
             ];
         });
@@ -184,7 +194,7 @@ class ChatController extends Controller
         $userId = $request->user()->ID;
 
         $validated = $request->validate([
-            'message' => 'required|string|max:5000',
+            'message' => 'required|string|max:65000', // Increased to support multiple image URLs
             'reply_to_message_id' => 'nullable|integer|exists:messages,id',
         ]);
 
@@ -208,6 +218,42 @@ class ChatController extends Controller
 
         $message->load(['sender', 'replyTo.sender']);
 
+        // Get the other user's ID
+        $otherUserId = $conversation->user1_id == $userId
+            ? $conversation->user2_id
+            : $conversation->user1_id;
+
+        // Create notification for new message
+        $notify = Notify::create([
+            'userid' => $userId,
+            'ownid' => $otherUserId,
+            'type' => 'message',
+            'posttype' => 'message',
+            'postid' => 0,
+            'content' => $validated['message'],
+            'status' => 0,
+        ]);
+
+        // Emit notification via Socket.IO to recipient (ownid)
+        \App\Http\Controllers\Api\NotifyController::emitNotification($otherUserId, [
+            'id' => $notify->id,
+            'userid' => $userId,
+            'ownid' => $otherUserId,
+            'type' => 'message',
+            'posttype' => 'message',
+            'postid' => 0,
+            'content' => $validated['message'],
+            'status' => 0,
+            'created_at' => $notify->created_at->toIso8601String(),
+            'sender_id' => $userId,
+            'recipient_id' => $otherUserId,
+        ]);
+
+        // Generate room names for the message
+        $senderRoomName = $this->generateRoomName($userId, $otherUserId);
+        $recipientRoomName = $this->generateRoomName($otherUserId, $userId);
+
+        // Don't set is_mine here - let frontend determine based on sender.id
         $messageData = [
             'id' => $message->id,
             'message' => $message->message,
@@ -217,16 +263,20 @@ class ChatController extends Controller
                 'id' => $message->sender->ID,
                 'name' => $message->sender->display_name ?? $message->sender->user_login,
             ],
+            'sender_id' => $message->sender->ID, // Add sender_id for easier comparison
             'reply_to' => $message->replyTo ? [
                 'id' => $message->replyTo->id,
                 'message' => $message->replyTo->message,
                 'sender_name' => $message->replyTo->sender->display_name ?? $message->replyTo->sender->user_login,
             ] : null,
-            'is_mine' => true,
+            'is_mine' => true, // This is for the API response only
             'is_read' => false,
             'is_edited' => false,
+            'is_pinned' => false,
             'created_at' => $message->created_at,
-            'conversation_id' => $conversationId,
+            'conversation_id' => (int) $conversationId, // Ensure it's an integer
+            'host_room' => $senderRoomName,
+            'remote_room' => $recipientRoomName,
         ];
 
         // Emit Socket.IO event to notify the recipient
@@ -243,7 +293,7 @@ class ChatController extends Controller
         $userId = $request->user()->ID;
 
         $validated = $request->validate([
-            'message' => 'required|string|max:5000',
+            'message' => 'required|string|max:65000', // Increased to support multiple image URLs
         ]);
 
         // Verify user owns the message
@@ -280,6 +330,62 @@ class ChatController extends Controller
 
         return response()->json([
             'message' => 'Message deleted successfully',
+        ]);
+    }
+
+    /**
+     * Toggle a reaction on a message
+     */
+    public function toggleReaction(Request $request, $conversationId, $messageId)
+    {
+        $userId = $request->user()->ID;
+        $emoji = $request->input('emoji', '❤️');
+
+        $message = Message::where('id', $messageId)
+            ->where('conversation_id', $conversationId)
+            ->firstOrFail();
+
+        $reaction = $message->reactions()->firstOrCreate(
+            ['user_id' => $userId, 'emoji' => $emoji],
+            ['count' => 0]
+        );
+        
+        $reaction->increment('count');
+
+        return response()->json([
+            'message_id' => $message->id,
+            'emoji' => $emoji,
+            'is_added' => true,
+            'reactions_count' => (int)$message->reactions()->sum('count'),
+        ]);
+    }
+
+    /**
+     * Pin or unpin a message
+     */
+    public function pinMessage(Request $request, $conversationId, $messageId)
+    {
+        $userId = $request->user()->ID;
+
+        // Verify user is part of conversation
+        Conversation::where('id', $conversationId)
+            ->where(function ($query) use ($userId) {
+                $query->where('user1_id', $userId)
+                    ->orWhere('user2_id', $userId);
+            })
+            ->firstOrFail();
+
+        $message = Message::where('id', $messageId)
+            ->where('conversation_id', $conversationId)
+            ->firstOrFail();
+
+        $message->is_pinned = !$message->is_pinned;
+        $message->save();
+
+        return response()->json([
+            'id' => $message->id,
+            'is_pinned' => $message->is_pinned,
+            'message' => $message->is_pinned ? 'Message pinned' : 'Message unpinned',
         ]);
     }
 
@@ -327,6 +433,9 @@ class ChatController extends Controller
             $validated['query']
         );
 
+        // Load reactions
+        $messages->load('reactions');
+
         $formatted = $messages->map(function ($message) use ($userId) {
             return [
                 'id' => $message->id,
@@ -336,11 +445,23 @@ class ChatController extends Controller
                     'name' => $message->sender->display_name ?? $message->sender->user_login,
                 ],
                 'is_mine' => $message->sender_id == $userId,
+                'is_pinned' => (bool)$message->is_pinned,
                 'created_at' => $message->created_at,
             ];
         });
 
         return response()->json($formatted);
+    }
+
+    public function markAsRead(Request $request, $conversationId)
+    {
+        $userId = $request->user()->ID;
+
+        $this->messageRepository->markConversationAsRead($conversationId, $userId);
+
+        return response()->json([
+            'message' => 'Messages marked as read',
+        ]);
     }
 
     /**
@@ -387,6 +508,7 @@ class ChatController extends Controller
             curl_setopt($ch, CURLOPT_POST, true);
             curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
             curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode([
+                'senderId' => $senderId,
                 'recipientId' => $recipientId,
                 'messageData' => $messageData,
                 'senderRoomName' => $senderRoomName,

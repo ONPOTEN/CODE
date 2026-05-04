@@ -51,11 +51,11 @@ export default function StudioPage() {
 
   return (
     <div className="container py-8">
-      <div className="max-w-2xl mx-auto bg-white rounded-sm shadow-sm p-8">
+      <div className="max-w-2xl mx-auto bg-grey-200 rounded-sm shadow-sm p-8">
         <h1 className="text-2xl font-medium mb-6">Đặt dịch vụ thiết kế mặt bằng</h1>
 
         {success && (
-          <div className="mb-6 p-4 bg-green-100 text-green-700 rounded-sm">
+          <div className="mb-6 p-4 bg-blue-500 text-green-700 rounded-sm">
             Đặt dịch vụ thành công! Chúng tôi sẽ liên hệ với bạn sớm.
           </div>
         )}
@@ -188,7 +188,7 @@ export default function StudioPage() {
           </button>
         </form>
 
-        <div className="mt-8 p-6 bg-gray-50 rounded-sm">
+        <div className="mt-8 p-6 bg-white rounded-sm">
           <h3 className="font-medium mb-2">Lưu ý:</h3>
           <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
             <li>Chúng tôi sẽ liên hệ với bạn trong vòng 24 giờ</li>

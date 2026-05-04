@@ -1,0 +1,254 @@
+'use client';
+
+import React, { useState } from 'react';
+
+interface SimpleProductComponentProps {
+  formData: {
+    price?: string | number;
+    sale_price?: string | number;
+    main_image?: string | File;
+    other_images?: (string | File)[];
+    short_description?: string;
+    detail_description?: string;
+    categories?: string;
+  };
+  onFormDataChange: (field: string, value: any) => void;
+}
+
+export const SimpleProductComponent: React.FC<SimpleProductComponentProps> = ({
+  formData,
+  onFormDataChange,
+}) => {
+  const [mainImagePreview, setMainImagePreview] = useState<string | null>(
+    formData.main_image instanceof File ? URL.createObjectURL(formData.main_image) : (typeof formData.main_image === 'string' ? formData.main_image : null)
+  );
+  const [otherImagePreviews, setOtherImagePreviews] = useState<string[]>(
+    (Array.isArray(formData.other_images) ? formData.other_images : []).map((img) =>
+      img instanceof File ? URL.createObjectURL(img) : typeof img === 'string' ? img : ''
+    ).filter(Boolean)
+  );
+
+  const handleMainImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      onFormDataChange('main_image', file);
+      setMainImagePreview(URL.createObjectURL(file));
+    }
+  };
+
+  const handleOtherImagesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length > 0) {
+      const newOtherImages = [...(formData.other_images || []), ...files];
+      onFormDataChange('other_images', newOtherImages);
+      setOtherImagePreviews([
+        ...otherImagePreviews,
+        ...files.map((file) => URL.createObjectURL(file)),
+      ]);
+    }
+  };
+
+  const removeMainImage = () => {
+    if (mainImagePreview && mainImagePreview.startsWith('blob:')) {
+      URL.revokeObjectURL(mainImagePreview);
+    }
+    setMainImagePreview(null);
+    onFormDataChange('main_image', '');
+  };
+
+  const removeOtherImage = (index: number) => {
+    if (otherImagePreviews[index] && otherImagePreviews[index].startsWith('blob:')) {
+      URL.revokeObjectURL(otherImagePreviews[index]);
+    }
+    const newOtherImages = (formData.other_images || []).filter((_, i) => i !== index);
+    const newPreviews = otherImagePreviews.filter((_, i) => i !== index);
+    onFormDataChange('other_images', newOtherImages);
+    setOtherImagePreviews(newPreviews);
+  };
+
+  return (
+    <div className="bg-grey-200 border border-blue-200 rounded-lg p-6 space-y-4">
+      <h3 className="text-lg font-semibold text-blue-900 flex items-center gap-2">
+        🛍️ Thông tin sản phẩm đơn giản
+      </h3>
+
+      {/* Price */}
+      <div>
+        <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-2">
+          Giá
+        </label>
+        <input
+          type="number"
+          id="price"
+          name="price"
+          step="0.01"
+          value={formData.price || ''}
+          onChange={(e) => onFormDataChange('price', e.target.value)}
+          className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+          placeholder="Nhập giá"
+        />
+      </div>
+
+      {/* Sale Price */}
+      <div>
+        <label htmlFor="sale_price" className="block text-sm font-medium text-gray-700 mb-2">
+          Giá khuyến mãi (Tùy chọn)
+        </label>
+        <input
+          type="number"
+          id="sale_price"
+          name="sale_price"
+          step="0.01"
+          value={formData.sale_price || ''}
+          onChange={(e) => onFormDataChange('sale_price', e.target.value)}
+          className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+          placeholder="Nhập giá khuyến mãi (để trống nếu không giảm giá)"
+        />
+        {formData.price && formData.sale_price && (
+          <p className="text-sm text-green-600 mt-1">
+            Giảm giá: {(((Number(formData.price) - Number(formData.sale_price)) / Number(formData.price)) * 100).toFixed(1)}%
+          </p>
+        )}
+      </div>
+
+      {/* Short Description */}
+      <div>
+        <label htmlFor="short_description" className="block text-sm font-medium text-gray-700 mb-2">
+          Mô tả ngắn
+        </label>
+        <input
+          type="text"
+          id="short_description"
+          name="short_description"
+          value={formData.short_description || ''}
+          onChange={(e) => onFormDataChange('short_description', e.target.value)}
+          className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+          placeholder="Tóm tắt ngắn gọn về sản phẩm"
+          maxLength={255}
+        />
+        <p className="text-xs text-gray-500 mt-1">
+          {(formData.short_description || '').toString().length}/255
+        </p>
+      </div>
+
+      {/* Detail Description */}
+      <div>
+        <label htmlFor="detail_description" className="block text-sm font-medium text-gray-700 mb-2">
+          Mô tả chi tiết
+        </label>
+        <textarea
+          id="detail_description"
+          name="detail_description"
+          value={formData.detail_description || ''}
+          onChange={(e) => onFormDataChange('detail_description', e.target.value)}
+          rows={5}
+          className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+          placeholder="Thông tin chi tiết về sản phẩm"
+        />
+      </div>
+
+      {/* Categories */}
+      <div>
+        <label htmlFor="categories" className="block text-sm font-medium text-gray-700 mb-2">
+          Danh mục (phân cách bằng dấu phẩy)
+        </label>
+        <input
+          type="text"
+          id="categories"
+          name="categories"
+          value={formData.categories || ''}
+          onChange={(e) => onFormDataChange('categories', e.target.value)}
+          className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+          placeholder="Ví dụ: Điện tử, Thiết bị, Công nghệ"
+        />
+      </div>
+
+      {/* Main Image */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Hình ảnh sản phẩm chính
+        </label>
+        {mainImagePreview ? (
+          <div className="space-y-3">
+            <div className="relative">
+              <img
+                src={mainImagePreview}
+                alt="Main product"
+                className="w-full h-48 object-cover rounded-lg border border-gray-300"
+              />
+              <button
+                type="button"
+                onClick={removeMainImage}
+                className="absolute top-2 right-2 p-2 bg-blue-500 text-gray-900 rounded-full hover:bg-blue-700 transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-blue-300 rounded-lg cursor-pointer bg-grey-200 hover:bg-blue-500 transition-colors">
+              <div className="flex flex-col items-center justify-center pt-2 pb-2">
+                <svg className="w-6 h-6 text-blue-600 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+                <p className="text-xs text-blue-600">Nhấp để thay đổi hình ảnh</p>
+              </div>
+              <input type="file" className="hidden" accept="image/*" onChange={handleMainImageChange} />
+            </label>
+          </div>
+        ) : (
+          <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-blue-300 rounded-lg cursor-pointer bg-grey-200 hover:bg-blue-500 transition-colors">
+            <div className="flex flex-col items-center justify-center pt-5 pb-6">
+              <svg className="w-8 h-8 text-blue-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+              </svg>
+              <p className="text-sm text-blue-600 font-medium">Tải lên hình ảnh chính</p>
+              <p className="text-xs text-gray-500">PNG, JPG, GIF tối đa 5MB</p>
+            </div>
+            <input type="file" className="hidden" accept="image/*" onChange={handleMainImageChange} />
+          </label>
+        )}
+      </div>
+
+      {/* Other Images */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Hình ảnh bổ sung
+        </label>
+        {otherImagePreviews.length > 0 && (
+          <div className="mb-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {otherImagePreviews.map((preview, index) => (
+                <div key={index} className="relative">
+                  <img
+                    src={preview}
+                    alt={`Image ${index + 1}`}
+                    className="w-full h-28 object-cover rounded-lg border border-gray-300"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeOtherImage(index)}
+                    className="absolute top-1 right-1 p-1 bg-blue-500 text-gray-900 rounded-full hover:bg-blue-700 transition-colors"
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-blue-300 rounded-lg cursor-pointer bg-grey-200 hover:bg-blue-500 transition-colors">
+          <div className="flex flex-col items-center justify-center pt-2 pb-2">
+            <svg className="w-6 h-6 text-blue-600 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+            </svg>
+            <p className="text-xs text-blue-600 font-medium">Nhấp hoặc kéo để thêm hình ảnh</p>
+          </div>
+          <input type="file" className="hidden" accept="image/*" multiple onChange={handleOtherImagesChange} />
+        </label>
+      </div>
+    </div>
+  );
+};
