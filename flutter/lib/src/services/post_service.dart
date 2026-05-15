@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:mime/mime.dart';
 import '../models/post.dart';
 import 'api_config.dart';
@@ -193,8 +194,8 @@ class PostService {
     String? excerpt,
     String type = 'post',
     String status = 'draft',
-    List<File>? images,
-    File? video,
+    List<dynamic>? images, // Accepts List<File> or List<XFile>
+    dynamic video, // Accepts File or XFile
     Function(double)? onProgress,
   }) async {
     try {
@@ -222,28 +223,55 @@ class PostService {
       request.fields['type'] = type;
       request.fields['status'] = status;
 
-      // Add images
+      // Add images (web-safe: uses fromBytes)
       if (images != null && images.isNotEmpty) {
         for (var image in images) {
-          final mimeType = lookupMimeType(image.path);
-          final multipartFile = await http.MultipartFile.fromPath(
+          final String path;
+          final List<int> bytes;
+          if (image is XFile) {
+            path = image.path;
+            bytes = await image.readAsBytes();
+          } else if (image is File) {
+            path = image.path;
+            bytes = await image.readAsBytes();
+          } else {
+            continue;
+          }
+          final mimeType = lookupMimeType(path) ?? 'image/jpeg';
+          final fileName = path.split('/').last.split('\\').last;
+          request.files.add(http.MultipartFile.fromBytes(
             'images[]',
-            image.path,
-            contentType: mimeType != null ? MediaType.parse(mimeType) : null,
-          );
-          request.files.add(multipartFile);
+            bytes,
+            filename: fileName,
+            contentType: MediaType.parse(mimeType),
+          ));
         }
       }
 
-      // Add video
+      // Add video (web-safe: uses fromBytes)
       if (video != null) {
-        final mimeType = lookupMimeType(video.path) ?? 'video/mp4';
-        final multipartFile = await http.MultipartFile.fromPath(
-          'video',
-          video.path,
-          contentType: MediaType.parse(mimeType),
-        );
-        request.files.add(multipartFile);
+        final String path;
+        final List<int> bytes;
+        if (video is XFile) {
+          path = video.path;
+          bytes = await video.readAsBytes();
+        } else if (video is File) {
+          path = video.path;
+          bytes = await video.readAsBytes();
+        } else {
+          path = '';
+          bytes = [];
+        }
+        if (bytes.isNotEmpty) {
+          final mimeType = lookupMimeType(path) ?? 'video/mp4';
+          final fileName = path.split('/').last.split('\\').last;
+          request.files.add(http.MultipartFile.fromBytes(
+            'video',
+            bytes,
+            filename: fileName,
+            contentType: MediaType.parse(mimeType),
+          ));
+        }
       }
 
       // Increased timeout for video uploads (5 minutes)
@@ -284,7 +312,7 @@ class PostService {
     String? type,
     String? status,
     String? visibility,
-    List<File>? images,
+    List<dynamic>? images, // Accepts List<File> or List<XFile>
     List<int>? removeImages,
   }) async {
     try {
@@ -323,16 +351,28 @@ class PostService {
         }
       }
 
-      // Add new images
+      // Add new images (web-safe: uses fromBytes)
       if (images != null && images.isNotEmpty) {
         for (var image in images) {
-          final mimeType = lookupMimeType(image.path);
-          final multipartFile = await http.MultipartFile.fromPath(
+          final String path;
+          final List<int> bytes;
+          if (image is XFile) {
+            path = image.path;
+            bytes = await image.readAsBytes();
+          } else if (image is File) {
+            path = image.path;
+            bytes = await image.readAsBytes();
+          } else {
+            continue;
+          }
+          final mimeType = lookupMimeType(path) ?? 'image/jpeg';
+          final fileName = path.split('/').last.split('\\').last;
+          request.files.add(http.MultipartFile.fromBytes(
             'images[]',
-            image.path,
-            contentType: mimeType != null ? MediaType.parse(mimeType) : null,
-          );
-          request.files.add(multipartFile);
+            bytes,
+            filename: fileName,
+            contentType: MediaType.parse(mimeType),
+          ));
         }
       }
 

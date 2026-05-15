@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:video_player/video_player.dart';
@@ -21,8 +23,9 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
 
   String _selectedType = Post.typePost;
   String _selectedStatus = Post.statusDraft;
-  List<File> _selectedImages = [];
-  File? _selectedVideo;
+  List<XFile> _selectedImages = [];
+  Map<String, Uint8List> _imageBytes = {};
+  XFile? _selectedVideo;
   VideoPlayerController? _videoController;
   bool _isLoading = false;
   String? _errorMessage;
@@ -56,8 +59,14 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         return;
       }
 
+      // Read bytes for each image (works on web & mobile)
+      for (final xfile in images) {
+        final bytes = await xfile.readAsBytes();
+        _imageBytes[xfile.path] = bytes;
+      }
+
       setState(() {
-        _selectedImages.addAll(images.map((xfile) => File(xfile.path)));
+        _selectedImages.addAll(images);
       });
     } catch (e) {
       print('Error picking images: $e');
@@ -66,6 +75,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
 
   void _removeImage(int index) {
     setState(() {
+      _imageBytes.remove(_selectedImages[index].path);
       _selectedImages.removeAt(index);
     });
   }
@@ -79,8 +89,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
 
       if (video == null) return;
 
-      final file = File(video.path);
-      final fileSize = await file.length();
+      final fileSize = await video.length();
 
       // Check file size
       if (fileSize > _maxVideoSize) {
@@ -95,29 +104,20 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         return;
       }
 
-      // Check file extension
-      final extension = video.path.toLowerCase().split('.').last;
-      if (extension != 'mp4' && extension != 'mov' && extension != 'avi') {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Chỉ hỗ trợ file video MP4, MOV, AVI'),
-              backgroundColor: Colors.orange,
-            ),
-          );
-        }
-        return;
-      }
-
       // Dispose old video controller
       await _videoController?.dispose();
 
-      // Initialize new video controller
-      final controller = VideoPlayerController.file(file);
+      // Initialize new video controller (web-safe)
+      VideoPlayerController controller;
+      if (kIsWeb) {
+        controller = VideoPlayerController.networkUrl(Uri.parse(video.path));
+      } else {
+        controller = VideoPlayerController.file(File(video.path));
+      }
       await controller.initialize();
 
       setState(() {
-        _selectedVideo = file;
+        _selectedVideo = video;
         _videoController = controller;
         _errorMessage = null;
       });
@@ -307,7 +307,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                   future: _selectedVideo!.length(),
                   builder: (context, snapshot) {
                     final size = snapshot.data ?? 0;
-                    final fileName = _selectedVideo!.path.split('/').last;
+                    final fileName = _selectedVideo!.path.split('/').last.split('\\').last;
                     return Text(
                       '$fileName (${_formatFileSize(size)})',
                       style: const TextStyle(
@@ -453,12 +453,19 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                               children: [
                                 ClipRRect(
                                   borderRadius: BorderRadius.circular(8),
-                                  child: Image.file(
-                                    _selectedImages[index],
-                                    width: double.infinity,
-                                    height: double.infinity,
-                                    fit: BoxFit.cover,
-                                  ),
+                                  child: _imageBytes.containsKey(_selectedImages[index].path)
+                                      ? Image.memory(
+                                          _imageBytes[_selectedImages[index].path]!,
+                                          width: double.infinity,
+                                          height: double.infinity,
+                                          fit: BoxFit.cover,
+                                        )
+                                      : Container(
+                                          color: Colors.grey[300],
+                                          child: const Center(
+                                            child: CircularProgressIndicator(strokeWidth: 2),
+                                          ),
+                                        ),
                                 ),
                                 Positioned(
                                   top: 4,
@@ -527,7 +534,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               const Text(
-                                'Video (MP4)',
+                                'Video',
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,

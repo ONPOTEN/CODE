@@ -645,30 +645,183 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       body: Column(
         children: [
-          // Create Post Button
+          // Facebook-style Create Post Card
           Container(
-            width: double.infinity,
-            padding: EdgeInsets.all(16),
-            child: ElevatedButton.icon(
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (context) => CreatePostScreen()),
-                ).then((created) {
-                  if (created == true) {
-                    _loadPosts(refresh: true);
-                  }
-                });
-              },
-              icon: Icon(Icons.add),
-              label: Text('Create New Post'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue[600],
-                foregroundColor: Colors.white,
-                padding: EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
+            margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey[200]!),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
                 ),
-              ),
+              ],
+            ),
+            child: Column(
+              children: [
+                // Avatar + "What's on your mind?" row
+                Row(
+                  children: [
+                    // User avatar
+                    CircleAvatar(
+                      radius: 20,
+                      backgroundColor: Colors.grey[300],
+                      child: Text(
+                        (_displayName ?? _username ?? 'U').isNotEmpty
+                            ? (_displayName ?? _username ?? 'U')[0].toUpperCase()
+                            : 'U',
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    // Pill-shaped "Bạn đang nghĩ gì thế?" button
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(builder: (context) => CreatePostScreen()),
+                          ).then((created) {
+                            if (created == true) {
+                              _loadPosts(refresh: true);
+                            }
+                          });
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[100],
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                          child: Text(
+                            'Bạn đang nghĩ gì thế${_displayName != null && _displayName!.isNotEmpty ? ', $_displayName' : ''}?',
+                            style: TextStyle(
+                              color: Colors.grey[500],
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                // Divider
+                Divider(color: Colors.grey[200], height: 1),
+                const SizedBox(height: 6),
+                // Action buttons row
+                Row(
+                  children: [
+                    // Video trực tiếp
+                    Expanded(
+                      child: InkWell(
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(builder: (context) => CreatePostScreen()),
+                          ).then((created) {
+                            if (created == true) {
+                              _loadPosts(refresh: true);
+                            }
+                          });
+                        },
+                        borderRadius: BorderRadius.circular(8),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.videocam, color: Colors.red[500], size: 22),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Video',
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Ảnh/video
+                    Expanded(
+                      child: InkWell(
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(builder: (context) => CreatePostScreen()),
+                          ).then((created) {
+                            if (created == true) {
+                              _loadPosts(refresh: true);
+                            }
+                          });
+                        },
+                        borderRadius: BorderRadius.circular(8),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.photo_library, color: Colors.green[500], size: 22),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Ảnh/video',
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Cảm xúc
+                    Expanded(
+                      child: InkWell(
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(builder: (context) => CreatePostScreen()),
+                          ).then((created) {
+                            if (created == true) {
+                              _loadPosts(refresh: true);
+                            }
+                          });
+                        },
+                        borderRadius: BorderRadius.circular(8),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.emoji_emotions, color: Colors.amber[600], size: 22),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Cảm xúc',
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
           // Posts Feed
