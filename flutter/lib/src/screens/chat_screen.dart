@@ -38,6 +38,7 @@ class _ChatScreenState extends State<ChatScreen> {
   bool _isVideoCallActive = false;
   Message? _replyingToMessage;
   final FocusNode _messageFocusNode = FocusNode();
+  int? _showReactionPickerMessageId;
 
   @override
   void initState() {
@@ -169,6 +170,58 @@ class _ChatScreenState extends State<ChatScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(result['message'] ?? 'Lỗi khi ghim tin nhắn')),
+        );
+      }
+    }
+  }
+
+  Future<void> _toggleReaction(Message message, String emoji) async {
+    // Optimistic update
+    final index = _messages.indexWhere((m) => m.id == message.id);
+    if (index == -1) return;
+
+    final msg = _messages[index];
+    List<String> newReactions = List.from(msg.reactions ?? []);
+    int newCount = msg.reactionsCount;
+    String? newMyReaction = msg.myReaction;
+
+    if (msg.myReaction == emoji) {
+      // Remove reaction
+      newMyReaction = null;
+      newCount = (newCount > 0) ? newCount - 1 : 0;
+      newReactions.remove(emoji);
+    } else {
+      // Add or change reaction
+      if (msg.myReaction == null) {
+        newCount++;
+      } else {
+        newReactions.remove(msg.myReaction);
+      }
+      newReactions.insert(0, emoji);
+      newMyReaction = emoji;
+    }
+
+    setState(() {
+      _messages[index] = msg.copyWith(
+        myReaction: newMyReaction,
+        reactionsCount: newCount,
+        reactions: newReactions,
+      );
+      _showReactionPickerMessageId = null;
+    });
+
+    final result = await MessageService.reactToMessage(widget.conversation.id, message.id, emoji);
+    if (!result['success']) {
+      // Revert if failed
+      if (mounted) {
+        setState(() {
+          final revertIndex = _messages.indexWhere((m) => m.id == message.id);
+          if (revertIndex != -1) {
+            _messages[revertIndex] = msg;
+          }
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(result['message'] ?? 'Lỗi khi thả cảm xúc')),
         );
       }
     }
@@ -1012,6 +1065,31 @@ class _ChatScreenState extends State<ChatScreen> {
                   _togglePin(message);
                 },
               ),
+              // Reactions in context menu
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: ['❤️', '👍', '😂', '😮', '😢'].map((emoji) {
+                    final isSelected = message.myReaction == emoji;
+                    return GestureDetector(
+                      onTap: () {
+                        Navigator.pop(context);
+                        _toggleReaction(message, emoji);
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: isSelected ? Colors.red.shade50 : Colors.transparent,
+                          shape: BoxShape.circle,
+                          border: isSelected ? Border.all(color: Colors.red.shade100) : null,
+                        ),
+                        child: Text(emoji, style: const TextStyle(fontSize: 24)),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
               if (message.isMine)
                 ListTile(
                   leading: const Icon(Icons.delete_outline, color: Colors.red),
@@ -1161,6 +1239,94 @@ class _ChatScreenState extends State<ChatScreen> {
                           ],
                         ),
                       ],
+                    ),
+                  ),
+
+                  // Reaction button & picker (Zalo style)
+                  if (_showReactionPickerMessageId == message.id)
+                    Container(
+                      margin: EdgeInsets.only(
+                        top: 4,
+                        right: isMine ? 16 : 0,
+                        left: isMine ? 0 : 16,
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.1),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                        border: Border.all(color: Colors.grey.shade200),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: ['❤️', '👍', '😂', '😮', '😢'].map((emoji) {
+                          return GestureDetector(
+                            onTap: () => _toggleReaction(message, emoji),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 4),
+                              child: Text(emoji, style: const TextStyle(fontSize: 20)),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+
+                  // Reaction badge
+                  if (message.reactionsCount > 0 || message.myReaction != null)
+                    GestureDetector(
+                      onTap: () => setState(() {
+                        _showReactionPickerMessageId = _showReactionPickerMessageId == message.id ? null : message.id;
+                      }),
+                      child: Transform.translate(
+                        offset: const Offset(0, -8),
+                        child: Container(
+                          margin: EdgeInsets.only(
+                            right: isMine ? 24 : 0,
+                            left: isMine ? 0 : 24,
+                          ),
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: message.myReaction != null ? Colors.red.shade50 : Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: message.myReaction != null ? Colors.red.shade100 : Colors.grey.shade200,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.05),
+                              blurRadius: 2,
+                              offset: const Offset(0, 1),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (message.reactions != null && message.reactions!.isNotEmpty)
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: message.reactions!.take(3).map((e) => Text(e, style: const TextStyle(fontSize: 12))).toList(),
+                              )
+                            else if (message.myReaction != null)
+                              Text(message.myReaction!, style: const TextStyle(fontSize: 12)),
+                            const SizedBox(width: 4),
+                            Text(
+                              '${message.reactionsCount > 0 ? message.reactionsCount : 1}',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.grey.shade700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 ],

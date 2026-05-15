@@ -329,6 +329,52 @@ class MessageService {
     }
   }
 
+  // React to a message
+  static Future<Map<String, dynamic>> reactToMessage(int conversationId, int messageId, String emoji) async {
+    try {
+      final token = await AuthStorage.getToken();
+      if (token == null) {
+        return {
+          'success': false,
+          'message': 'Authentication token not found',
+        };
+      }
+
+      final body = {
+        'emoji': emoji,
+      };
+
+      final response = await http.post(
+        Uri.parse(ApiConfig.getUrl('/conversations/$conversationId/messages/$messageId/react')),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: json.encode(body),
+      ).timeout(ApiConfig.timeout);
+
+      final data = json.decode(response.body);
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'message': data['message'] ?? 'Reaction updated successfully',
+        };
+      } else {
+        return {
+          'success': false,
+          'message': data['message'] ?? 'Failed to update reaction',
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Error: ${e.toString()}',
+      };
+    }
+  }
+
   // Get or create conversation with a user
   static Future<Map<String, dynamic>> getOrCreateConversation(int userId) async {
     try {

@@ -28,6 +28,12 @@ class Message {
   // Reply to message (if loaded)
   final Map<String, dynamic>? replyTo;
 
+  // Reactions
+  final int reactionsCount;
+  final List<String>? reactions;
+  final String? myReaction;
+
+
   // Message types
   static const String typeText = 'text';
   static const String typeImage = 'image';
@@ -65,6 +71,9 @@ class Message {
     this.sender,
     this.isMine = false,
     this.replyTo,
+    this.reactionsCount = 0,
+    this.reactions,
+    this.myReaction,
   });
 
   factory Message.fromJson(Map<String, dynamic> json) {
@@ -100,6 +109,12 @@ class Message {
         replyToMap = Map<String, dynamic>.from(json['reply_to']);
       }
 
+      // Safe parse reactions list
+      List<String>? reactionsList;
+      if (json['reactions'] != null && json['reactions'] is List) {
+        reactionsList = (json['reactions'] as List).map((e) => e.toString()).toList();
+      }
+
       return Message(
         id: _parseInt(json['id']) ?? 0,
         conversationId: _parseInt(json['conversation_id']) ?? 0,
@@ -123,6 +138,9 @@ class Message {
         sender: senderMap,
         isMine: json['is_mine'] == true || json['is_mine'] == 1 || json['is_mine'] == '1',
         replyTo: replyToMap,
+        reactionsCount: _parseInt(json['reactions_count']) ?? 0,
+        reactions: reactionsList,
+        myReaction: json['my_reaction'] as String?,
       );
     } catch (e, stackTrace) {
       print('Message.fromJson - Error parsing: $e');
@@ -156,6 +174,9 @@ class Message {
       if (sender != null) 'sender': sender,
       'is_mine': isMine,
       if (replyTo != null) 'reply_to': replyTo,
+      'reactions_count': reactionsCount,
+      if (reactions != null) 'reactions': reactions,
+      if (myReaction != null) 'my_reaction': myReaction,
     };
   }
 
@@ -207,6 +228,9 @@ class Message {
     Map<String, dynamic>? sender,
     bool? isMine,
     Map<String, dynamic>? replyTo,
+    int? reactionsCount,
+    List<String>? reactions,
+    String? myReaction,
   }) {
     return Message(
       id: id ?? this.id,
@@ -231,6 +255,9 @@ class Message {
       sender: sender ?? this.sender,
       isMine: isMine ?? this.isMine,
       replyTo: replyTo ?? this.replyTo,
+      reactionsCount: reactionsCount ?? this.reactionsCount,
+      reactions: reactions ?? this.reactions,
+      myReaction: myReaction ?? this.myReaction,
     );
   }
 
