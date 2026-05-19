@@ -441,4 +441,149 @@ class GroupService {
       };
     }
   }
+
+  // Like a group post
+  static Future<Map<String, dynamic>> likePost(int postId) async {
+    try {
+      final token = await AuthStorage.getToken();
+      if (token == null) return {'success': false, 'message': 'Authentication required'};
+
+      final response = await http.post(
+        Uri.parse(ApiConfig.getUrl('/group-posts/$postId/engage/like')),
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      ).timeout(const Duration(seconds: 15));
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return {'success': true, 'data': json.decode(response.body)};
+      } else {
+        return {'success': false, 'message': 'Failed to like post'};
+      }
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  // Unlike a group post
+  static Future<Map<String, dynamic>> unlikePost(int postId) async {
+    try {
+      final token = await AuthStorage.getToken();
+      if (token == null) return {'success': false, 'message': 'Authentication required'};
+
+      final response = await http.delete(
+        Uri.parse(ApiConfig.getUrl('/group-posts/$postId/engage/like')),
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      ).timeout(const Duration(seconds: 15));
+
+      if (response.statusCode == 200) {
+        return {'success': true, 'data': json.decode(response.body)};
+      } else {
+        return {'success': false, 'message': 'Failed to unlike post'};
+      }
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  // Dislike a group post
+  static Future<Map<String, dynamic>> dislikePost(int postId) async {
+    try {
+      final token = await AuthStorage.getToken();
+      if (token == null) return {'success': false, 'message': 'Authentication required'};
+
+      final response = await http.post(
+        Uri.parse(ApiConfig.getUrl('/group-posts/$postId/engage/dislike')),
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      ).timeout(const Duration(seconds: 15));
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return {'success': true, 'data': json.decode(response.body)};
+      } else {
+        return {'success': false, 'message': 'Failed to dislike post'};
+      }
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  // Remove dislike from a group post
+  static Future<Map<String, dynamic>> removeDislikePost(int postId) async {
+    try {
+      final token = await AuthStorage.getToken();
+      if (token == null) return {'success': false, 'message': 'Authentication required'};
+
+      final response = await http.delete(
+        Uri.parse(ApiConfig.getUrl('/group-posts/$postId/engage/dislike')),
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      ).timeout(const Duration(seconds: 15));
+
+      if (response.statusCode == 200) {
+        return {'success': true, 'data': json.decode(response.body)};
+      } else {
+        return {'success': false, 'message': 'Failed to remove dislike'};
+      }
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  // Share a group post
+  static Future<Map<String, dynamic>> sharePost(int postId, {String sharedVia = 'direct'}) async {
+    try {
+      final token = await AuthStorage.getToken();
+      if (token == null) return {'success': false, 'message': 'Authentication required'};
+
+      final response = await http.post(
+        Uri.parse(ApiConfig.getUrl('/group-posts/$postId/engage/share')),
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({'shared_via': sharedVia}),
+      ).timeout(const Duration(seconds: 15));
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return {'success': true, 'data': json.decode(response.body)};
+      } else {
+        return {'success': false, 'message': 'Failed to share post'};
+      }
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  // Get engagement stats
+  static Future<Map<String, dynamic>> getEngagementStats(int postId) async {
+    try {
+      final token = await AuthStorage.getToken();
+      
+      final response = await http.get(
+        Uri.parse(ApiConfig.getUrl('/group-posts/$postId/engage/stats')),
+        headers: {
+          'Accept': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+      ).timeout(const Duration(seconds: 15));
+
+      if (response.statusCode == 200) {
+        return {'success': true, 'data': json.decode(response.body)};
+      } else {
+        return {'success': false, 'message': 'Failed to get stats'};
+      }
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
+    }
+  }
 }

@@ -674,78 +674,134 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     );
   }
 
-  Widget _buildCommentInputSection() {
-    return Padding(
-      key: _commentInputKey,
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Add Comment',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
+  Widget _buildStickyCommentBar() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border(top: BorderSide(color: Colors.grey[300]!)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            offset: const Offset(0, -4),
+            blurRadius: 8,
           ),
-          const SizedBox(height: 12),
+        ],
+      ),
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: 12,
+        bottom: 12 + MediaQuery.of(context).padding.bottom,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Text Input and Send Button
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Expanded(
                 child: TextField(
+                  key: _commentInputKey,
                   controller: _commentController,
                   minLines: 1,
-                  maxLines: 3,
+                  maxLines: 4,
                   enabled: !_isCommentSubmitting,
+                  onChanged: (text) => setState(() {}),
                   decoration: InputDecoration(
-                    hintText: 'Write a comment...',
+                    hintText: 'Viết bình luận... (Sử dụng @ để nhắc tên)',
+                    hintStyle: TextStyle(color: Colors.grey[500], fontSize: 14),
+                    filled: true,
+                    fillColor: Colors.grey[50],
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey[300]!),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey[300]!),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Colors.blue),
                     ),
                     contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 10,
+                      horizontal: 16,
+                      vertical: 12,
                     ),
                   ),
                 ),
               ),
               const SizedBox(width: 8),
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.blue,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: _isCommentSubmitting ? null : _submitComment,
-                    borderRadius: BorderRadius.circular(8),
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: _isCommentSubmitting
-                          ? SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  Colors.white,
-                                ),
-                              ),
-                            )
-                          : const Icon(
-                              Icons.send,
-                              color: Colors.white,
-                              size: 20,
-                            ),
+              // Send Button
+              ValueListenableBuilder<TextEditingValue>(
+                valueListenable: _commentController,
+                builder: (context, value, child) {
+                  final hasText = value.text.trim().isNotEmpty;
+                  final canSubmit = hasText && !_isCommentSubmitting;
+                  return Container(
+                    height: 44,
+                    width: 44,
+                    decoration: BoxDecoration(
+                      color: canSubmit ? Colors.blue[500] : Colors.blue[200],
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                  ),
-                ),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: canSubmit ? _submitComment : null,
+                        borderRadius: BorderRadius.circular(12),
+                        child: Center(
+                          child: _isCommentSubmitting
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  ),
+                                )
+                              : const Icon(
+                                  Icons.send,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
               ),
             ],
           ),
+          const SizedBox(height: 8),
+          // Action Icons Row
+          Row(
+            children: [
+              _buildActionIconButton(Icons.image_outlined, Colors.green[500]!, 'Thêm ảnh'),
+              _buildActionIconButton(Icons.emoji_emotions_outlined, Colors.yellow[700]!, 'Thêm biểu tượng cảm xúc'),
+              _buildActionIconButton(Icons.gif_box_outlined, Colors.purple[500]!, 'Thêm GIF'),
+              _buildActionIconButton(Icons.sticky_note_2_outlined, Colors.pink[500]!, 'Thêm nhãn dán'),
+              _buildActionIconButton(Icons.alternate_email, Colors.blue[500]!, 'Nhắc đến ai đó'),
+            ],
+          ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildActionIconButton(IconData icon, Color color, String tooltip) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 4),
+      child: IconButton(
+        onPressed: () {
+          // Future functionality
+        },
+        icon: Icon(icon, color: color, size: 24),
+        tooltip: tooltip,
+        splashRadius: 20,
+        constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+        padding: EdgeInsets.zero,
       ),
     );
   }
@@ -868,198 +924,202 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          // App Bar with Image
-          SliverAppBar(
-            expandedHeight: 300,
-            pinned: true,
-            backgroundColor: Colors.blue,
-            foregroundColor: Colors.white,
-            flexibleSpace: FlexibleSpaceBar(
-              background: _buildMediaGallery(),
-            ),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.share),
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Share post')),
-                  );
-                },
-                tooltip: 'Share',
-              ),
-            ],
-          ),
+      body: Column(
+        children: [
+          Expanded(
+            child: CustomScrollView(
+              slivers: [
+                // App Bar with Image
+                SliverAppBar(
+                  expandedHeight: 300,
+                  pinned: true,
+                  backgroundColor: Colors.blue,
+                  foregroundColor: Colors.white,
+                  flexibleSpace: FlexibleSpaceBar(
+                    background: _buildMediaGallery(),
+                  ),
+                  actions: [
+                    IconButton(
+                      icon: const Icon(Icons.share),
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Share post')),
+                        );
+                      },
+                      tooltip: 'Share',
+                    ),
+                  ],
+                ),
 
-          // Content
-          SliverToBoxAdapter(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header Section
-                Padding(
-                  padding: const EdgeInsets.all(16),
+                // Content
+                SliverToBoxAdapter(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Status and Type
-                      Row(
-                        children: [
-                          _buildStatusBadge(),
-                          const SizedBox(width: 8),
-                          _buildTypeBadge(),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Title
-                      Text(
-                        widget.post.title,
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-
-                      // Post metadata (date created)
-                      Row(
-                        children: [
-                          Icon(Icons.calendar_today,
-                              size: 16, color: Colors.grey[600]),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Posted ${_formatDate(widget.post.createdAt)}',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey[600],
+                      // Header Section
+                      Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Status and Type
+                            Row(
+                              children: [
+                                _buildStatusBadge(),
+                                const SizedBox(width: 8),
+                                _buildTypeBadge(),
+                              ],
                             ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
+                            const SizedBox(height: 16),
 
-                const Divider(height: 1),
+                            // Title
+                            Text(
+                              widget.post.title,
+                              style: const TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
 
-                // Author Card
-                _buildAuthorCard(),
-
-                const Divider(height: 1),
-
-                // Details Section
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Post Details',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                            // Post metadata (date created)
+                            Row(
+                              children: [
+                                Icon(Icons.calendar_today,
+                                    size: 16, color: Colors.grey[600]),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Posted ${_formatDate(widget.post.createdAt)}',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 16),
 
-                      // Comment Count (from engagement provider)
-                      Consumer<EngagementProvider>(
-                        builder: (context, engagementProvider, _) {
-                          final engagement = engagementProvider.getEngagement(widget.post.id);
-                          final commentCount = engagement?.commentCount ?? widget.post.commentCount;
-                          return _buildInfoRow(
-                            Icons.comment,
-                            'Comments',
-                            '$commentCount',
-                          );
-                        },
+                      const Divider(height: 1),
+
+                      // Author Card
+                      _buildAuthorCard(),
+
+                      const Divider(height: 1),
+
+                      // Details Section
+                      Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Post Details',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+
+                            // Comment Count (from engagement provider)
+                            Consumer<EngagementProvider>(
+                              builder: (context, engagementProvider, _) {
+                                final engagement = engagementProvider.getEngagement(widget.post.id);
+                                final commentCount = engagement?.commentCount ?? widget.post.commentCount;
+                                return _buildInfoRow(
+                                  Icons.comment,
+                                  'Comments',
+                                  '$commentCount',
+                                );
+                              },
+                            ),
+
+                            // Visibility
+                            _buildInfoRow(
+                              widget.post.isPublic()
+                                  ? Icons.public
+                                  : Icons.lock,
+                              'Visibility',
+                              widget.post.isPublic() ? 'Public' : 'Private',
+                            ),
+
+                            // Updated Date
+                            if (widget.post.updatedAt != null)
+                              _buildInfoRow(
+                                Icons.update,
+                                'Last Updated',
+                                _formatDate(widget.post.updatedAt),
+                              ),
+                          ],
+                        ),
                       ),
 
-                      // Visibility
-                      _buildInfoRow(
-                        widget.post.isPublic()
-                            ? Icons.public
-                            : Icons.lock,
-                        'Visibility',
-                        widget.post.isPublic() ? 'Public' : 'Private',
-                      ),
+                      // Engagement Stats Section
+                      _buildEngagementStats(),
 
-                      // Updated Date
-                      if (widget.post.updatedAt != null)
-                        _buildInfoRow(
-                          Icons.update,
-                          'Last Updated',
-                          _formatDate(widget.post.updatedAt),
-                        ),
-                    ],
-                  ),
-                ),
-
-                // Engagement Stats Section
-                _buildEngagementStats(),
-
-                // Content Section
-                if (widget.post.content.isNotEmpty) ...[
-                  const Divider(height: 1),
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Content',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        HtmlContentWidget(
-                          content: widget.post.content,
-                          maxImageWidth: MediaQuery.of(context).size.width - 32,
-                          maxImageHeight: 400,
-                          maxVideoWidth: MediaQuery.of(context).size.width - 32,
-                          maxVideoHeight: 220,
-                          defaultTextStyle: TextStyle(
-                            fontSize: 15,
-                            color: Colors.grey[800],
-                            height: 1.5,
+                      // Content Section
+                      if (widget.post.content.isNotEmpty) ...[
+                        const Divider(height: 1),
+                        Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Content',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              HtmlContentWidget(
+                                content: widget.post.content,
+                                maxImageWidth: MediaQuery.of(context).size.width - 32,
+                                maxImageHeight: 400,
+                                maxVideoWidth: MediaQuery.of(context).size.width - 32,
+                                maxVideoHeight: 220,
+                                defaultTextStyle: TextStyle(
+                                  fontSize: 15,
+                                  color: Colors.grey[800],
+                                  height: 1.5,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
-                    ),
-                  ),
-                ],
 
-                // Engagement Section
-                const Divider(height: 1),
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: EngagementButtons(
-                    postId: widget.post.id,
-                    postTitle: widget.post.title,
-                    postSlug: 'post-${widget.post.id}',
-                    postText: widget.post.excerpt,
-                    onCommentPressed: _scrollToCommentInput,
-                    showLabels: true,
-                    compact: false,
+                      // Engagement Section
+                      const Divider(height: 1),
+                      Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: EngagementButtons(
+                          postId: widget.post.id,
+                          postTitle: widget.post.title,
+                          postSlug: 'post-${widget.post.id}',
+                          postText: widget.post.excerpt,
+                          onCommentPressed: _scrollToCommentInput,
+                          showLabels: true,
+                          compact: false,
+                        ),
+                      ),
+
+                      // Comments Section
+                      const Divider(height: 1),
+                      _buildCommentsSection(),
+
+                      const SizedBox(height: 20),
+                    ],
                   ),
                 ),
-
-                // Comments Section
-                const Divider(height: 1),
-                _buildCommentsSection(),
-
-                // Comment Input Section
-                const Divider(height: 1),
-                _buildCommentInputSection(),
-
-                const SizedBox(height: 80), // Space for FAB
               ],
             ),
           ),
+          // Sticky Bottom Bar
+          _buildStickyCommentBar(),
         ],
       ),
     );

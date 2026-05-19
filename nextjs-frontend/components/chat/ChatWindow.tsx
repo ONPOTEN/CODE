@@ -942,50 +942,9 @@ export default function ChatWindow({ conversation, onNewMessage }: ChatWindowPro
   const displayName = getDisplayName(conversation.other_user, isShopRoom ? 'Khách hàng' : 'Người dùng');
 
   return (
-    <div className="flex flex-col h-full bg-white shadow-[0_0_50px_-12px_rgba(0,0,0,0.05)]">
-      {/* Chat Header */}
-      <div className="px-6 py-5 border-b border-slate-100 bg-white/80 backdrop-blur-xl flex items-center justify-between sticky top-0 z-20">
-        <div className="flex items-center gap-4">
-          {/* Avatar Area */}
-          {isShopRoom ? (
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-xl flex-shrink-0 shadow-lg shadow-indigo-200 text-white font-black">
-              🏪
-            </div>
-          ) : (
-            <div className="relative group">
-              <UserAvatar
-                name={displayName}
-                avatarUrl={conversation.other_user?.avatar}
-                size={48}
-              />
-              <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-emerald-500 border-2 border-white rounded-full shadow-sm" />
-            </div>
-          )}
-          <div className="flex-1 min-w-0">
-            <h2 className="font-black text-lg text-slate-800 tracking-tight truncate leading-tight">
-              {isShopRoom ? 'Tin nhắn cửa hàng' : displayName}
-            </h2>
-            <div className="flex items-center gap-2 mt-0.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <p className="text-[10px] font-black text-slate-400 tracking-widest uppercase truncate">
-                {isShopRoom ? displayName : (conversation.other_user?.email || 'Đang hoạt động')}
-              </p>
-            </div>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <button className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-          </button>
-          <VideoCallButton
-            conversation={conversation}
-            onVideoCallClick={handleVideoCallClick}
-            isCallActive={isCallActive}
-          />
-        </div>
-      </div>
-      
-      {/* Pinned Messages Bar */}
+    <div className="flex flex-col flex-1 min-h-0 bg-white shadow-[0_0_50px_-12px_rgba(0,0,0,0.05)]">
+
+      {/* Pinned Messages Bar - fixed above scroll area */}
       {messages.some(m => m.is_pinned) && (
         <PinnedMessagesBar 
           pinnedMessages={messages.filter(m => m.is_pinned)} 
@@ -995,7 +954,7 @@ export default function ChatWindow({ conversation, onNewMessage }: ChatWindowPro
       )}
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-6 py-8 space-y-2 bg-[#F8FAFC]">
+      <div className="relative z-0 flex-1 overflow-y-auto px-6 py-8 space-y-2" style={{ backgroundColor: '#F8FAFC' }}>
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center p-8">
             <div className="w-20 h-20 rounded-[2rem] bg-indigo-50 flex items-center justify-center text-4xl mb-4 grayscale opacity-50">💬</div>
@@ -1076,7 +1035,7 @@ export default function ChatWindow({ conversation, onNewMessage }: ChatWindowPro
       </div>
 
       {/* Message Input Container */}
-      <div className="p-4 bg-white border-t border-slate-100 shadow-[0_-10px_30px_-15px_rgba(0,0,0,0.05)]">
+      <div className="p-4 bg-white border-t border-slate-100 shadow-[0_-10px_30px_-15px_rgba(0,0,0,0.05)] shrink-0">
         <MessageReplyPreview 
           message={replyingTo} 
           onClear={() => setReplyingTo(null)} 

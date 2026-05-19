@@ -106,7 +106,7 @@ export default function ShopsFeedPage() {
               </svg>
             </div>
           )}
-          
+
           <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
           {/* Badges */}
@@ -177,11 +177,8 @@ export default function ShopsFeedPage() {
       {/* Hero Header Section */}
       <section className="relative overflow-hidden pt-12 pb-24 lg:pt-20 lg:pb-32">
         <div className="absolute inset-0 bg-gradient-to-br from-indigo-700 via-violet-600 to-fuchsia-500">
-          <div className="absolute inset-0 opacity-10">
-            <div className="absolute inset-0" style={{
-              backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(255,255,255,0.4) 1px, transparent 0)',
-              backgroundSize: '32px 32px'
-            }} />
+          <div className="absolute inset-0">
+            <div className="absolute inset-0" />
           </div>
           <div className="absolute -top-24 -left-24 w-96 h-96 bg-white/10 rounded-full blur-[100px] animate-pulse" />
           <div className="absolute -bottom-24 -right-24 w-[500px] h-[500px] bg-indigo-500/20 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '1s' }} />
@@ -189,13 +186,6 @@ export default function ShopsFeedPage() {
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6">
           <div className="text-center">
-            <h1 className="text-4xl lg:text-6xl font-black text-white mb-6 tracking-tight drop-shadow-xl">
-              Thế Giới <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-200 to-orange-300">Sản Phẩm</span>
-            </h1>
-            <p className="text-white/80 text-lg lg:text-xl max-w-2xl mx-auto leading-relaxed mb-10">
-              Khám phá những sản phẩm độc đáo từ các cửa hàng uy tín trên toàn cộng đồng Centimet2.
-            </p>
-            
             <div className="flex flex-wrap justify-center gap-4">
               <Link href="/shops" className="px-8 py-3.5 bg-white text-indigo-700 rounded-2xl font-bold transition-all hover:scale-105 hover:shadow-2xl shadow-indigo-500/20">
                 Tìm Cửa Hàng
@@ -218,7 +208,7 @@ export default function ShopsFeedPage() {
       {/* Content Section */}
       <section className="-mt-12 relative z-10 px-4 pb-20">
         <div className="max-w-7xl mx-auto space-y-16">
-          
+
           {/* Trending Section */}
           <div className="space-y-8">
             <div className="flex items-end justify-between border-b border-slate-200 pb-4">
@@ -283,7 +273,7 @@ export default function ShopsFeedPage() {
                 ))}
               </div>
             )}
-            
+
             {!loading && latestProducts.length >= 12 && (
               <div className="pt-8 flex justify-center">
                 <Link href="/shops" className="group px-8 py-3 bg-white border border-slate-200 rounded-2xl font-bold text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-all flex items-center gap-2">
@@ -302,7 +292,7 @@ export default function ShopsFeedPage() {
         <div className="max-w-5xl mx-auto bg-gradient-to-r from-slate-900 to-slate-800 rounded-[2.5rem] p-8 md:p-16 relative overflow-hidden text-center">
           <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-indigo-500/20 rounded-full blur-[80px]" />
           <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-64 h-64 bg-fuchsia-500/20 rounded-full blur-[80px]" />
-          
+
           <div className="relative z-10 space-y-6">
             <h2 className="text-3xl md:text-4xl font-black text-white">Bạn đang có sản phẩm tuyệt vời?</h2>
             <p className="text-slate-400 text-lg max-w-2xl mx-auto">

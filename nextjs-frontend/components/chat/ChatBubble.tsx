@@ -3,7 +3,8 @@
 import { ChatMessage } from '@/lib/api';
 import { formatTime } from '@/lib/utils';
 import Image from 'next/image';
-import { useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { GroupInvitationMessage } from '@/components/GroupInvitationMessage';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -24,9 +25,14 @@ export default function ChatBubble({ message, isGrouped, onReply, onReact, onRec
   const [showReactionPicker, setShowReactionPicker] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [menuStyle, setMenuStyle] = useState<React.CSSProperties>({});
+  const [isMounted, setIsMounted] = useState(false);
   const bubbleRef = useRef<HTMLDivElement>(null);
   const touchTimerRef = useRef<NodeJS.Timeout | null>(null);
   const { user } = useAuth();
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const handleOpenMenu = (e: React.MouseEvent | React.TouchEvent) => {
     if (bubbleRef.current) {
@@ -63,7 +69,6 @@ export default function ChatBubble({ message, isGrouped, onReply, onReact, onRec
         top: `${top}px`,
         left: left === 'auto' ? 'auto' : `${left}px`,
         right: right === 'auto' ? 'auto' : `${right}px`,
-        zIndex: 1000000,
       });
       setShowMenu(true);
     }
@@ -316,67 +321,67 @@ export default function ChatBubble({ message, isGrouped, onReply, onReact, onRec
               </div>
             </div>
 
-            {/* Context Menu Backdrop */}
-            {showMenu && (
-              <div 
-                className="fixed inset-0 z-[999000] overflow-hidden bg-black/10 backdrop-blur-[2px]" 
-                onClick={() => setShowMenu(false)}
-              />
-            )}
+            {/* Context Menu Backdrop and Panel */}
+            {showMenu && isMounted && createPortal(
+              <>
+                <div
+                  className="fixed inset-0 z-[2147483646] overflow-hidden bg-black/10 backdrop-blur-[2px]"
+                  onClick={() => setShowMenu(false)}
+                />
 
-            {/* Floating Context Menu */}
-            {showMenu && (
-              <div 
-                className={`fixed z-[999001] w-48 bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 ring-1 ring-black/5 animate-in fade-in zoom-in duration-200 overflow-hidden`}
-                style={menuStyle}
-                onClick={(e) => e.stopPropagation()}
-              >
-                {/* Context Menu Reactions (Zalo Style) */}
-                <div className="flex items-center justify-between p-2.5 border-b border-slate-100/50 bg-slate-50/50">
-                  {['❤️', '👍', '😂', '😮', '😢'].map(emoji => (
-                    <button
-                      key={emoji}
-                      onClick={() => handleContextReact(emoji)}
-                      className={`hover:scale-125 transition-transform p-1.5 rounded-xl hover:bg-white hover:shadow-sm ${message.my_reaction === emoji ? 'bg-white shadow-sm ring-1 ring-rose-100' : ''}`}
-                    >
-                      <span className="text-xl leading-none">{emoji}</span>
-                    </button>
-                  ))}
-                </div>
+                <div
+                  className="fixed z-[2147483647] w-48 bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 ring-1 ring-black/5 animate-in fade-in zoom-in duration-200 overflow-hidden"
+                  style={menuStyle}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {/* Context Menu Reactions (Zalo Style) */}
+                  <div className="flex items-center justify-between p-2.5 border-b border-slate-100/50 bg-slate-50/50">
+                    {['❤️', '👍', '😂', '😮', '😢'].map(emoji => (
+                      <button
+                        key={emoji}
+                        onClick={() => handleContextReact(emoji)}
+                        className={`hover:scale-125 transition-transform p-1.5 rounded-xl hover:bg-white hover:shadow-sm ${message.my_reaction === emoji ? 'bg-white shadow-sm ring-1 ring-rose-100' : ''}`}
+                      >
+                        <span className="text-xl leading-none">{emoji}</span>
+                      </button>
+                    ))}
+                  </div>
 
-                <div className="flex flex-col py-1.5 font-bold">
-                  <button 
-                    onClick={() => onReply?.(message)}
-                    className="px-4 py-3 text-left text-[14px] text-slate-700 hover:bg-slate-50 flex items-center gap-3 transition-colors active:bg-slate-100 border-b border-slate-50/50"
-                  >
-                    <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" /></svg>
-                    Trả lời
-                  </button>
-                  <button 
-                    onClick={handleCopy}
-                    className="px-4 py-3 text-left text-[14px] font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-3 transition-colors active:bg-slate-100"
-                  >
-                    <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
-                    Copy
-                  </button>
-                  <button 
-                    onClick={handlePinClick}
-                    className="px-4 py-3 text-left text-[14px] font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-3 transition-colors active:bg-slate-100"
-                  >
-                    <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
-                    Ghim
-                  </button>
-                  {message.is_mine && (
+                  <div className="flex flex-col py-1.5 font-bold">
                     <button 
-                      onClick={handleRecallClick}
-                      className="px-4 py-3 text-left text-[14px] font-bold text-rose-600 hover:bg-rose-50 flex items-center gap-3 transition-colors active:bg-rose-100"
+                      onClick={() => { onReply?.(message); setShowMenu(false); }}
+                      className="px-4 py-3 text-left text-[14px] text-slate-700 hover:bg-slate-50 flex items-center gap-3 transition-colors active:bg-slate-100 border-b border-slate-50/50"
                     >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                      Thu hồi
+                      <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" /></svg>
+                      Trả lời
                     </button>
-                  )}
+                    <button 
+                      onClick={handleCopy}
+                      className="px-4 py-3 text-left text-[14px] font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-3 transition-colors active:bg-slate-100"
+                    >
+                      <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                      Copy
+                    </button>
+                    <button 
+                      onClick={handlePinClick}
+                      className="px-4 py-3 text-left text-[14px] font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-3 transition-colors active:bg-slate-100"
+                    >
+                      <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
+                      Ghim
+                    </button>
+                    {message.is_mine && (
+                      <button 
+                        onClick={handleRecallClick}
+                        className="px-4 py-3 text-left text-[14px] font-bold text-rose-600 hover:bg-rose-50 flex items-center gap-3 transition-colors active:bg-rose-100"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                        Thu hồi
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </div>
+              </>,
+              document.body
             )}
 
             {/* Actions (Reply/React) - Hover only on desktop */}

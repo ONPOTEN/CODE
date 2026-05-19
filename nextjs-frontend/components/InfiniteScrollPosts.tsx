@@ -10,6 +10,8 @@ import { AuthorCard } from '@/components/AuthorCard';
 import { ImageCarousel } from '@/components/ImageCarousel';
 import VideoPlayer from '@/components/VideoPlayer';
 import FriendSuggestions from '@/components/FriendSuggestions';
+import PostContent from '@/components/PostContent';
+import AdSenseBlock from '@/components/AdSenseBlock';
 
 export default function InfiniteScrollPosts() {
   const [postsList, setPostsList] = useState<Post[]>([]);
@@ -187,12 +189,16 @@ export default function InfiniteScrollPosts() {
     // Process video URLs and iframes (YouTube, Vimeo, Facebook, TikTok)
     normalizedContent = processVideoContent(normalizedContent);
 
+    // If the content contains a script tag, we should be very careful with truncation
+    // For now, if it's an ad (contains script), we might want to show it fully or handle it specially
+    const hasScript = /<script/i.test(normalizedContent);
+
     // Strip HTML tags for word counting
     const textOnly = normalizedContent.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
     const words = textOnly.split(/\s+/).filter(w => w.length > 0);
 
-    if (words.length > wordLimit) {
-      // Truncate and add ellipsis
+    if (words.length > wordLimit && !hasScript) {
+      // Truncate and add ellipsis - only for non-script content
       const truncatedText = words.slice(0, wordLimit).join(' ') + '...';
       return truncatedText;
     }
@@ -397,6 +403,9 @@ export default function InfiniteScrollPosts() {
         ) : (
           <div className="grid gap-6">
             {postsList.map((post, index) => {
+              const postNumber = index + 1;
+              const shouldShowHomepageAd = [2, 7, 9, 15].includes(postNumber);
+
               // Prioritize featured_image, fallback to first image in images array
               const featuredImageUrl = post.featured_image ||
                 (post.images && post.images.length > 0 ? post.images[0].url : null);
@@ -480,9 +489,9 @@ export default function InfiniteScrollPosts() {
                     {/* Content */}
                     {post.content && (
                       <Link href={`/posts/${post.id}`}>
-                        <div
+                        <PostContent
                           className="mt-2 text-base md:text-lg text-gray-800 break-words hover:text-blue-600 cursor-pointer transition-colors prose prose-sm prose-video max-w-none post-content"
-                          dangerouslySetInnerHTML={{ __html: getTruncatedContent(post.content, 50) }}
+                          content={getTruncatedContent(post.content, 100)}
                         />
                       </Link>
                     )}
@@ -521,6 +530,15 @@ export default function InfiniteScrollPosts() {
                     </div>
                   </div>
                 </article>
+
+                {shouldShowHomepageAd && (
+                  <div className="rounded-lg border border-gray-100 bg-gray-50/50 px-2 py-3">
+                    <AdSenseBlock
+                      client="ca-pub-8350902137868521"
+                      slot="2027584221"
+                    />
+                  </div>
+                )}
                 </React.Fragment>
               );
             })}

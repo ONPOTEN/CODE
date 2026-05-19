@@ -155,6 +155,28 @@
     outline: 2px solid #1877f2;
     outline-offset: 2px;
   }
+
+  /* Adsense placeholder in WYSIWYG editors */
+  [contenteditable] ins.adsbygoogle {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 100px;
+    background-color: #f0f2f5;
+    border: 2px dashed #bcc0c4;
+    color: #65676b;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    margin: 1rem 0;
+    cursor: default;
+    border-radius: 8px;
+  }
+
+  [contenteditable] ins.adsbygoogle::before {
+    content: "Google Adsense (Sẽ tự động hiển thị khi đăng bài)";
+  }
 }
 
 @layer components {

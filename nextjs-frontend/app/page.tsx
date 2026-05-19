@@ -51,7 +51,7 @@ export default function HomePage() {
   const { user } = useAuth();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
+    <div className="min-h-screen">
       {/* Menu - Desktop Only */}
       <div className="hidden lg:block">
         <Menu />
@@ -81,23 +81,23 @@ export default function HomePage() {
                 Bạn đang nghĩ gì thế{user?.display_name ? `, ${user.display_name}` : ''}?
               </button>
             </div>
-            
+
             <div className="border-t pt-3 flex items-center justify-between px-2">
               <button onClick={() => setIsCreatePostOpen(true)} className="flex flex-1 items-center justify-center gap-2 py-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-500 font-medium text-sm md:text-base">
                 <span className="text-red-500">
-                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
+                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z" /></svg>
                 </span>
                 Video trực tiếp
               </button>
               <button onClick={() => setIsCreatePostOpen(true)} className="flex flex-1 items-center justify-center gap-2 py-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-500 font-medium text-sm md:text-base">
                 <span className="text-green-500">
-                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z" /></svg>
                 </span>
                 Ảnh/video
               </button>
               <button onClick={() => setIsCreatePostOpen(true)} className="flex flex-1 items-center justify-center gap-2 py-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-500 font-medium text-sm md:text-base hidden sm:flex">
                 <span className="text-yellow-500">
-                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11.5 8.5 11.5zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"/></svg>
+                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11.5 8.5 11.5zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z" /></svg>
                 </span>
                 Cảm xúc/hoạt động
               </button>

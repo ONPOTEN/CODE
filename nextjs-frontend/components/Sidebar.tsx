@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSidebar } from '@/contexts/SidebarContext';
 import { isAdmin } from '@/lib/roles';
+import AdSenseBlock from '@/components/AdSenseBlock';
 
 interface NavItem {
   label: string;
@@ -120,7 +121,7 @@ const Sidebar: React.FC = () => {
   return (
     <>
       <aside
-        className={`fixed left-0 top-0 h-screen w-sidebar bg-white border-r border-gray-300 flex-col hidden lg:flex z-40 transition-transform duration-300 ease-in-out ${
+        className={`fixed left-0 top-0 h-screen w-sidebar bg-white border-r border-gray-300 flex-col hidden lg:flex z-[9999] transition-transform duration-300 ease-in-out ${
           isSidebarVisible ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
@@ -172,6 +173,17 @@ const Sidebar: React.FC = () => {
             <span className="text-sm font-medium">{item.label}</span>
           </Link>
         ))}
+
+        {/* Sidebar Ad Unit */}
+        <div className="mt-8 px-2 overflow-hidden">
+          <AdSenseBlock 
+            client="ca-pub-8350902137868521"
+            slot="6288245784"
+            format="auto"
+            responsive="true"
+            className="scale-90 origin-top"
+          />
+        </div>
       </nav>
 
       {/* User Profile & Logout */}

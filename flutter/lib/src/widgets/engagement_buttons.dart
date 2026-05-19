@@ -33,6 +33,16 @@ class _EngagementButtonsState extends State<EngagementButtons> {
   late EngagementProvider _engagementProvider;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<EngagementProvider>().fetchEngagementStats(widget.postId);
+      }
+    });
+  }
+
+  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     _engagementProvider = Provider.of<EngagementProvider>(context, listen: false);

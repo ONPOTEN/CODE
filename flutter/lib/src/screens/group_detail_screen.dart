@@ -4,6 +4,7 @@ import '../models/group.dart';
 import '../models/group_post.dart';
 import '../services/group_service.dart';
 import '../services/api_config.dart';
+import '../widgets/engagement_buttons.dart';
 import '../widgets/post_video_player.dart';
 import '../widgets/suggested_groups.dart';
 import 'post_detail_screen.dart';
@@ -617,41 +618,15 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
               _buildImagesGrid(post.images),
             ],
             // Stats and actions
+            // Engagement buttons
             Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                children: [
-                  // Stats row
-                  Row(
-                    children: [
-                      if (post.likesCount > 0) ...[
-                        Icon(Icons.thumb_up, size: 14, color: Colors.blue),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${post.likesCount}',
-                          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                        ),
-                        const SizedBox(width: 16),
-                      ],
-                      if (post.commentsCount > 0) ...[
-                        Text(
-                          '${post.commentsCount} bình luận',
-                          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                        ),
-                      ],
-                    ],
-                  ),
-                  const Divider(height: 24),
-                  // Actions row
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      _buildActionButton(Icons.thumb_up_outlined, 'Thích'),
-                      _buildActionButton(Icons.chat_bubble_outline, 'Bình luận'),
-                      _buildActionButton(Icons.share_outlined, 'Chia sẻ'),
-                    ],
-                  ),
-                ],
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: _GroupPostEngagementRow(
+                post: post,
+                onCommentPressed: () {
+                  // Navigate to post detail screen when comment is pressed
+                  // Need to create GroupPostDetailScreen or similar in the future
+                },
               ),
             ),
           ],
@@ -744,19 +719,7 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
     );
   }
 
-  Widget _buildActionButton(IconData icon, String label) {
-    return TextButton.icon(
-      onPressed: () {},
-      icon: Icon(icon, size: 20, color: Colors.grey[700]),
-      label: Text(
-        label,
-        style: TextStyle(
-          fontSize: 13,
-          color: Colors.grey[700],
-        ),
-      ),
-    );
-  }
+
 
   String _formatDate(String dateStr) {
     try {
@@ -914,3 +877,218 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
     );
   }
 }
+
+class _GroupPostEngagementRow extends StatefulWidget {
+  final GroupPost post;
+  final VoidCallback onCommentPressed;
+
+  const _GroupPostEngagementRow({
+    Key? key,
+    required this.post,
+    required this.onCommentPressed,
+  }) : super(key: key);
+
+  @override
+  State<_GroupPostEngagementRow> createState() => _GroupPostEngagementRowState();
+}
+
+class _GroupPostEngagementRowState extends State<_GroupPostEngagementRow> {
+  late int _likeCount;
+  late int _dislikeCount;
+  late int _shareCount;
+  late int _commentCount;
+  bool _isLiked = false;
+  bool _isDisliked = false;
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _likeCount = widget.post.likesCount;
+    _dislikeCount = widget.post.dislikesCount;
+    _shareCount = 0; // Backend doesn't return shareCount in GroupPost by default
+    _commentCount = widget.post.commentsCount;
+    _fetchStats();
+  }
+
+  Future<void> _fetchStats() async {
+    final result = await GroupService.getEngagementStats(widget.post.id);
+    if (result['success'] && mounted) {
+      final data = result['data'];
+      setState(() {
+        _likeCount = data['likes']['count'] ?? _likeCount;
+        _isLiked = data['likes']['user_liked'] ?? false;
+        _dislikeCount = data['dislikes']['count'] ?? _dislikeCount;
+        _isDisliked = data['dislikes']['user_disliked'] ?? false;
+        _commentCount = data['comments']['count'] ?? _commentCount;
+        _shareCount = data['shares']['count'] ?? _shareCount;
+      });
+    }
+  }
+
+  Future<void> _toggleLike() async {
+    if (_isLoading) return;
+    setState(() => _isLoading = true);
+
+    try {
+      final result = _isLiked
+          ? await GroupService.unlikePost(widget.post.id)
+          : await GroupService.likePost(widget.post.id);
+
+      if (result['success'] && mounted) {
+        setState(() {
+          _isLiked = !_isLiked;
+          _likeCount = result['data']['likes_count'] ?? (_isLiked ? _likeCount + 1 : _likeCount - 1);
+          if (_isLiked && _isDisliked) {
+            _isDisliked = false;
+            _dislikeCount = (_dislikeCount > 0) ? _dislikeCount - 1 : 0;
+          }
+        });
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _toggleDislike() async {
+    if (_isLoading) return;
+    setState(() => _isLoading = true);
+
+    try {
+      final result = _isDisliked
+          ? await GroupService.removeDislikePost(widget.post.id)
+          : await GroupService.dislikePost(widget.post.id);
+
+      if (result['success'] && mounted) {
+        setState(() {
+          _isDisliked = !_isDisliked;
+          _dislikeCount = result['data']['dislikes_count'] ?? (_isDisliked ? _dislikeCount + 1 : _dislikeCount - 1);
+          if (_isDisliked && _isLiked) {
+            _isLiked = false;
+            _likeCount = (_likeCount > 0) ? _likeCount - 1 : 0;
+          }
+        });
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _showShareBottomSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (BuildContext context) {
+        return Container(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2)),
+              ),
+              const SizedBox(height: 16),
+              Text('Chia sẻ bài viết', style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox(height: 24),
+              GridView.count(
+                crossAxisCount: 3,
+                shrinkWrap: true,
+                mainAxisSpacing: 24,
+                crossAxisSpacing: 16,
+                children: [
+                  _buildShareOption('Facebook', '📘', 'facebook'),
+                  _buildShareOption('Twitter', '𝕏', 'twitter'),
+                  _buildShareOption('WhatsApp', '💬', 'whatsapp'),
+                  _buildShareOption('LinkedIn', '💼', 'linkedin'),
+                  _buildShareOption('Email', '✉️', 'email'),
+                  _buildShareOption('Copy Link', '🔗', 'direct'),
+                ],
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildShareOption(String label, String icon, String platform) {
+    return GestureDetector(
+      onTap: () async {
+        Navigator.pop(context);
+        final result = await GroupService.sharePost(widget.post.id, sharedVia: platform);
+        if (result['success'] && mounted) {
+          setState(() {
+            _shareCount = result['data']['shares_count'] ?? _shareCount + 1;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Đã chia sẻ qua $platform!')));
+        }
+      },
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(12)),
+            child: Center(child: Text(icon, style: const TextStyle(fontSize: 32))),
+          ),
+          const SizedBox(height: 8),
+          Text(label, textAlign: TextAlign.center, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildButton(String icon, int count, bool isActive, VoidCallback onPressed) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: _isLoading ? null : onPressed,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          decoration: BoxDecoration(
+            color: isActive ? Colors.blue.shade50 : Colors.grey.shade100,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: isActive ? Colors.blue : Colors.transparent, width: 1),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(icon, style: const TextStyle(fontSize: 16)),
+              const SizedBox(width: 6),
+              Text(
+                '$count',
+                style: TextStyle(
+                  color: isActive ? Colors.blue : Colors.grey[700],
+                  fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        _buildButton('👍', _likeCount, _isLiked, _toggleLike),
+        _buildButton('👎', _dislikeCount, _isDisliked, _toggleDislike),
+        _buildButton('📤', _shareCount, false, () => _showShareBottomSheet(context)),
+        _buildButton('💬', _commentCount, false, widget.onCommentPressed),
+      ],
+    );
+  }
+}
+

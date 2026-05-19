@@ -9,6 +9,7 @@ import { EngagementButtons } from '@/components/EngagementButtons';
 import { CommentsSection } from '@/components/CommentsSection';
 import { AuthorCard } from '@/components/AuthorCard';
 import VideoPlayer from '@/components/VideoPlayer';
+import AdBanner from '@/components/AdBanner';
 
 interface PostDetailClientProps {
   postId: string;
@@ -470,29 +471,36 @@ export default function PostDetailClient({ postId }: PostDetailClientProps) {
 
             {/* Additional Images Carousel */}
             {post.images && post.images.length > 0 && (
-              <div className="px-4">
-                {/* Main Carousel */}
-                <div
-                  className="relative bg-gray-900 rounded-lg overflow-hidden mb-4 cursor-grab active:cursor-grabbing"
-                  onTouchStart={handleTouchStart}
-                  onTouchEnd={handleTouchEnd}
-                >
-                  <img
-                    src={typeof post.images[selectedImageIndex] === 'string' ? post.images[selectedImageIndex] : post.images[selectedImageIndex]?.url || ''}
-                    alt={`${post.title} - Image ${selectedImageIndex + 1}`}
-                    className="w-full h-auto object-contain"
-                    onError={(e) => {
-                      e.currentTarget.src = '';
-                      e.currentTarget.style.display = 'none';
-                    }}
-                  />
+              <>
+                <div className="px-4">
+                  {/* Main Carousel */}
+                  <div
+                    className="relative bg-gray-900 rounded-lg overflow-hidden mb-4 cursor-grab active:cursor-grabbing"
+                    onTouchStart={handleTouchStart}
+                    onTouchEnd={handleTouchEnd}
+                  >
+                    <img
+                      src={typeof post.images[selectedImageIndex] === 'string' ? post.images[selectedImageIndex] : post.images[selectedImageIndex]?.url || ''}
+                      alt={`${post.title} - Image ${selectedImageIndex + 1}`}
+                      className="w-full h-auto object-contain"
+                      onError={(e) => {
+                        e.currentTarget.src = '';
+                        e.currentTarget.style.display = 'none';
+                      }}
+                    />
 
-                  {/* Image Counter */}
-                  <div className="absolute bottom-4 right-4 bg-black bg-opacity-75 text-white px-3 py-1 rounded-full text-sm font-medium">
-                    {selectedImageIndex + 1} / {post.images?.length || 0}
+                    {/* Image Counter */}
+                    <div className="absolute bottom-4 right-4 bg-black bg-opacity-75 text-white px-3 py-1 rounded-full text-sm font-medium">
+                      {selectedImageIndex + 1} / {post.images?.length || 0}
+                    </div>
                   </div>
                 </div>
-              </div>
+                
+                {/* Google Ads */}
+                <div className="px-4 mb-4">
+                  <AdBanner adSlot="2027584221" />
+                </div>
+              </>
             )}
 
             {/* Video Player */}

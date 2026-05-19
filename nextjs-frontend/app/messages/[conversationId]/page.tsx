@@ -214,7 +214,7 @@ export default function ConversationDetailPage() {
   return (
     <div className={`flex flex-col h-screen bg-[#F8FAFC] transition-[margin-left] duration-300 ease-in-out ${isSidebarVisible ? 'lg:ml-sidebar' : ''}`}>
       {/* Header - Mobile only */}
-      <div className="lg:hidden px-6 py-4 border-b border-slate-100 bg-white/80 backdrop-blur-xl flex items-center justify-between sticky top-0 z-40">
+      <div className="lg:hidden px-6 py-4 border-b border-slate-100 bg-white flex items-center justify-between sticky top-0 z-40">
         <div className="flex items-center gap-4">
           <Link href="/messages" className="p-2 -ml-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -236,7 +236,7 @@ export default function ConversationDetailPage() {
       </div>
 
       {/* Main Content - Split view on desktop */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden min-h-0">
         {/* Conversation List - Left Panel (Desktop only) */}
         <div className="hidden lg:flex lg:flex-col lg:w-80 xl:w-[400px] border-r border-slate-100 bg-white shadow-xl shadow-slate-200/50 relative z-30">
           {/* List Header */}
@@ -272,7 +272,7 @@ export default function ConversationDetailPage() {
         </div>
 
         {/* Chat Window - Right Panel */}
-        <div className="flex-1 flex flex-col overflow-hidden bg-slate-50">
+        <div className="flex-1 flex flex-col overflow-hidden bg-slate-50 min-h-0">
           <ChatWindow
             conversation={conversation}
             onNewMessage={handleNewMessageCallback}
