@@ -20,6 +20,7 @@ import 'src/screens/firebase_phone_password_setup_screen.dart';
 import 'src/screens/firebase_forgot_password_screen.dart';
 import 'src/screens/groups_list_screen.dart';
 import 'src/screens/group_detail_screen.dart';
+import 'src/screens/group_post_detail_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -87,6 +88,10 @@ class MyApp extends StatelessWidget {
           '/group': (context) {
             final groupId = ModalRoute.of(context)?.settings.arguments as int?;
             return GroupDetailScreen(groupId: groupId ?? 0);
+          },
+          '/group-post': (context) {
+            final postId = ModalRoute.of(context)?.settings.arguments as int?;
+            return GroupPostDetailScreen(postId: postId ?? 0);
           },
         },
       ),

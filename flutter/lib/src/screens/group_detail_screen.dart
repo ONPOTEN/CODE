@@ -514,122 +514,124 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
     final hasImages = post.images.isNotEmpty;
     final hasVideo = post.video != null && post.video!.isNotEmpty;
 
-    return GestureDetector(
-      onTap: () {
-        // Navigate to post detail if needed
-      },
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
-        color: Colors.white,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Author header
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Row(
-                children: [
-                  // Author avatar
-                  CircleAvatar(
-                    radius: 20,
-                    backgroundColor: Colors.blue[200],
-                    backgroundImage: post.author?.avatar != null && post.author!.avatar!.isNotEmpty
-                        ? CachedNetworkImageProvider(ApiConfig.getImageUrl(post.author!.avatar!))
-                        : null,
-                    child: post.author?.avatar == null || post.author!.avatar!.isEmpty
-                        ? Text(
-                            post.author?.displayName?.isNotEmpty == true
-                                ? post.author!.displayName![0].toUpperCase()
-                                : 'U',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          )
-                        : null,
-                  ),
-                  const SizedBox(width: 10),
-                  // Author name and date
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          post.author?.displayName ?? 'Người dùng',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                          ),
-                        ),
-                        Text(
-                          _formatDate(post.postDate),
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  // Menu button
-                  IconButton(
-                    icon: const Icon(Icons.more_horiz),
-                    onPressed: () {},
-                  ),
-                ],
-              ),
-            ),
-            // Post title
-            if (post.postTitle.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Text(
-                  post.postTitle,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            // Post content
-            if (post.postContent.isNotEmpty)
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          Navigator.pushNamed(context, '/group-post', arguments: post.id);
+        },
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
+          color: Colors.white,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Author header
               Padding(
                 padding: const EdgeInsets.all(12),
-                child: Text(
-                  post.postContent,
-                  style: const TextStyle(fontSize: 14),
-                  maxLines: 5,
-                  overflow: TextOverflow.ellipsis,
+                child: Row(
+                  children: [
+                    // Author avatar
+                    CircleAvatar(
+                      radius: 20,
+                      backgroundColor: Colors.blue[200],
+                      backgroundImage: post.author?.avatar != null && post.author!.avatar!.isNotEmpty
+                          ? CachedNetworkImageProvider(ApiConfig.getImageUrl(post.author!.avatar!))
+                          : null,
+                      child: post.author?.avatar == null || post.author!.avatar!.isEmpty
+                          ? Text(
+                              post.author?.displayName?.isNotEmpty == true
+                                  ? post.author!.displayName![0].toUpperCase()
+                                  : 'U',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            )
+                          : null,
+                    ),
+                    const SizedBox(width: 10),
+                    // Author name and date
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            post.author?.displayName ?? 'Người dùng',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                          Text(
+                            _formatDate(post.postDate),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Menu button
+                    IconButton(
+                      icon: const Icon(Icons.more_horiz),
+                      onPressed: () {},
+                    ),
+                  ],
                 ),
               ),
-            // Video
-            if (hasVideo)
+              // Post title
+              if (post.postTitle.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Text(
+                    post.postTitle,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              // Post content
+              if (post.postContent.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Text(
+                    post.postContent,
+                    style: const TextStyle(fontSize: 14),
+                    maxLines: 5,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              // Video
+              if (hasVideo)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: FeedVideoPlayer(
+                    videoUrl: post.video!,
+                    height: 250,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              // Images (show even if video exists)
+              if (hasImages) ...[
+                if (hasVideo) const SizedBox(height: 12),
+                _buildImagesGrid(post.images),
+              ],
+              // Stats and actions
+              // Engagement buttons
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: FeedVideoPlayer(
-                  videoUrl: post.video!,
-                  height: 250,
-                  borderRadius: BorderRadius.circular(8),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                child: _GroupPostEngagementRow(
+                  post: post,
+                  onCommentPressed: () {
+                    Navigator.pushNamed(context, '/group-post', arguments: post.id);
+                  },
                 ),
               ),
-            // Images (show even if video exists)
-            if (hasImages) ...[
-              if (hasVideo) const SizedBox(height: 12),
-              _buildImagesGrid(post.images),
             ],
-            // Stats and actions
-            // Engagement buttons
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              child: _GroupPostEngagementRow(
-                post: post,
-                onCommentPressed: () {
-                  // Navigate to post detail screen when comment is pressed
-                  // Need to create GroupPostDetailScreen or similar in the future
-                },
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );

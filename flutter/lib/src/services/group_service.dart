@@ -586,4 +586,39 @@ class GroupService {
       return {'success': false, 'message': e.toString()};
     }
   }
+
+  // Get single group post by ID
+  static Future<Map<String, dynamic>> getGroupPost(int postId) async {
+    try {
+      final token = await AuthStorage.getToken();
+
+      final response = await http.get(
+        Uri.parse(ApiConfig.getUrl('/group-posts/$postId')),
+        headers: {
+          'Accept': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+      ).timeout(const Duration(seconds: 30));
+
+      final data = json.decode(response.body);
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'post': GroupPost.fromJson(data['data']),
+        };
+      } else {
+        return {
+          'success': false,
+          'message': data['message'] ?? 'Failed to load group post',
+        };
+      }
+    } catch (e) {
+      print('GroupService - Error getting group post: $e');
+      return {
+        'success': false,
+        'message': 'Error: ${e.toString()}',
+      };
+    }
+  }
 }
