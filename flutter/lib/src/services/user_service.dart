@@ -53,4 +53,45 @@ class UserService {
       };
     }
   }
+
+  // Get a single user by ID
+  static Future<Map<String, dynamic>> getUserById(int userId) async {
+    try {
+      final token = await AuthStorage.getToken();
+      if (token == null) {
+        return {
+          'success': false,
+          'message': 'Authentication token not found',
+        };
+      }
+
+      final response = await http.get(
+        Uri.parse(ApiConfig.getUrl('/users/$userId')),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      ).timeout(ApiConfig.timeout);
+
+      final data = json.decode(response.body);
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'user': User.fromJson(data['data'] ?? data),
+        };
+      } else {
+        return {
+          'success': false,
+          'message': data['message'] ?? 'Failed to fetch user',
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Error: ${e.toString()}',
+      };
+    }
+  }
 }

@@ -5,6 +5,7 @@ import '../services/api_config.dart';
 import '../widgets/engagement_buttons.dart';
 import '../widgets/post_video_player.dart';
 import '../widgets/html_content_widget.dart';
+import '../widgets/adsense_banner.dart';
 import '../providers/engagement_provider.dart';
 
 class PostDetailScreen extends StatefulWidget {
@@ -1091,6 +1092,12 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                           ),
                         ),
                       ],
+                      
+                      // End of post Google AdSense Banner
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 16),
+                        child: AdSenseBanner(),
+                      ),
 
                       // Engagement Section
                       const Divider(height: 1),

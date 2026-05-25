@@ -15,12 +15,14 @@ class SocketService {
   final _typingController = StreamController<Map<String, dynamic>>.broadcast();
   final _connectionController = StreamController<bool>.broadcast();
   final _callController = StreamController<Map<String, dynamic>>.broadcast();
+  final _notificationController = StreamController<Map<String, dynamic>>.broadcast();
 
   // Getters for streams
   Stream<Message> get messageStream => _messageController.stream;
   Stream<Map<String, dynamic>> get typingStream => _typingController.stream;
   Stream<bool> get connectionStream => _connectionController.stream;
   Stream<Map<String, dynamic>> get callStream => _callController.stream;
+  Stream<Map<String, dynamic>> get notificationStream => _notificationController.stream;
 
   // Singleton pattern
   factory SocketService() {
@@ -113,6 +115,19 @@ class SocketService {
         }
       } catch (e) {
         print('SocketService - Error parsing new:message: $e');
+      }
+    });
+
+    // Listen for notifications
+    _socket!.on('new:notification', (data) {
+      if (_isDisposed) return;
+      try {
+        print('SocketService - Received new:notification: $data');
+        if (!_notificationController.isClosed) {
+          _notificationController.add(data);
+        }
+      } catch (e) {
+        print('SocketService - Error parsing new:notification: $e');
       }
     });
 
@@ -455,6 +470,9 @@ class SocketService {
     }
     if (!_callController.isClosed) {
       await _callController.close();
+    }
+    if (!_notificationController.isClosed) {
+      await _notificationController.close();
     }
 
     print('SocketService - Disposed successfully');

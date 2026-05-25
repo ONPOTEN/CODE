@@ -3,6 +3,7 @@ import '../models/post.dart';
 import '../services/post_service.dart';
 import '../services/api_config.dart';
 import '../widgets/engagement_buttons.dart';
+import '../widgets/adsense_banner.dart';
 import 'post_detail_screen.dart';
 
 class PostsFeedScreen extends StatefulWidget {
@@ -534,6 +535,17 @@ class _PostsFeedScreenState extends State<PostsFeedScreen> {
                                     ),
                                   );
                                 }
+                                
+                                // Show an ad every 5 posts (but not as the very first item)
+                                if (index > 0 && index % 5 == 0) {
+                                  return Column(
+                                    children: [
+                                      const AdSenseBanner(),
+                                      _buildPostCard(_posts[index]),
+                                    ],
+                                  );
+                                }
+                                
                                 return _buildPostCard(_posts[index]);
                               },
                             ),

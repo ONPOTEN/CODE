@@ -4,6 +4,7 @@ import '../models/shop_post.dart';
 import '../services/shop_service.dart';
 import 'shop_detail_screen.dart';
 import 'shops_list_screen.dart';
+import '../widgets/notification_bell.dart';
 
 class ProductFeedScreen extends StatefulWidget {
   const ProductFeedScreen({Key? key}) : super(key: key);
@@ -132,6 +133,7 @@ class _ProductFeedScreenState extends State<ProductFeedScreen> {
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
+          const NotificationBell(),
           TextButton.icon(
             onPressed: () {
               Navigator.push(

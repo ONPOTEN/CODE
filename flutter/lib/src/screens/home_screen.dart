@@ -14,6 +14,7 @@ import 'create_post_screen.dart';
 import 'chat_screen.dart';
 import 'user_profile_screen.dart';
 import '../widgets/friend_suggestions.dart';
+import '../widgets/notification_bell.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -636,6 +637,7 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Container(color: Colors.grey[200], height: 1),
         ),
         actions: [
+          NotificationBell(),
           IconButton(
             icon: Icon(Icons.logout),
             tooltip: 'Logout',

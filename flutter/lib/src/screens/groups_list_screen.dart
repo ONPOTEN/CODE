@@ -4,6 +4,7 @@ import '../models/group.dart';
 import '../services/group_service.dart';
 import '../services/api_config.dart';
 import 'group_detail_screen.dart';
+import '../widgets/notification_bell.dart';
 
 class GroupsListScreen extends StatefulWidget {
   const GroupsListScreen({Key? key}) : super(key: key);
@@ -335,6 +336,9 @@ class _GroupsListScreenState extends State<GroupsListScreen> {
           preferredSize: const Size.fromHeight(1),
           child: Container(color: Colors.grey[200], height: 1),
         ),
+        actions: [
+          const NotificationBell(),
+        ],
       ),
       body: Column(
         children: [

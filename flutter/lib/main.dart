@@ -8,6 +8,7 @@ import 'src/services/socket_service.dart';
 import 'src/services/api_config.dart';
 import 'src/providers/auth_provider.dart';
 import 'src/providers/engagement_provider.dart';
+import 'src/providers/notification_provider.dart';
 import 'src/screens/combined_login_screen.dart';
 import 'src/screens/unified_login_screen.dart';
 import 'src/screens/enhanced_login_screen.dart';
@@ -59,6 +60,7 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (context) => AuthProvider()),
         ChangeNotifierProvider(create: (context) => EngagementProvider()),
+        ChangeNotifierProvider(create: (context) => NotificationProvider()),
       ],
       child: MaterialApp(
         title: 'Flutter WebRTC Demo',
@@ -139,6 +141,10 @@ class _AuthWrapperState extends State<AuthWrapper> {
           token: token,
         );
         print('Main - EngagementProvider initialized');
+
+        // Fetch initial notification count
+        final notificationProvider = context.read<NotificationProvider>();
+        await notificationProvider.fetchCount();
       }
     }
 

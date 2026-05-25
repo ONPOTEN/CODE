@@ -12,6 +12,7 @@ import 'friends_list_screen.dart';
 import 'create_post_screen.dart';
 import 'my_posts_screen.dart';
 import 'add_friend_screen.dart';
+import '../widgets/notification_bell.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -774,6 +775,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           title: const Text('Hồ sơ'),
           backgroundColor: Colors.blue,
           foregroundColor: Colors.white,
+          actions: [
+            const NotificationBell(),
+          ],
         ),
         body: Center(
           child: Padding(
@@ -836,12 +840,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Hồ sơ'),
-        backgroundColor: Colors.blue,
-        foregroundColor: Colors.white,
-        actions: [
-          IconButton(
+        appBar: AppBar(
+          title: const Text('Hồ sơ'),
+          backgroundColor: Colors.blue,
+          foregroundColor: Colors.white,
+          actions: [
+            const NotificationBell(),
+            IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () {
               _loadUserData();
